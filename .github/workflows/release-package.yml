@@ -1,0 +1,17 @@
+name: Verify Release Package
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python tools/package_release.py
+      - run: python -m py_compile tools/build_portable.py tools/package_release.py
