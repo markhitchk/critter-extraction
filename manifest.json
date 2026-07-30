@@ -1,20 +1,10 @@
 {
-  "name": "Critter Extraction 3D \u2014 GitHub Pages Edition",
-  "short_name": "Critter 3D",
-  "id": "./",
-  "start_url": "./",
-  "scope": "./",
+  "name": "Critter Extraction",
+  "short_name": "Critter Extraction",
+  "description": "A cute 3D browser extraction game by Harley's Studios.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "landscape",
-  "background_color": "#15162b",
+  "background_color": "#111225",
   "theme_color": "#15162b",
-  "description": "A cute low-poly first/third-person extraction shooter with full puppy and bunny characters.",
-  "icons": [
-    {
-      "src": "./assets/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "icons": [{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml"}]
 }
