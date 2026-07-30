@@ -1,44 +1,20 @@
-# Critter Extraction 3D — GitHub Pages Edition
+# Critter Extraction v0.26.7
 
-A static, no-build browser extraction shooter with full low-poly puppy and bunny characters, first-person paws/weapon view, animated third-person character view, inventory management, local saves, Chromebook fallback rendering, and manual-code WebRTC co-op.
+A cute 3D browser extraction game by **Harley’s Studios**. This release adds the account-based **Petals** economy and repairs the **Custom Loadout Builder** so it uses only real items packed from Account Stash.
 
-## Publish on GitHub Pages
+## Highlights
 
-1. Create a new GitHub repository.
-2. Upload **all files and folders from this package to the repository root**. Keep `.github/workflows/pages.yml` and the empty `.nojekyll` file.
-3. Commit to the `main` branch.
-4. Open **Settings → Pages** and set **Source** to **GitHub Actions**.
-5. Open the repository's **Actions** tab and wait for **Deploy Critter Extraction to GitHub Pages** to complete.
-6. Open the URL shown by the deployment. A project repository normally uses `https://USERNAME.github.io/REPOSITORY/`.
+- Eight low-poly critters with first- and third-person views.
+- Procedural regions, contracts, loot, enemies, extraction, and direct WebRTC co-op.
+- Per-account Petals balance. New and migrated accounts begin at **0 Petals**.
+- Trading Post with safe stash selling, Sell Junk protection, item locking, and basic supply purchases.
+- Twenty-slot, 30 kg Custom Loadout with real packed weapons and armor—no invisible starter gear.
+- Forty-slot Account Stash with centered, short-screen-friendly inventory layouts.
+- Local account saves, XML exports, profile URLs, and migration from previous v26.x builds.
 
-No npm install, build command, database, or server is required. All paths are relative so the game works from a GitHub project subfolder.
+## Run locally
 
-## Controls
-
-- `W A S D` / arrows — move
-- Mouse — look
-- Left click — shoot
-- `F` or `Space` — backup shoot controls
-- Right click — aim
-- `V` — first/third person
-- `R` — reload
-- `I` / `Tab` — inventory
-- `E` — interact/extract
-- `Q` — heal
-- `Esc` — release mouse
-
-## Character views
-
-- **Third-person:** complete upright puppy or bunny, head, face, ears, muzzle/tail, torso, vest, backpack, arms, paws, legs, feet, weapon, walk animation, recoil, and muzzle flash.
-- **First-person:** visible sleeves, both forearms and paws, Pea Popper, movement bob, recoil, and muzzle flash.
-
-## Shooting fix
-
-Shots are queued immediately on pointer input so fast Chromebook clicks are not lost during pointer-lock or network update timing. The game also accepts `F` and `Space` as backup fire keys.
-
-## Local testing
-
-Open `index.html` directly for basic solo testing, or run a static server for PWA and WebRTC behavior:
+Extract the complete folder and open `START_HERE.html` for the self-contained build. For GitHub Pages, PWA caching, and WebRTC testing, run a static server:
 
 ```bash
 python -m http.server 8080
@@ -46,6 +22,22 @@ python -m http.server 8080
 
 Then open `http://localhost:8080/`.
 
-## Multiplayer note
+## Controls
 
-Direct co-op still uses the manual Host Code / Join Code WebRTC exchange. GitHub Pages supplies HTTPS hosting but is not a signaling or TURN backend, so restrictive networks can still block peer-to-peer connections.
+`WASD` move • mouse aim • left click/F/Space fire • right click aim • `R` reload • `Q` heal • `I`/Tab inventory • `E` interact/extract • `V` camera • `B` shoulder • `Esc` pause.
+
+## Petals and Trading Post
+
+Extracted items enter Account Stash. Open **Trading Post** to sell one item, a stack, or approved junk. Weapons, armor, ammo, healing items, quest items, Moonberries, locked items, and Custom Loadout items are protected from Sell Junk. Basic supplies can be bought only when the account has enough Petals and the stash has room.
+
+## Custom Loadout
+
+Choose **Custom Loadout**, then move real items from Account Stash into the left 20-slot backpack. Pack and equip a weapon before starting. Prepared items are saved locally and become at-risk match inventory only after the world initializes successfully.
+
+## Browser support
+
+Designed for current Chrome, Chromebook Chrome, Edge, Firefox, and Safari. Solo play can run locally. Public matchmaking/PeerJS and WebRTC require internet access; restrictive networks may still block direct peer connections.
+
+## Data and privacy
+
+Accounts, Petals, settings, stash, and statistics are stored in the browser. The game has no central account database. Diagnostic reports exclude profile images, usernames, inventory contents, room codes, and WebRTC packets.
