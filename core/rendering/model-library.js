@@ -30,6 +30,11 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     'arms','paws','legs','feet','tail','weapon','accessory'
   ],
   weaponModels: ['pea_popper','acorn_sprayer','honey_carbine','carrot_scatter','moonbeam'],
+  authoredRuntimeAssets: {
+    peaPopper: 'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
+    supplyCrate: 'assets/models/loot/supply_crate/supply_crate.glb',
+    pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb'
+  },
   combatRig: {
     zones: [
       { id:'head', y:2.23, radius:0.62, damageMultiplier:1.65 },
@@ -41,3 +46,16 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     tracerSource: 'weapon-muzzle'
   }
 });
+
+/* Load the authored GLB bridge synchronously before game-loader.js fetches
+   game-core.js. Procedural rendering remains available as a safe fallback. */
+if (!window.HarleyHighEndRuntime) {
+  if (document.readyState === 'loading') {
+    document.write('<script src="./core/rendering/high-end-glb-runtime.js" data-required-boot-file="core/rendering/high-end-glb-runtime.js"><\/script>');
+  } else {
+    const script = document.createElement('script');
+    script.src = './core/rendering/high-end-glb-runtime.js';
+    script.dataset.requiredBootFile = 'core/rendering/high-end-glb-runtime.js';
+    document.head.appendChild(script);
+  }
+}
