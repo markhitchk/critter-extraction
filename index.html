@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15162b">
+  <meta name="description" content="Harley’s Studios presents Critter Extraction — a cute first-person and third-person browser extraction shooter with custom critters, weapons, loadouts, inventory, and direct co-op.">
+  <title>Critter Extraction v0.27.1 — Cartoon-Realistic Art Upgrade — Harley’s Studios</title>
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css" data-required-boot-file="styles.css">
+  <script>
+    /* Critter Extraction v0.27.1 startup diagnostics.
+       Gives exact file/runtime details, lets the player copy a support report,
+       and treats slow loading as recoverable instead of immediately failing. */
+    (function () {
+      'use strict';
+
+      var state = window.__CRITTER_BOOT__ = {
+        version: '27.1',
+        startedAt: Date.now(),
+        gameStarted: false,
+        initialized: false,
+        ready: false,
+        failed: false,
+        stage: 'document-loading',
+        detail: '',
+        history: [],
+        errors: []
+      };
+      var panelMode = '';
+      var slowTimer = 0;
+      var failureTimer = 0;
+
+      function clean(value) {
+        return String(value == null ? '' : value).replace(/[<>]/g, '');
+      }
+
+      function shortFile(value) {
+        var raw = clean(value || 'unknown file');
+        try {
+          var url = new URL(raw, location.href);
+          return url.pathname.split('/').filter(Boolean).slice(-3).join('/') || raw;
+        } catch (_) {
+          return raw;
+        }
+      }
+
+      function errorCode(kind) {
+        var map = { 'file load':'FILE', 'JavaScript':'JS', promise:'PROMISE', timeout:'TIMEOUT', startup:'START' };
+        return 'CE-' + (map[kind] || 'BOOT') + '-' + String(state.errors.length + 1).padStart(2, '0');
+      }
+
+      function addHistory(stage, detail) {
+        state.history.push({
+          stage: clean(stage || 'unknown'),
+          detail: clean(detail || ''),
+          elapsedMs: Date.now() - state.startedAt
+        });
+        if (state.history.length > 30) state.history.shift();
+      }
+
+      function addError(kind, message, source, line, column) {
+        var entry = {
+          code: errorCode(kind),
+          kind: clean(kind || 'startup'),
+          message: clean(message || 'Unknown startup error'),
+          source: shortFile(source || ''),
+          line: Number(line || 0),
+          column: Number(column || 0),
+          elapsedMs: Date.now() - state.startedAt,
+          at: new Date().toISOString()
+        };
+        state.errors.push(entry);
+        return entry;
+      }
+
+      function supportReport() {
+        return JSON.stringify({
+          game: 'Critter Extraction',
+          version: state.version,
+          url: location.href,
+          protocol: location.protocol,
+          online: navigator.onLine,
+          userAgent: navigator.userAgent,
+          viewport: { width: innerWidth, height: innerHeight, pixelRatio: devicePixelRatio || 1 },
+          stage: state.stage,
+          detail: state.detail,
+          elapsedMs: Date.now() - state.startedAt,
+          flags: { gameStarted: state.gameStarted, initialized: state.initialized, ready: state.ready, failed: state.failed },
+          history: state.history,
+          errors: state.errors
+        }, null, 2);
+      }
+
+      function copyText(value) {
+        if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(value);
+        return new Promise(function (resolve, reject) {
+          try {
+            var area = document.createElement('textarea');
+            area.value = value;
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand('copy') ? resolve() : reject(new Error('Copy failed'));
+            area.remove();
+          } catch (err) { reject(err); }
+        });
+      }
+
+      function hideBootForRecovery() {
+        var boot = document.getElementById('studioBoot');
+        if (boot) boot.hidden = true;
+        panelMode = '';
+      }
+
+      function renderPanel(mode, summary, entry) {
+        if (state.ready) return;
+        var boot = document.getElementById('studioBoot');
+        if (!boot) {
+          document.addEventListener('DOMContentLoaded', function () { renderPanel(mode, summary, entry); }, { once: true });
+          return;
+        }
+
+        panelMode = mode;
+        if (mode === 'failure') {
+          state.failed = true;
+          state.stage = 'failed';
+          state.detail = clean(summary);
+          clearTimeout(slowTimer);
+          clearTimeout(failureTimer);
+        }
+
+        boot.hidden = false;
+        boot.classList.remove('is-hiding');
+        boot.innerHTML = '';
+        boot.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:16px;overflow:auto;background:#090b15;color:#fff;font-family:Arial,system-ui,sans-serif;';
+
+        var card = document.createElement('section');
+        card.className = 'studio-loading-card boot-problem-card';
+        card.style.cssText = 'width:min(720px,100%);padding:24px;border:1px solid rgba(100,232,234,.55);border-radius:22px;background:#11152a;box-shadow:0 24px 80px rgba(0,0,0,.6);text-align:left;';
+
+        var eyebrow = document.createElement('span');
+        eyebrow.className = 'eyebrow';
+        eyebrow.textContent = mode === 'slow' ? 'STILL LOADING — RECOVERY OPTIONS' : 'STARTUP ERROR';
+        var heading = document.createElement('h1');
+        heading.textContent = mode === 'slow' ? 'Critter Extraction is taking longer than expected' : 'Critter Extraction could not finish loading';
+        heading.style.margin = '8px 0 10px';
+        var message = document.createElement('p');
+        message.textContent = clean(summary);
+        message.style.cssText = 'margin:0 0 14px;color:#d5daea;line-height:1.5;';
+
+        var checklist = document.createElement('div');
+        checklist.className = 'boot-checklist';
+        checklist.style.cssText = 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 14px;';
+        [
+          ['PAGE', true],
+          ['GAME SCRIPT', state.gameStarted],
+          ['SYSTEMS', state.initialized],
+          ['READY', state.ready]
+        ].forEach(function (row) {
+          var item = document.createElement('div');
+          item.style.cssText = 'padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,.11);background:' + (row[1] ? 'rgba(126,247,212,.10)' : 'rgba(255,211,111,.07)') + ';font-size:10px;font-weight:800;text-align:center;color:' + (row[1] ? '#9ff8df' : '#ffd99a') + ';';
+          item.textContent = (row[1] ? '✓ ' : '… ') + row[0];
+          checklist.appendChild(item);
+        });
+
+        var details = document.createElement('pre');
+        details.className = 'boot-error-details';
+        var detailText = entry
+          ? entry.code + '\n' + entry.kind.toUpperCase() + ': ' + entry.message
+          : 'STATUS: ' + clean(state.stage) + (state.detail ? '\nDETAIL: ' + clean(state.detail) : '');
+        if (entry && entry.source) detailText += '\nFILE: ' + entry.source;
+        if (entry && entry.line) detailText += '\nLOCATION: line ' + entry.line + (entry.column ? ', column ' + entry.column : '');
+        detailText += '\nELAPSED: ' + Math.round((Date.now() - state.startedAt) / 1000) + ' seconds';
+        details.textContent = detailText;
+        details.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;padding:12px;border-radius:10px;background:#080b18;border:1px solid rgba(255,255,255,.12);color:#ffd99a;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;';
+
+        var help = document.createElement('p');
+        help.textContent = location.protocol === 'file:'
+          ? 'Keep the extracted folder together. START_HERE.html is the portable build. The support report below records the exact stage, browser, viewport, and failed file without including account or stash data.'
+          : 'Reload once. On GitHub Pages, index.html must be at the published repository root—not inside another Critter-Extraction folder. Also verify that styles.css, assets/models/harleys-model-library.js, and js/game.js kept their original case-sensitive paths.';
+        help.style.cssText = 'margin:0 0 16px;color:#aeb5cb;font-size:12px;line-height:1.5;';
+
+        var status = document.createElement('div');
+        status.setAttribute('aria-live', 'polite');
+        status.style.cssText = 'min-height:18px;margin:0 0 8px;color:#9ff8df;font-size:11px;font-weight:800;';
+
+        var actions = document.createElement('div');
+        actions.className = 'boot-error-actions';
+        actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:9px;';
+
+        function action(label, primary, handler) {
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = label;
+          button.style.cssText = 'border:' + (primary ? '0' : '1px solid rgba(255,255,255,.18)') + ';border-radius:10px;padding:10px 14px;background:' + (primary ? '#64e8ea' : 'rgba(255,255,255,.06)') + ';color:' + (primary ? '#0b1020' : '#fff') + ';font-weight:800;cursor:pointer;';
+          button.addEventListener('click', handler);
+          actions.appendChild(button);
+          return button;
+        }
+
+        action('Retry Loading', true, function () { location.reload(); });
+        action('Copy Support Report', false, function () {
+          copyText(supportReport()).then(function () { status.textContent = 'Support report copied.'; }, function () { status.textContent = 'Copy failed. Open the browser console and type __CRITTER_BOOT__.errors'; });
+        });
+        action('Download Support Report', false, function () {
+          try {
+            var blob = new Blob([supportReport()], { type: 'application/json' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'critter-extraction-v0.27.1-support-report.json';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(function () { URL.revokeObjectURL(link.href); }, 500);
+            status.textContent = 'Support report downloaded.';
+          } catch (_) { status.textContent = 'Download failed. Use Copy Support Report instead.'; }
+        });
+
+        if (mode === 'slow') {
+          action('Keep Waiting', false, function () {
+            status.textContent = 'Waiting 30 more seconds…';
+            hideBootForRecovery();
+            failureTimer = setTimeout(function () {
+              if (state.ready || state.failed) return;
+              var timeout = addError('timeout', 'The game still did not report ready after the extended wait.', state.gameStarted ? 'js/game.js' : 'index.html', 0, 0);
+              renderPanel('failure', timeout.message, timeout);
+            }, 30000);
+          });
+          if (state.initialized) action('Continue to Menu', false, hideBootForRecovery);
+        }
+
+        if (!/START_HERE\.html$/i.test(location.pathname)) {
+          var portable = document.createElement('a');
+          portable.href = './START_HERE.html';
+          portable.textContent = 'Open Portable Build';
+          portable.style.cssText = 'display:inline-flex;align-items:center;border:1px solid rgba(142,130,255,.55);border-radius:10px;padding:9px 13px;background:rgba(142,130,255,.14);color:#fff;text-decoration:none;font-weight:800;';
+          actions.appendChild(portable);
+        }
+
+        card.appendChild(eyebrow);
+        card.appendChild(heading);
+        card.appendChild(message);
+        card.appendChild(checklist);
+        card.appendChild(details);
+        card.appendChild(help);
+        card.appendChild(status);
+        card.appendChild(actions);
+        boot.appendChild(card);
+      }
+
+      window.__critterBootReport = function (stage, detail) {
+        stage = clean(stage || 'unknown');
+        state.stage = stage;
+        state.detail = clean(detail || '');
+        addHistory(stage, detail);
+        if (stage === 'game-script-started') state.gameStarted = true;
+        if (stage === 'game-initialized') state.initialized = true;
+        if (stage === 'ready') {
+          state.ready = true;
+          state.failed = false;
+          clearTimeout(slowTimer);
+          clearTimeout(failureTimer);
+        }
+        if (stage === 'failure') {
+          var entry = addError('startup', detail || 'The game reported a startup failure.');
+          renderPanel('failure', entry.message, entry);
+        }
+      };
+
+      window.addEventListener('error', function (event) {
+        if (state.ready) {
+          console.error('Critter Extraction runtime issue', event.error || event.message || event);
+          return;
+        }
+        var target = event && event.target;
+        if (target && target !== window) {
+          var tag = String(target.tagName || '').toUpperCase();
+          if (tag === 'SCRIPT' && target.dataset && target.dataset.optionalNetworkScript === 'true') return;
+          if (tag === 'SCRIPT' || (tag === 'LINK' && String(target.rel || '').toLowerCase() === 'stylesheet')) {
+            var source = target.getAttribute('src') || target.getAttribute('href') || 'unknown required file';
+            var entry = addError('file load', 'A required ' + tag.toLowerCase() + ' file failed to load.', source, 0, 0);
+            renderPanel('failure', 'A required game file failed to load: ' + entry.source, entry);
+          }
+          return;
+        }
+        var runtime = addError('JavaScript', event && event.message ? event.message : 'Unknown JavaScript error', event && event.filename ? event.filename : '', event && event.lineno ? event.lineno : 0, event && event.colno ? event.colno : 0);
+        renderPanel('failure', 'The game stopped during startup because of a JavaScript error.', runtime);
+      }, true);
+
+      window.addEventListener('unhandledrejection', function (event) {
+        if (state.ready) { console.error('Critter Extraction promise issue', event.reason); return; }
+        var reason = event && event.reason;
+        var message = reason && reason.message ? reason.message : clean(reason || 'Unhandled promise rejection');
+        var rejection = addError('promise', message, reason && reason.fileName ? reason.fileName : '', reason && reason.lineNumber ? reason.lineNumber : 0, 0);
+        renderPanel('failure', 'An initialization task failed.', rejection);
+      });
+
+      window.addEventListener('DOMContentLoaded', function () {
+        addHistory('dom-ready', 'The HTML document finished loading.');
+        slowTimer = setTimeout(function () {
+          if (state.ready || state.failed) return;
+          renderPanel('slow', state.gameStarted
+            ? 'The game script is running, but one initialization stage has not reported ready yet.'
+            : 'The browser has not started the main game script yet.', null);
+        }, 20000);
+        failureTimer = setTimeout(function () {
+          if (state.ready || state.failed) return;
+          var message = state.gameStarted
+            ? 'The game script did not finish initialization within 60 seconds.'
+            : 'The main game script did not begin within 60 seconds.';
+          var timeoutError = addError('timeout', message, state.gameStarted ? 'js/game.js' : 'index.html', 0, 0);
+          renderPanel('failure', message, timeoutError);
+        }, 60000);
+      }, { once: true });
+    })();
+  </script>
+</head>
+<body>
+  <div id="studioBoot" class="studio-loading" aria-live="polite">
+    <div class="studio-loading-bg"></div>
+    <div class="studio-loading-card">
+      <img class="studio-logo" src="./assets/HTG.png" alt="Harley’s Studios puppy logo">
+      <span class="eyebrow">HARLEY’S STUDIOS PRESENTS</span>
+      <h1>Critter Extraction</h1>
+      <p>Cinematic critters. Tactical cover. Bigger extraction runs.</p>
+      <div class="loading-track"><b id="bootBar"></b></div>
+      <small id="bootStatus">Loading refreshed critters, regional map assets, weapons, and HUD…</small>
+    </div>
+  </div>
+  <div id="dropLoading" class="studio-loading drop-loading" hidden aria-live="polite">
+    <div class="drop-loading-bg"></div>
+    <div class="studio-loading-card compact-load">
+      <img class="studio-logo small-logo" src="./assets/HTG.png" alt="">
+      <span class="eyebrow">PREPARING DROP</span>
+      <h2 id="dropLoadingTitle">Packing the Meadow Kit</h2>
+      <div class="loading-track"><b id="dropLoadingBar"></b></div>
+      <small id="dropLoadingStatus">Checking critter gear…</small>
+    </div>
+  </div>
+  <div id="app">
+    <header class="topbar">
+      <button class="brand" id="brandBtn" aria-label="Return to menu">
+        <img src="./assets/icon.svg" alt="Harley’s Studios puppy icon" width="46" height="46">
+        <span><strong>Critter Extraction</strong><small>v0.27.1 • Harley’s Studios • Cartoon-Realistic Art Upgrade</small></span>
+      </button>
+      <div class="top-actions">
+        <button class="ghost" data-open="helpModal">Controls</button>
+        <button class="ghost" data-open="settingsModal">Settings</button>
+        <button class="petals-chip" id="topPetalsBtn" type="button" aria-label="Open Trading Post"><span aria-hidden="true">🌸</span><strong id="topPetals">0 Petals</strong></button>
+        <button class="account-chip" id="accountBtn"><span id="topAvatar" class="avatar"></span><span><strong id="topName">Rookie</strong><small>Device account</small></span></button>
+      </div>
+    </header>
+
+    <main>
+      <section id="menuScreen" class="screen active">
+        <div class="hero panel">
+          <div class="hero-copy">
+            <div class="eyebrow">HARLEY’S STUDIOS • MODERN-BROWSER READY • PROCEDURAL MAPS</div>
+            <h1>Choose your critter. Build your kit. Bring the loot home.</h1>
+            <p>Play as one of eight redesigned Harley’s Studios critters with unique tactical colors, species details, five distinct blasters, and starter kits. Every drop rolls a new region, layout, regional landmark, decor set, extraction point, required contract, bonus quest, enemy patrol, and loot arrangement. Third-person shows the complete animated character; first-person shows matching species paws and the equipped weapon.</p>
+            <div class="play-row">
+              <button class="primary xl" id="soloBtn">Play Solo</button>
+              <button class="secondary xl" id="hostBtn">Host Multiplayer</button>
+              <button class="secondary xl" id="joinBtn">Join Co-op</button>
+            </div>
+            <div class="notice"><strong>Controls:</strong> click the game to capture the mouse, left-click to fire, use <kbd>F</kbd> or <kbd>Space</kbd> as backup fire keys, <kbd>Esc</kbd> for pause, <kbd>V</kbd> to switch views, and <kbd>B</kbd> to switch shoulders.</div>
+          </div>
+          <div class="hero-scene studio-hero" aria-hidden="true"><img src="./assets/loading/cinematic-gameplay-fullhd.webp" alt=""><div class="studio-stamp"><img src="./assets/icon.svg" alt=""><span>ORIGINAL GAME ASSETS<br>BY HARLEY’S STUDIOS</span></div></div>
+        </div>
+
+        <div class="dashboard">
+          <article class="panel profile-panel">
+            <div class="panel-heading"><div><span class="eyebrow">ACTIVE ACCOUNT</span><h2 id="profileName">Rookie</h2></div><button class="mini" id="editProfileBtn">Name & Profile</button></div>
+            <div class="profile-summary"><span id="menuAvatar" class="avatar avatar-large"></span><div><strong id="profileHandle">@rookie</strong><p id="profileBio">Ready for the meadow.</p></div></div>
+            <div class="progress"><div><span>Level <b id="levelText">1</b></span><span id="xpText">0 / 100 XP</span></div><i><b id="xpBar"></b></i></div>
+            <div class="profile-petals"><span><small>ACCOUNT CURRENCY</small><strong id="profilePetals">🌸 0 Petals</strong></span><button class="mini" id="profileMerchantBtn" type="button">Trading Post</button></div>
+            <button class="secondary full" id="accountsBtn">Switch / Manage Accounts</button>
+          </article>
+
+          <article class="panel stats-panel">
+            <div class="panel-heading"><div><span class="eyebrow">CAREER</span><h2>Extraction Record</h2></div><span class="pill">Local save</span></div>
+            <div class="stat-grid">
+              <div><strong id="extractsStat">0</strong><span>Extracts</span></div>
+              <div><strong id="berriesStat">0</strong><span>Berries</span></div>
+              <div><strong id="killsStat">0</strong><span>Critters</span></div>
+              <div><strong id="matchesStat">0</strong><span>Drops</span></div>
+            </div>
+          </article>
+
+          <article class="panel loadout-panel">
+            <div class="panel-heading"><div><span class="eyebrow">SELECTED LOADOUT</span><h2 id="menuLoadoutName">Meadow Scout</h2></div><button class="mini" id="loadoutBtn">Choose Kit</button></div>
+            <div class="loadout weapon-loadout"><img id="menuWeaponAsset" src="./assets/weapons/pea_popper.svg" alt=""><div><strong id="menuWeaponName">Pea Popper</strong><small id="menuWeaponDesc">Balanced semi-auto berry blaster</small></div></div>
+            <div class="loadout"><img id="menuUtilityAsset" src="./assets/items/bandage.svg" alt=""><div><strong id="menuUtilityName">Berry Patches</strong><small id="menuUtilityDesc">Two quick healing patches</small></div></div>
+            <div class="loadout"><span>◇</span><div><strong id="menuPackName">Critter Pack</strong><small id="menuPackDesc">20 slots • 25 kg carry limit</small></div></div>
+            <div class="button-pair triple"><button class="secondary" id="inventoryBtn">Stash</button><button class="secondary" id="merchantBtn" type="button">Trading Post</button><button class="secondary" data-open="customizeModal">Character</button></div>
+          </article>
+        </div>
+        <footer class="studio-footer"><img src="./assets/HTG.png" alt="Harley the Gamer puppy logo"><div><strong>Made by Harley’s Studios</strong><small>Original character, weapon, item, regional map, interface, and loading assets created for Critter Extraction.</small></div></footer>
+      </section>
+
+      <section id="gameScreen" class="screen game-screen">
+        <div class="game-shell">
+          <canvas id="gameCanvas" width="1280" height="720" tabindex="0" aria-label="Critter Extraction game"></canvas>
+          <div id="worldLabels" class="world-labels" aria-hidden="true"></div>
+          <div id="playOverlay" class="play-overlay" hidden aria-hidden="true"><button id="captureBtn" type="button" tabindex="-1">Capture Mouse</button></div>
+          <div id="rendererBadge" class="renderer-badge">Starting renderer…</div><div id="safeZoneBadge" class="safe-zone-badge" hidden>SAFE ZONE</div>
+          <div id="webglError" class="webgl-error" hidden>The game could not start either WebGL or the lightweight Canvas renderer. Reload the page or use a current Chrome, Edge, Firefox, or Safari browser.</div>
+          <aside class="hud squad-hud hud-left" aria-label="Squad status">
+            <div class="squad-self">
+              <span id="hudAvatar" class="avatar avatar-small"></span>
+              <div class="squad-self-info"><strong id="hudName">Rookie</strong><small id="networkBadge">SOLO</small><i><b id="squadSelfBar"></b></i></div>
+            </div>
+            <div id="squadMembers" class="squad-members"></div>
+          </aside>
+
+          <div class="hud hud-center cinematic-center">
+            <div class="compass-strip"><span>W</span><span>285</span><span>NW</span><strong id="compassHeading">000</strong><span>N</span><span>45</span><span>NE</span></div>
+            <div class="extraction-card">
+              <div class="objective-copy"><small id="objectiveStep">STEP 1</small><strong id="extractionLabel">LOCATE EXTRACTION BEACON</strong><span id="objectiveDetail">Follow the gold diamond</span></div>
+              <div class="mission-timer"><small>DROP CLOSES</small><div class="timer" id="timerText">05:00</div></div>
+              <div class="berry-counter"><small id="lootLabel">MOONBERRIES</small><strong id="lootText">0 / 5</strong></div>
+            </div>
+            <div class="camera-tag" id="cameraTag">THIRD PERSON</div>
+          </div>
+
+          <div class="hud hud-right hud-actions"><button class="hud-button" id="gameInventoryBtn">Inventory [I]</button><button class="hud-button" id="pauseBtn">Pause</button><button class="hud-button danger" id="leaveBtn">Leave</button></div>
+          <aside class="hud minimap-hud" aria-label="Minimap and objectives">
+            <div id="minimapTitle" class="minimap-title">PINE VALLEY</div>
+            <div id="minimapMap" class="minimap-map"><i id="minimapRoadA" class="minimap-road road-a"></i><i id="minimapRoadB" class="minimap-road road-b"></i><i id="minimapRail" class="minimap-rail"></i><b id="minimapPlayer" class="minimap-player">▲</b><span id="minimapExtract" class="minimap-extract">◆</span></div>
+            <div class="minimap-stats"><span>♟ <b id="aliveCount">12</b></span><span>☠ <b id="hudKills">0</b></span><span>◷ <b id="miniTimer">05:00</b></span></div>
+            <div class="mission-list"><strong id="missionListTitle">DROP OBJECTIVES</strong>
+              <label id="findObjectiveRow" class="objective-row active"><input id="findObjectiveCheck" type="checkbox" disabled><span><b id="findObjectiveTitle">Locate extraction beacon</b><small id="findObjectiveStatus">Searching…</small></span></label>
+              <label id="contractObjectiveRow" class="objective-row locked"><input id="contractObjectiveCheck" type="checkbox" disabled><span><b id="contractObjectiveTitle">Drop contract</b><small id="contractObjectiveStatus">Locked</small></span></label>
+              <label id="bonusObjectiveRow" class="objective-row locked"><input id="bonusObjectiveCheck" type="checkbox" disabled><span><b id="bonusObjectiveTitle">Bonus contract</b><small id="bonusObjectiveStatus">Locked</small></span></label>
+              <label id="lootObjectiveRow" class="objective-row locked"><input id="lootObjectiveCheck" type="checkbox" disabled><span><b id="lootObjectiveTitle">Collect Moonberries</b><small id="lootObjectiveStatus">0 / 5 collected</small></span></label>
+              <label id="extractObjectiveRow" class="objective-row locked"><input id="extractObjectiveCheck" type="checkbox" disabled><span><b id="extractObjectiveTitle">Extract alive</b><small id="extractObjectiveStatus">Locked</small></span></label>
+            </div>
+          </aside>
+
+          <div class="crosshair" id="crosshair"><i></i><b></b><em></em><span></span></div>
+          <div class="hitmarker" id="hitmarker" aria-hidden="true"><i></i><b></b><em></em><span></span></div>
+          <div class="hud vitals-hud">
+            <div class="vital shield-vital"><span>◆</span><i><b id="shieldBar"></b></i><strong id="shieldText">50</strong></div>
+            <div class="vital hp-vital"><span>♥</span><i><b id="hpBar"></b></i><strong id="hpText">100</strong></div>
+          </div>
+          <div class="hud bottom-left cinematic-hint" id="controlHint">Click game to aim • WASD move • Click/F fire • E interact • C crouch • V camera • B shoulder • I inventory</div>
+          <div class="quickbar" id="quickbar"></div>
+          <div class="hud ammo cinematic-ammo"><small id="ammoWeaponName">PEA POPPER</small><strong id="ammoText">16 / 80</strong><span id="reloadText"></span><em>AUTO</em></div>
+          <div class="interaction" id="interaction" hidden><strong id="interactionText">Hold E to extract</strong><i><b id="interactionBar"></b></i></div>
+          <div class="toast" id="toast"></div>
+          <div class="damage-flash" id="damageFlash"></div>
+          <div class="touch-controls" id="touchControls" hidden aria-label="Touch game controls">
+            <div class="touch-stick-zone"><div class="touch-stick" id="moveStick" role="group" aria-label="Movement joystick"><i></i></div><span>MOVE</span></div>
+            <div class="touch-look" id="lookArea" role="group" aria-label="Drag to look around"><span>DRAG TO LOOK</span></div>
+            <div class="touch-top-buttons">
+              <button type="button" id="touchPause" aria-label="Pause game">Ⅱ</button>
+              <button type="button" id="touchInventory" aria-label="Open backpack">BAG</button>
+              <button type="button" id="touchCamera" aria-label="Switch camera">CAM</button>
+              <button type="button" id="touchShoulder" aria-label="Switch camera shoulder">↔</button>
+            </div>
+            <div class="touch-buttons">
+              <button type="button" class="touch-crouch" id="touchCrouch" aria-label="Toggle crouch" aria-pressed="false">C</button>
+              <button type="button" class="touch-reload" id="touchReload" aria-label="Reload weapon">R</button>
+              <button type="button" class="touch-heal" id="touchHeal" aria-label="Use healing item">+</button>
+              <button type="button" class="touch-use" id="touchUse" aria-label="Interact">USE</button>
+              <button type="button" class="touch-aim" id="touchAim" aria-label="Hold to aim">AIM</button>
+              <button type="button" class="fire" id="touchFire" aria-label="Hold to fire">FIRE</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="inventoryModal" class="modal inventory-modal">
+    <div class="modal-card inventory-card">
+      <header><div><span class="eyebrow" id="inventoryEyebrow">ACCOUNT STORAGE</span><h2 id="inventoryTitle">Stash & Loadout</h2></div><button class="icon-close" data-close="inventoryModal">×</button></header>
+      <div id="customLoadoutNotice" class="custom-loadout-notice" hidden><div><span class="eyebrow">CUSTOM LOADOUT BUILDER</span><strong>Pack real items from your Account Stash</strong><small>Quick-transfer items into the left backpack. Those items are saved as your next drop loadout and stay at risk until you extract.</small></div><span class="custom-loadout-autosave">AUTO-SAVED</span></div>
+      <div class="inventory-summary">
+        <div><span>BACKPACK WEIGHT</span><strong id="weightText">0.0 / 25.0 kg</strong><i><b id="weightBar"></b></i></div>
+        <div><span>VALUE AT RISK</span><strong id="riskValue">0</strong><small>Lost if you fail to extract</small></div>
+        <div><span>MOONBERRIES</span><strong id="inventoryBerryCount">0</strong><small>Need 5 to extract</small></div>
+        <div><span>ACCOUNT PETALS</span><strong id="inventoryPetals">🌸 0</strong><small>Spend at the Trading Post</small></div>
+      </div>
+      <div class="inventory-layout">
+        <section class="inventory-section">
+          <div class="inventory-heading"><div><span class="eyebrow">CARRIED ITEMS</span><h3 id="backpackTitle">Backpack</h3></div><button class="mini" id="sortBackpackBtn">Sort</button></div>
+          <div id="backpackGrid" class="item-grid backpack-grid" aria-label="Backpack inventory"></div>
+          <div class="inventory-help">Select an item for actions. Double-click gear to equip, consumables to use, or nearby loot to take it.</div>
+        </section>
+        <aside class="inventory-side">
+          <section class="equipment-panel">
+            <div class="inventory-heading"><div><span class="eyebrow">EQUIPPED</span><h3>Loadout</h3></div></div>
+            <div class="equipment-slots">
+              <button class="equipment-slot" data-equip="weapon"><img id="equipWeaponAsset" src="./assets/weapons/pea_popper.svg" alt=""><div><small>PRIMARY</small><strong id="equipWeapon">Pea Popper</strong></div></button>
+              <button class="equipment-slot" data-equip="armor"><span>⬡</span><div><small>ARMOR</small><strong id="equipArmor">Leaf Vest</strong></div></button>
+              <button class="equipment-slot" data-equip="backpack"><span>◇</span><div><small>BACKPACK</small><strong id="equipBackpack">Critter Pack</strong></div></button>
+            </div>
+          </section>
+          <section class="side-storage">
+            <div class="inventory-heading"><div><span class="eyebrow" id="sideEyebrow">SAFE STORAGE</span><h3 id="sideTitle">Account Stash</h3></div><button class="mini" id="takeAllBtn" hidden>Take All</button></div>
+            <div id="sideGrid" class="item-grid side-grid" aria-label="Stash or nearby loot"></div>
+          </section>
+          <section id="itemDetails" class="item-details">
+            <div class="item-details-icon">?</div><div><span class="eyebrow">ITEM DETAILS</span><h3>Select an item</h3><p>Item information and actions appear here.</p></div>
+          </section>
+        </aside>
+      </div>
+      <footer><button class="ghost" id="dropSelectedBtn" hidden>Drop Selected</button><button class="ghost" id="returnPreparedBtn" hidden>Return All to Stash</button><button class="secondary" id="openMerchantFromInventoryBtn" type="button">Sell Items</button><button class="secondary" id="quickTransferBtn">Quick Transfer</button><button class="primary" data-close="inventoryModal">Done</button></footer>
+    </div>
+  </dialog>
+
+
+  <dialog id="merchantModal" class="modal merchant-modal">
+    <div class="modal-card wide merchant-card">
+      <header><div><span class="eyebrow">MOONMEADOW TRADING POST</span><h2>Buy & Sell</h2></div><div class="merchant-header-actions"><strong id="merchantPetals" class="merchant-balance">🌸 0 Petals</strong><button class="icon-close" data-close="merchantModal">×</button></div></header>
+      <div class="merchant-tabs" role="tablist"><button class="primary" id="merchantSellTab" type="button">Sell</button><button class="secondary" id="merchantBuyTab" type="button">Buy</button></div>
+      <div id="merchantSellPanel" class="merchant-panel">
+        <div class="merchant-toolbar"><div><span class="eyebrow">ACCOUNT STASH</span><h3>Sell extracted items</h3><small>Custom Loadout and locked items are protected.</small></div><button class="secondary" id="sellJunkBtn" type="button">Sell Junk</button></div>
+        <div class="merchant-layout"><div id="merchantSellGrid" class="item-grid square-item-grid merchant-grid" aria-label="Items available to sell"></div><section id="merchantDetails" class="merchant-details"><span class="eyebrow">SALE DETAILS</span><h3>Select a stash item</h3><p>Choose an item to see its value and selling options.</p></section></div>
+      </div>
+      <div id="merchantBuyPanel" class="merchant-panel" hidden>
+        <div class="merchant-toolbar"><div><span class="eyebrow">BASIC SUPPLIES</span><h3>Buy supplies</h3><small>Purchases go directly to Account Stash.</small></div></div>
+        <div id="merchantBuyGrid" class="merchant-buy-grid"></div>
+      </div>
+      <footer><button class="primary" data-close="merchantModal">Done</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="sellConfirmModal" class="modal compact">
+    <div class="modal-card sell-confirm-card"><header><div><span class="eyebrow">CONFIRM SALE</span><h2 id="sellConfirmTitle">Sell Item</h2></div><button class="icon-close" data-close="sellConfirmModal">×</button></header><div id="sellConfirmBody" class="sell-confirm-body"></div><footer><button class="ghost" data-close="sellConfirmModal">Cancel</button><button class="primary" id="confirmSellBtn" type="button">Confirm Sale</button></footer></div>
+  </dialog>
+
+  <dialog id="accountsModal" class="modal">
+    <div class="modal-card wide">
+      <header><div><span class="eyebrow">SAVED IN THIS BROWSER</span><h2>Device Accounts</h2></div><button class="icon-close" data-close="accountsModal">×</button></header>
+      <div class="account-note">These profiles are stored only on this device. They are not cloud accounts and do not provide secure online authentication.</div>
+      <div id="accountList" class="account-list"></div>
+      <div class="xml-profile-tools">
+        <label>Import XML or Profile URL<input id="profileXmlUrlInput" type="url" inputmode="url" placeholder="Paste an XML URL or copied Profile URL"></label>
+        <button class="secondary" id="importProfileUrlBtn" type="button">Import XML URL</button>
+        <input id="profileXmlFileInput" type="file" accept=".xml,application/xml,text/xml" hidden>
+      </div>
+      <footer><button class="secondary" id="importAccountBtn" type="button">Upload Profile XML</button><button class="ghost" id="legacyImportBtn" type="button">Import Legacy Code</button><button class="primary" id="newAccountBtn">Create Account</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="profileModal" class="modal">
+    <form id="profileForm" class="modal-card">
+      <header><div><span class="eyebrow" id="profileModalEyebrow">DEVICE PROFILE</span><h2 id="profileModalTitle">Create Account</h2></div><button type="button" class="icon-close" data-close="profileModal">×</button></header>
+      <div class="profile-editor">
+        <div class="avatar-editor">
+          <span id="editAvatarPreview" class="avatar avatar-xl"></span>
+          <label class="upload-button">Upload profile picture<input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+          <label class="avatar-url-label">Profile image URL<input id="avatarUrlInput" type="url" inputmode="url" placeholder="https://example.com/avatar.png"></label>
+          <button type="button" class="secondary small" id="applyAvatarUrlBtn">Use image URL</button>
+          <button type="button" class="ghost small" id="removeAvatarBtn">Use initials</button>
+        </div>
+        <div class="form-grid">
+          <label>Username<input id="usernameInput" maxlength="18" pattern="[A-Za-z0-9_\-]+" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="meadow_ranger"><small class="field-help">Letters, numbers, underscores, and dashes.</small></label>
+          <label>Display name<input id="displayNameInput" maxlength="24" autocomplete="nickname" required placeholder="Meadow Ranger"><small class="field-help">Spaces now work correctly.</small></label>
+          <label class="span-2">Bio<textarea id="bioInput" maxlength="120" rows="3" placeholder="Tell other players about your critter."></textarea></label>
+        </div>
+      </div>
+      <footer><button type="button" class="ghost" data-close="profileModal">Cancel</button><button class="primary" type="submit">Save Account</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="loadoutModal" class="modal">
+    <div class="modal-card wide loadout-card">
+      <header><div><span class="eyebrow">HARLEY’S STUDIOS ARMORY</span><h2>Choose a Loadout</h2></div><button class="icon-close" data-close="loadoutModal">×</button></header>
+      <p class="modal-intro">Choose a ready-made starter kit or build a custom loadout using only real items moved from Account Stash.</p>
+      <section class="custom-loadout-toolbar" aria-label="Custom loadout builder">
+        <div><span class="eyebrow">CUSTOM LOADOUT</span><strong>Pack your own items for the next drop</strong><small>Your custom backpack uses 20 slots and a 30 kg limit. Add and equip a packed weapon before starting.</small></div>
+        <button class="secondary" id="customLoadoutBtn" type="button">Build Custom Loadout</button>
+      </section>
+      <div id="loadoutGrid" class="loadout-grid"></div>
+      <footer><button class="primary" data-close="loadoutModal">Done</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="customizeModal" class="modal">
+    <form id="customizeForm" class="modal-card wide customize-card">
+      <header><div><span class="eyebrow">YOUR CRITTER</span><h2>Appearance</h2></div><button type="button" class="icon-close" data-close="customizeModal">×</button></header>
+      <div class="customize-grid expanded-customize">
+        <div class="critter-preview" id="critterPreview"><img id="critterPreviewAsset" src="./assets/characters/puppy.svg" alt="Selected critter preview"></div>
+        <div class="customize-controls">
+          <span class="eyebrow">HARLEY’S STUDIOS CHARACTER COLLECTION</span>
+          <div id="characterRoster" class="character-roster" role="listbox" aria-label="Choose a critter"></div>
+          <div class="form-grid">
+            <label>Critter type<select id="species"><option value="puppy">Puppy</option><option value="bunny">Bunny</option><option value="kitty">Kitty</option><option value="fox">Fox</option><option value="panda">Panda</option><option value="bear">Bear</option><option value="raccoon">Raccoon</option><option value="redpanda">Red Panda</option></select></label>
+            <label>Body color<input id="bodyColor" type="color"></label>
+            <label>Accent color<input id="accentColor" type="color"></label>
+            <label>Accessory<select id="accessory"><option value="none">None</option><option value="cap">Tiny cap</option><option value="crown">Pocket crown</option><option value="antenna">Signal antenna</option><option value="headphones">Studio headphones</option><option value="bandana">Explorer bandana</option></select></label>
+            <label>Eye style<select id="eyeStyle"><option value="dot">Button eyes</option><option value="happy">Happy eyes</option><option value="cool">Cool shades</option><option value="sparkle">Sparkle eyes</option></select></label>
+          </div>
+        </div>
+      </div>
+      <footer><button type="button" class="ghost" data-close="customizeModal">Cancel</button><button class="primary" type="submit">Save Look</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="settingsModal" class="modal">
+    <form id="settingsForm" class="modal-card wide">
+      <header><div><span class="eyebrow">GAMEPLAY • CAMERA • PERFORMANCE</span><h2>Settings</h2></div><button type="button" class="icon-close" data-close="settingsModal">×</button></header>
+      <div class="settings-grid">
+        <section><h3>Camera</h3>
+          <label>Default view<select id="cameraMode"><option value="third">Third-person</option><option value="first">First-person</option></select></label>
+          <label>Third-person shoulder<select id="shoulderSide"><option value="right">Right shoulder</option><option value="left">Left shoulder</option></select></label>
+          <label>Field of view <output id="fovOut">75°</output><input id="fov" type="range" min="55" max="100" step="1"></label>
+          <label>Mouse sensitivity <output id="sensitivityOut">1.0×</output><input id="sensitivity" type="range" min="0.2" max="2.5" step="0.1"></label>
+          <label class="check"><input id="invertY" type="checkbox"> Invert vertical look</label>
+        </section>
+        <section><h3>Gameplay</h3>
+          <label>Difficulty<select id="difficulty"><option value="cozy">Cozy</option><option value="normal">Normal</option><option value="spicy">Spicy</option></select></label>
+          <label class="check"><input id="aimAssist" type="checkbox"> Gentle aim assist</label>
+          <label class="check"><input id="autoReload" type="checkbox"> Automatic reload</label>
+          <label class="check"><input id="showHints" type="checkbox"> Show control hints</label>
+          <label class="check"><input id="showHitboxes" type="checkbox"> Show hitboxes for testing</label>
+        </section>
+        <section><h3>Graphics</h3>
+          <label>Model detail<select id="quality"><option value="low">Low — fewer polygons</option><option value="medium">Medium — balanced</option><option value="high">High — rounder models</option></select></label>
+          <p id="graphicsDetailText" class="setting-note">Medium uses balanced character, enemy, tree, and prop geometry.</p>
+          <label>Render scale<select id="renderScale"><option value="0.7">70%</option><option value="0.85">85%</option><option value="1">100%</option></select></label>
+          <label class="check"><input id="fogEnabled" type="checkbox"> Meadow fog</label>
+          <label class="check"><input id="compatibilityMode" type="checkbox"> Chromebook / compatibility mode</label>
+          <label class="check"><input id="reducedMotion" type="checkbox"> Reduced motion</label>
+        </section>
+        <section><h3>Interface & Audio</h3>
+          <label>HUD scale <output id="hudScaleOut">100%</output><input id="hudScale" type="range" min="80" max="130" step="5"></label>
+          <label>Volume <output id="volumeOut">70%</output><input id="volume" type="range" min="0" max="100" step="1"></label>
+          <label class="check"><input id="touchAlways" type="checkbox"> Always show phone/tablet touch controls</label>
+        </section>
+      </div>
+      <footer><span class="setting-save-note">Changes save automatically.</span><button type="button" class="ghost" data-close="settingsModal">Close</button><button class="primary" type="submit">Save Settings</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="hostModal" class="modal">
+    <div class="modal-card network-card simple-network-card">
+      <header><div><span class="eyebrow">HOST GAME</span><h2>Create a Co-op Room</h2></div><button class="icon-close" data-close="hostModal">×</button></header>
+      <div class="network-status"><i id="hostNetworkDot"></i><div><strong id="hostNetworkStatus">Creating room…</strong><small id="hostNetworkHelp">Connecting to the online room service.</small></div></div>
+      <section class="lobby-panel" aria-label="Multiplayer lobby"><div class="lobby-heading"><strong>PLAYERS</strong><span id="hostLobbyCount">1 / 4</span></div><div id="hostLobbyRoster" class="lobby-roster"></div></section>
+      <section class="host-rules-panel" aria-label="Host match rules">
+        <div class="host-rules-heading"><div><span class="eyebrow">HOST RULES</span><strong>Choose how connected players fight</strong></div><small id="hostRulesHelp">Co-op Extraction keeps every player on one team.</small></div>
+        <div class="host-mode-grid" role="radiogroup" aria-label="Match mode">
+          <label class="host-mode-card"><input id="hostModeCoop" type="radio" name="hostMatchMode" value="coop" checked><span><strong>Co-op Extraction</strong><small>Players work together against AI raiders.</small></span></label>
+          <label class="host-mode-card"><input id="hostModePvp" type="radio" name="hostMatchMode" value="pvp"><span><strong>Player vs Player</strong><small>No AI raiders. Last critter standing wins.</small></span></label>
+        </div>
+        <label id="hostFriendlyFireRow" class="host-friendly-fire"><input id="hostFriendlyFire" type="checkbox"><span><strong>Allow friendly fire in Co-op</strong><small>When disabled, teammate shots pass through without causing damage.</small></span></label>
+      </section>
+      <div class="simple-room-code"><span>ROOM CODE</span><output id="hostRoomPin" class="room-pin">------</output><button class="secondary" id="copyRoomPinBtn" type="button">Copy Code</button></div>
+      <div class="network-code-only"><strong>Send only this six-digit code.</strong><p>Up to three friends can open Join Co-op, enter the same code, and press Enter or Join Room.</p></div>
+      <div class="host-room-actions">
+        <button id="refreshHostCodeBtn" class="ghost" type="button">New Room</button>
+        <button class="primary" id="startCoopBtn" disabled>Waiting for Players…</button>
+      </div>
+      <div class="account-note">Internet is required for code-only matchmaking. The room service introduces the browsers; game data then travels through the WebRTC connection.</div>
+    </div>
+  </dialog>
+
+  <dialog id="joinModal" class="modal">
+    <div class="modal-card network-card simple-network-card">
+      <header><div><span class="eyebrow">JOIN GAME</span><h2>Join a Co-op Room</h2></div><button class="icon-close" data-close="joinModal">×</button></header>
+      <div class="network-status"><i id="joinNetworkDot"></i><div><strong id="joinNetworkStatus">Enter the room code</strong><small id="joinNetworkHelp">Ask the host for their six-digit code.</small></div></div>
+      <section class="lobby-panel" aria-label="Multiplayer lobby"><div class="lobby-heading"><strong>PLAYERS</strong><span id="joinLobbyCount">1 / 4</span></div><div id="joinLobbyRoster" class="lobby-roster"></div></section>
+      <div id="joinRulesSummary" class="join-rules-summary"><strong>ROOM RULES</strong><span>Waiting for the host’s match settings…</span></div>
+      <label class="simple-pin-entry">6-DIGIT ROOM CODE<input id="joinRoomPin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="12" placeholder="000000" aria-describedby="joinActionHelp"></label>
+      <div class="join-direct-action">
+        <button class="primary full" id="joinRoomBtn" type="button">Join Room</button>
+        <small id="joinActionHelp">Enter all six digits, then press Enter or click Join Room.</small>
+      </div>
+      <div class="account-note">No invite files, reply files, copy-paste packets, or extra setup are required. Internet access must be available on both devices.</div>
+    </div>
+  </dialog>
+
+  <dialog id="pauseModal" class="modal compact">
+    <div class="modal-card compact-card pause-card">
+      <header><div><span class="eyebrow" id="pauseEyebrow">MATCH PAUSED</span><h2>Pause Menu</h2></div></header>
+      <p id="pauseStatus" class="pause-status">The solo match is paused. Your run is safe until you resume.</p>
+      <div class="pause-map-info"><span><small>CURRENT MAP</small><strong id="pauseMapName">Unknown Map</strong></span><code id="pauseMapSeed">SEED 0</code></div>
+      <div class="stack">
+        <button class="primary" id="resumeBtn">Resume Game</button>
+        <button class="secondary" id="pauseSettingsBtn">Settings</button>
+        <button class="secondary" id="pauseControlsBtn">Controls</button>
+        <button class="danger-button" id="quitBtn">Exit to Main Menu</button>
+        <button class="ghost" id="exitBrowserBtn">Exit Browser Game</button>
+      </div>
+      <small class="pause-footnote">Press Esc again to resume. In co-op, the world continues while this menu is open.</small>
+    </div>
+  </dialog>
+
+  <dialog id="resultModal" class="modal">
+    <div class="modal-card result-card"><header><div><span class="eyebrow" id="resultEyebrow">DROP COMPLETE</span><h2 id="resultTitle">Extraction Successful</h2></div></header><div class="result-orb" id="resultOrb">✦</div><p id="resultText"></p><div class="result-stats"><div><strong id="resultLoot">0</strong><span>Berries</span></div><div><strong id="resultKills">0</strong><span>Critters</span></div><div><strong id="resultPetals">0</strong><span>Petals</span></div><div><strong id="resultXP">0</strong><span>XP</span></div></div><footer><button class="primary" id="resultMenuBtn">Return to Menu</button></footer></div>
+  </dialog>
+
+  <dialog id="backupModal" class="modal">
+    <div class="modal-card"><header><div><span class="eyebrow">PROFILE BACKUP</span><h2 id="backupTitle">Export Account</h2></div><button class="icon-close" data-close="backupModal">×</button></header><p id="backupHelp">Copy this code to move the profile to another browser.</p><textarea id="backupCode" class="backup-code"></textarea><footer><button class="secondary" data-copy="backupCode">Copy Code</button><button class="primary" id="applyImportBtn" hidden>Import Account</button></footer></div>
+  </dialog>
+
+  <dialog id="helpModal" class="modal">
+    <div class="modal-card wide"><header><div><span class="eyebrow">HOW TO PLAY</span><h2>Controls, Maps & Contracts</h2></div><button class="icon-close" data-close="helpModal">×</button></header><div class="help-grid"><section><h3>Movement</h3><p><kbd>W A S D</kbd> Move</p><p><kbd>Shift</kbd> Sprint</p><p><kbd>C / Ctrl</kbd> Crouch behind train cars, containers, crates, and boulders</p><p><kbd>Click inside game</kbd> Capture mouse without covering the screen</p><p><kbd>Mouse</kbd> Look and aim</p><p><kbd>Esc</kbd> Open or close the pause menu</p><p><kbd>V</kbd> Switch first/third person</p><p><kbd>B</kbd> Switch third-person shoulder</p><p>Every drop selects a named region, terrain palette, extraction point, landmark orientation, cover layout, prop placement, enemy patrol, and loot arrangement from the run seed.</p></section><section><h3>Combat</h3><p><kbd>Left click / F / Space</kbd> Fire</p><p>First-person shows species-colored paws and the equipped weapon. Third-person uses a collision-safe over-the-shoulder camera so the critter stays visible without covering the crosshair.</p><p><kbd>Right click</kbd> Aim down sights</p><p><kbd>R</kbd> Reload</p><p><kbd>Q</kbd> Use healing patch</p><p><kbd>I / Tab</kbd> Open backpack</p><p><kbd>1–4</kbd> Quick-use slots</p></section><section><h3>Touch Screens</h3><p>Phones and tablets automatically get a movement joystick, a right-side drag area for looking, and large controls for fire, aim, reload, interact, healing, crouch, backpack, camera, shoulder, and pause.</p><p>Hold <kbd>FIRE</kbd>, <kbd>AIM</kbd>, or <kbd>USE</kbd> while moving and looking with other fingers. Tap <kbd>C</kbd> to toggle crouch. Landscape orientation gives the clearest view.</p></section><section><h3>Contracts & Extraction</h3><p>Each run rolls a required drop contract and an optional bonus contract from combat, scavenging, exploration, survival, and gear objectives. Locate the beacon, complete the required contract, carry at least five Moonberries, then hold <kbd>E</kbd> or <kbd>USE</kbd> at the beacon for two seconds. Extracted items move into your stash; failed-drop loot is lost.</p></section><section><h3>Multiplayer & Browsers</h3><p>One host and up to three guests join with the six-digit room code. The host chooses Co-op Extraction or Player vs Player. Co-op can keep friendly fire disabled or allow teammate damage; PvP always enables player damage and ends when one critter remains. Internet is required for matchmaking; game state then travels over WebRTC. Solo play works offline. The self-contained START_HERE.html build supports current Chrome, Edge, Firefox, and Safari without relying on sibling asset files.</p></section></div></div>
+  </dialog>
+
+  <script src="./assets/models/harleys-model-library.js" data-required-boot-file="assets/models/harleys-model-library.js"></script>
+  <script src="./js/game.js?v=0.27.1" data-required-boot-file="js/game.js"></script>
+</body>
+</html>
