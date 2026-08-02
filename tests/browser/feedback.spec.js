@@ -2,16 +2,58 @@ const { test, expect } = require('@playwright/test');
 
 const repoApi = 'https://api.github.com/repos/markhitchk/critter-extraction';
 
-async function dismissBlockingProfileModal(page) {
-  await page.locator('#profileModal').waitFor({ state: 'attached', timeout: 2000 }).catch(() => {});
-  await page.waitForTimeout(150);
-  await page.evaluate(() => {
-    const dialog = document.getElementById('profileModal');
-    if (dialog && dialog.open && typeof dialog.close === 'function') dialog.close();
+async function blockRequiredProfileModal(page) {
+  await page.addInitScript(() => {
+    const neutralize = dialog => {
+      if (!dialog || dialog.id !== 'profileModal') return false;
+      try {
+        if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      } catch (_) {}
+      dialog.removeAttribute('open');
+      dialog.style.setProperty('display', 'none', 'important');
+      dialog.style.setProperty('pointer-events', 'none', 'important');
+      return true;
+    };
+
+    const install = () => {
+      if (window.HTMLDialogElement) {
+        const prototype = window.HTMLDialogElement.prototype;
+        const originalShow = prototype.show;
+        const originalShowModal = prototype.showModal;
+
+        prototype.show = function (...args) {
+          if (neutralize(this)) return undefined;
+          return originalShow.apply(this, args);
+        };
+
+        prototype.showModal = function (...args) {
+          if (neutralize(this)) return undefined;
+          return originalShowModal.apply(this, args);
+        };
+      }
+
+      const closeProfileModal = () => neutralize(document.getElementById('profileModal'));
+      closeProfileModal();
+
+      const observer = new MutationObserver(closeProfileModal);
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['open']
+      });
+
+      window.setInterval(closeProfileModal, 50);
+    };
+
+    if (document.documentElement) install();
+    else window.addEventListener('DOMContentLoaded', install, { once: true });
   });
 }
 
 test.beforeEach(async ({ page }) => {
+  await blockRequiredProfileModal(page);
+
   await page.route(`${repoApi}/issues?**`, async route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -76,7 +118,6 @@ test.beforeEach(async ({ page }) => {
 
 test('feedback report is drafted and reviewed inside the game', async ({ page }) => {
   await page.goto('/');
-  await dismissBlockingProfileModal(page);
   await page.locator('#critter-feedback-launcher').click();
   await expect(page.locator('#critter-feedback-center')).toBeVisible();
   await expect(page.locator('#critter-feedback-center a')).toHaveCount(0);
@@ -96,7 +137,6 @@ test('feedback report is drafted and reviewed inside the game', async ({ page })
 
 test('issues and comments are viewed inside the game', async ({ page }) => {
   await page.goto('/?feedback=1');
-  await dismissBlockingProfileModal(page);
   await expect(page.locator('#critter-feedback-center')).toBeVisible();
   await page.getByRole('button', { name: 'Issues & Updates' }).click();
 
