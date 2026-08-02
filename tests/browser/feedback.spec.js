@@ -98,7 +98,7 @@ test('issues and comments are viewed inside the game', async ({ page }) => {
 });
 
 test('issue draft URL is privacy safe and prefilled', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?private-room-code=123456#secret');
   const result = await page.evaluate(() => {
     const report = window.CritterIssueAPI.buildReport({
       type: 'bug',
@@ -118,5 +118,6 @@ test('issue draft URL is privacy safe and prefilled', async ({ page }) => {
   expect(result.title).toContain('[Bug]');
   expect(result.body).toContain('Visible problem');
   expect(result.body).not.toContain('localStorage');
-  expect(result.body).not.toContain(location.search);
+  expect(result.body).not.toContain('123456');
+  expect(result.body).not.toContain('secret');
 });
