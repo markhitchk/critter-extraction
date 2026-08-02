@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "project": "Critter Extraction",
+  "studio": "Harley's Studios",
+  "status": "foundation",
+  "runtime": {
+    "preferredModelFormat": "glb",
+    "upAxis": "Y",
+    "units": "meters",
+    "defaultQuality": "medium",
+    "supportedQualityTiers": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "references": {
+    "primary": "assets/loading/gameplay-reference.webp",
+    "secondary": "assets/loading/cinematic-gameplay-fullhd.webp"
+  },
+  "qualityTiers": {
+    "low": {
+      "textureMax": 1024,
+      "characterLod": 2,
+      "environmentLod": 2,
+      "vegetationDensity": 0.45,
+      "shadowQuality": "reduced"
+    },
+    "medium": {
+      "textureMax": 2048,
+      "characterLod": 1,
+      "environmentLod": 1,
+      "vegetationDensity": 0.72,
+      "shadowQuality": "standard"
+    },
+    "high": {
+      "textureMax": 4096,
+      "characterLod": 0,
+      "environmentLod": 0,
+      "vegetationDensity": 1,
+      "shadowQuality": "enhanced"
+    }
+  },
+  "verticalSlice": [
+    "character.tactical_puppy",
+    "enemy.puppy_raider",
+    "weapon.pea_popper",
+    "armor.leaf_vest",
+    "backpack.critter_pack",
+    "loot.small_supply_crate",
+    "loot.death_box",
+    "terrain.pine_valley_ground",
+    "vegetation.pine_family",
+    "vegetation.pine_grass",
+    "rock.pine_cover_set",
+    "rail.pine_track_set",
+    "rail.freight_car",
+    "structure.ranger_outpost",
+    "vfx.pea_muzzle_flash",
+    "vfx.pea_impact",
+    "vfx.loot_glow"
+  ],
+  "assets": [
+    {
+      "id": "character.tactical_puppy",
+      "category": "character",
+      "status": "planned",
+      "species": "puppy",
+      "role": "player",
+      "targetTriangles": {
+        "lod0": 52000,
+        "lod1": 26000,
+        "lod2": 10000
+      },
+      "attachmentNodes": [
+        "hand_r_grip",
+        "hand_l_support",
+        "backpack_socket",
+        "weapon_back_socket",
+        "headgear_socket",
+        "nameplate_socket"
+      ],
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "sprint",
+        "crouch",
+        "jump",
+        "fall",
+        "land",
+        "aim",
+        "fire",
+        "reload",
+        "pickup",
+        "heal",
+        "hit",
+        "death",
+        "extract"
+      ]
+    },
+    {
+      "id": "enemy.puppy_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "puppy",
+      "sharedRig": "character.tactical_puppy",
+      "weapon": "weapon.pea_popper"
+    },
+    {
+      "id": "enemy.bunny_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "bunny",
+      "weapon": "weapon.moonbeam"
+    },
+    {
+      "id": "enemy.kitty_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "kitty",
+      "weapon": "weapon.honey_carbine"
+    },
+    {
+      "id": "enemy.fox_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "fox",
+      "weapon": "weapon.acorn_sprayer"
+    },
+    {
+      "id": "enemy.panda_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "panda",
+      "weapon": "weapon.carrot_scatter"
+    },
+    {
+      "id": "enemy.bear_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "bear",
+      "weapon": "weapon.carrot_scatter"
+    },
+    {
+      "id": "enemy.raccoon_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "raccoon",
+      "weapon": "weapon.pea_popper"
+    },
+    {
+      "id": "enemy.redpanda_raider",
+      "category": "enemy",
+      "status": "planned",
+      "species": "redpanda",
+      "weapon": "weapon.honey_carbine"
+    },
+    {
+      "id": "weapon.pea_popper",
+      "category": "weapon",
+      "status": "planned",
+      "currentFallback": "assets/weapons/pea_popper.svg",
+      "targetTriangles": 14000,
+      "attachmentNodes": [
+        "grip_r",
+        "grip_l",
+        "muzzle",
+        "sight",
+        "magazine"
+      ]
+    },
+    {
+      "id": "weapon.acorn_sprayer",
+      "category": "weapon",
+      "status": "planned",
+      "currentFallback": "assets/weapons/acorn_sprayer.svg",
+      "targetTriangles": 15000,
+      "attachmentNodes": [
+        "grip_r",
+        "grip_l",
+        "muzzle",
+        "sight",
+        "magazine"
+      ]
+    },
+    {
+      "id": "weapon.honey_carbine",
+      "category": "weapon",
+      "status": "planned",
+      "currentFallback": "assets/weapons/honey_carbine.svg",
+      "targetTriangles": 18000,
+      "attachmentNodes": [
+        "grip_r",
+        "grip_l",
+        "muzzle",
+        "sight",
+        "magazine"
+      ]
+    },
+    {
+      "id": "weapon.carrot_scatter",
+      "category": "weapon",
+      "status": "planned",
+      "currentFallback": "assets/weapons/carrot_scatter.svg",
+      "targetTriangles": 17000,
+      "attachmentNodes": [
+        "grip_r",
+        "grip_l",
+        "muzzle",
+        "sight",
+        "magazine"
+      ]
+    },
+    {
+      "id": "weapon.moonbeam",
+      "category": "weapon",
+      "status": "planned",
+      "currentFallback": "assets/weapons/moonbeam.svg",
+      "targetTriangles": 20000,
+      "attachmentNodes": [
+        "grip_r",
+        "grip_l",
+        "muzzle",
+        "sight",
+        "magazine"
+      ]
+    },
+    {
+      "id": "armor.leaf_vest",
+      "category": "armor",
+      "status": "planned",
+      "currentFallback": "assets/items/armor_leaf_vest.svg",
+      "slot": "chest"
+    },
+    {
+      "id": "armor.feather_vest",
+      "category": "armor",
+      "status": "planned",
+      "currentFallback": "assets/items/armor_feather_vest.svg",
+      "slot": "chest"
+    },
+    {
+      "id": "armor.bark_guard",
+      "category": "armor",
+      "status": "planned",
+      "currentFallback": "assets/items/armor_bark_guard.svg",
+      "slot": "chest"
+    },
+    {
+      "id": "armor.root_padding",
+      "category": "armor",
+      "status": "planned",
+      "currentFallback": "assets/items/armor_root_padding.svg",
+      "slot": "chest"
+    },
+    {
+      "id": "armor.star_cloak",
+      "category": "armor",
+      "status": "planned",
+      "currentFallback": "assets/items/armor_star_cloak.svg",
+      "slot": "chest"
+    },
+    {
+      "id": "backpack.critter_pack",
+      "category": "backpack",
+      "status": "planned",
+      "slot": "backpack_socket"
+    },
+    {
+      "id": "loot.small_supply_crate",
+      "category": "loot",
+      "status": "planned",
+      "states": [
+        "closed",
+        "open"
+      ]
+    },
+    {
+      "id": "loot.death_box",
+      "category": "loot",
+      "status": "planned",
+      "states": [
+        "closed",
+        "open"
+      ]
+    },
+    {
+      "id": "terrain.pine_valley_ground",
+      "category": "terrain",
+      "status": "planned",
+      "region": "pine-valley",
+      "materialLayers": [
+        "packed_dirt",
+        "forest_soil",
+        "grass_edge",
+        "rail_ballast"
+      ]
+    },
+    {
+      "id": "vegetation.pine_family",
+      "category": "vegetation",
+      "status": "planned",
+      "region": "pine-valley",
+      "requiresInstancing": true,
+      "requiresCollisionProxy": true,
+      "requiresLods": true
+    },
+    {
+      "id": "vegetation.pine_grass",
+      "category": "vegetation",
+      "status": "planned",
+      "region": "pine-valley",
+      "requiresInstancing": true,
+      "requiresLods": true
+    },
+    {
+      "id": "rock.pine_cover_set",
+      "category": "rock",
+      "status": "planned",
+      "region": "pine-valley",
+      "requiresCollisionProxy": true,
+      "requiresLods": true
+    },
+    {
+      "id": "rail.pine_track_set",
+      "category": "rail",
+      "status": "planned",
+      "region": "pine-valley",
+      "requiresInstancing": true,
+      "requiresCollisionProxy": true
+    },
+    {
+      "id": "rail.freight_car",
+      "category": "rail",
+      "status": "planned",
+      "requiresCollisionProxy": true,
+      "requiresLods": true
+    },
+    {
+      "id": "structure.ranger_outpost",
+      "category": "structure",
+      "status": "planned",
+      "region": "pine-valley",
+      "requiresCollisionProxy": true,
+      "requiresLods": true
+    },
+    {
+      "id": "vfx.pea_muzzle_flash",
+      "category": "vfx",
+      "status": "planned",
+      "weapon": "weapon.pea_popper"
+    },
+    {
+      "id": "vfx.pea_impact",
+      "category": "vfx",
+      "status": "planned",
+      "weapon": "weapon.pea_popper"
+    },
+    {
+      "id": "vfx.loot_glow",
+      "category": "vfx",
+      "status": "planned"
+    }
+  ]
+}
