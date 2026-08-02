@@ -64,10 +64,9 @@ for (const requiredFairPlayFeature of ['FAIR_PLAY_VERSION', 'sanitizeGuestInput'
 for (const requiredRespawnFeature of ['enemyRespawnRate', 'ENEMY_RESPAWN_SECONDS', 'scheduleEnemyRespawn', 'updateEnemyRespawns', 'maxAlive']) {
   if (!game.includes(requiredRespawnFeature)) throw new Error(`Enemy respawn feature is missing: ${requiredRespawnFeature}`);
 }
-for (const requiredInviteFeature of ['joinUrlForPin', "searchParams.set('join','room')", 'joinRequestFromUrl', 'roomInviteText', 'copyInviteLinkBtn', 'openJoinFromUrl']) {
+for (const requiredInviteFeature of ['joinPinFromUrl', 'joinUrlForPin', "searchParams.set('join',clean)", 'roomInviteText', 'copyInviteLinkBtn', 'openJoinFromUrl', 'openJoinModal(pin)', 'setTimeout(runJoinAction,120)']) {
   if (!game.includes(requiredInviteFeature)) throw new Error(`Shared room URL support is missing: ${requiredInviteFeature}`);
 }
-if (/setTimeout\(runJoinAction|openJoinModal\(pin\)/.test(game)) throw new Error('Shared room URLs must not prefill or automatically submit the room code.');
 for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'legacyAccountSetupRequired', 'automaticAccountNeedsSetup', 'accountSetupComplete', 'Create Your First Account', 'Finish Your Account Setup', 'Create your account to continue']) {
   if (!game.includes(requiredOnboardingFeature)) throw new Error(`First-visit account onboarding is missing: ${requiredOnboardingFeature}`);
 }
