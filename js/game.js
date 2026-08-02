@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix8';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix9';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -120,6 +120,46 @@
       name: 'await account overwrite confirmation for XML imports',
       find: String.raw`  async function importProfileXmlText(text) { if (installImportedAccount(accountFromXml(text)) && dom.accountsModal.open) dom.accountsModal.close(); }`,
       replace: String.raw`  async function importProfileXmlText(text) { if (await installImportedAccount(accountFromXml(text)) && dom.accountsModal.open) dom.accountsModal.close(); }`
+    },
+    {
+      name: 'reliable account profile URL import',
+      find: String.raw`  async function importProfileUrlValue(value) {
+    const raw=String(value||'').trim(), hash=raw.match(/[#&]profile=([^&]+)/i);
+    if(hash){const xml=decodeUtf8Base64Url(decodeURIComponent(hash[1]));await importProfileXmlText(xml);return;}
+    if(!/^https?:\/\//i.test(raw))throw new Error('Not an account URL');
+    const response=await fetch(raw,`,
+      replace: String.raw`  async function importProfileUrlValue(value) {
+    const raw=String(value||'').trim();
+    if(!raw)throw new Error('Paste an account or Profile URL');
+    let encoded='';
+    try{
+      const parsed=new URL(raw,location.href);
+      encoded=parsed.searchParams.get('profile')||'';
+      if(!encoded&&parsed.hash){
+        const hash=parsed.hash.slice(1),params=new URLSearchParams(hash);
+        encoded=params.get('profile')||'';
+        if(!encoded&&hash.toLowerCase().startsWith('profile='))encoded=hash.slice(8);
+      }
+    }catch(_){}
+    if(!encoded){
+      const match=raw.match(/(?:^|[?#&])profile=([^&]+)/i);
+      encoded=match?match[1]:'';
+    }
+    if(encoded){
+      const xml=decodeUtf8Base64Url(decodeURIComponent(encoded));
+      await importProfileXmlText(xml);
+      return;
+    }
+    if(!/^https?:\/\//i.test(raw))throw new Error('Not an account URL');
+    let fetchUrl=raw;
+    try{
+      const url=new URL(raw);
+      if(url.hostname.toLowerCase()==='github.com'){
+        const parts=url.pathname.split('/').filter(Boolean),blobIndex=parts.indexOf('blob');
+        if(blobIndex===2&&parts.length>4)fetchUrl='https://raw.githubusercontent.com/'+parts[0]+'/'+parts[1]+'/'+parts.slice(blobIndex+1).join('/');
+      }
+    }catch(_){}
+    const response=await fetch(fetchUrl,`
     },
     {
       name: 'await account overwrite confirmation for backup-code imports',
