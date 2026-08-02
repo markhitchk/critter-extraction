@@ -65,6 +65,54 @@ jobs:
           commit_phase validation "Add validation tools and browser tests"
           commit_phase actions "Update GitHub Actions"
 
+          python - <<'PY'
+          from pathlib import Path
+          Path('core/boot/project-paths.js').write_text(r"""(() => {
+            'use strict';
+            function scriptBase() {
+              const current = document.currentScript && document.currentScript.src;
+              if (current) return new URL('../../', current);
+              return new URL('./', location.href);
+            }
+            function projectRoot() {
+              if (location.protocol === 'file:') {
+                const pathname = location.pathname.replace(/\\/g, '/');
+                const markers = ['/core/', '/reset/', '/invite/', '/portable/'];
+                for (const marker of markers) {
+                  const index = pathname.lastIndexOf(marker);
+                  if (index >= 0) return new URL('file://' + pathname.slice(0, index + 1));
+                }
+                return new URL('./', location.href);
+              }
+              return scriptBase();
+            }
+            function resolve(value = '') { return new URL(String(value).replace(/^\/+/, ''), projectRoot()).href; }
+            function relative(value = '') { return resolve(value); }
+            window.CritterPaths = Object.freeze({ projectRoot, resolve, relative });
+          })();
+          """)
+          Path('tools/check-links.mjs').write_text(r"""import fs from 'node:fs';
+          import path from 'node:path';
+          const pages = ['index.html','404.html','error.html','invite.html','invite/index.html','reset/index.html','core/error-system/index.html','core/error-system/fallback.html'];
+          const missing = [];
+          for (const file of pages) {
+            if (!fs.existsSync(file)) continue;
+            const html = fs.readFileSync(file, 'utf8');
+            for (const match of html.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)) {
+              const value = match[1];
+              if (/^(?:https?:|data:|blob:|mailto:|javascript:|\/\/)/.test(value)) continue;
+              const target = path.resolve(path.dirname(file), value);
+              if (!fs.existsSync(target)) missing.push(file + ' -> ' + value);
+            }
+          }
+          if (missing.length) {
+            console.error(missing.join('\n'));
+            process.exit(1);
+          }
+          console.log('Relative links OK');
+          """)
+          PY
+
           node tools/reorganize-repository.mjs docs-links
           rm -rf tools/.reorg-payload
           git add -A
