@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix6';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix7';
   const patches = [
     {
       name: 'canonical join-code parser',
