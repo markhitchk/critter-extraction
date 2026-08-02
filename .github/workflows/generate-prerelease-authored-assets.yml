@@ -1,12 +1,13 @@
 name: Generate prerelease authored assets
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/fix-missing-prerelease-assets
-    paths:
-      - prerelease/tools/generate-authored-assets.mjs
-      - .github/workflows/generate-prerelease-authored-assets.yml
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_dispatch:
 
 permissions:
@@ -14,9 +15,10 @@ permissions:
 
 jobs:
   generate-assets:
+    if: github.event.pull_request.head.ref == 'agent/fix-missing-prerelease-assets'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out branch
+      - name: Check out corrective branch
         uses: actions/checkout@v7
         with:
           ref: agent/fix-missing-prerelease-assets
