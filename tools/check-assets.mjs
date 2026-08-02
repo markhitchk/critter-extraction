@@ -1,1 +1,0 @@
-import fs from'node:fs';const required=['assets/branding/icon.svg','core/rendering/model-library.js','assets/vendor/peerjs.min.js'];const missing=required.filter(x=>!fs.existsSync(x));if(missing.length){console.error('Missing assets:',missing);process.exit(1)}console.log('Required assets OK');

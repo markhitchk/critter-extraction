@@ -1,1 +1,0 @@
-import fs from'node:fs';import{execFileSync}from'node:child_process';const name='critter-extraction-v0.22.0.zip';execFileSync('zip',['-r',name,'.','-x','.git/*','node_modules/*','test-results/*','playwright-report/*',name],{stdio:'inherit'});console.log(name);
