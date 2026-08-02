@@ -1,0 +1,85 @@
+name: One-shot loader cache repair
+
+on:
+  push:
+    paths:
+      - .github/workflows/one-shot-hotfix-cache.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Force fresh loader URLs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          old_tag = '<script src="./js/game.js?v=0.27.1" data-required-boot-file="js/game.js"></script>'
+          new_tag = '<script src="./js/game.js?v=0.27.1-hotfix7" data-required-boot-file="js/game.js"></script>'
+          if old_tag not in html:
+              raise SystemExit('Expected game.js script tag was not found')
+          index.write_text(html.replace(old_tag, new_tag, 1), encoding='utf-8')
+
+          loader = Path('js/game.js')
+          source = loader.read_text(encoding='utf-8')
+          if '0.27.1-hotfix6' not in source:
+              raise SystemExit('Expected hotfix6 core URL was not found')
+          loader.write_text(source.replace('0.27.1-hotfix6', '0.27.1-hotfix7', 1), encoding='utf-8')
+          PY
+
+      - name: Validate loader and generated game core
+        run: |
+          node --check js/game.js
+          cat > /tmp/validate-loader.mjs <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+
+          let captured = '';
+          globalThis.window = { __critterBootReport() {} };
+          globalThis.fetch = async () => ({
+            ok: true,
+            text: async () => fs.readFileSync('js/game-core.js', 'utf8')
+          });
+          globalThis.Blob = class {
+            constructor(parts) { captured = parts.join(''); }
+          };
+          globalThis.URL = {
+            createObjectURL() { return 'blob:validation'; },
+            revokeObjectURL() {}
+          };
+          globalThis.document = {
+            createElement() { return {}; },
+            head: { appendChild() {} }
+          };
+
+          vm.runInThisContext(fs.readFileSync('js/game.js', 'utf8'), { filename: 'js/game.js' });
+          await new Promise(resolve => setTimeout(resolve, 100));
+          if (!captured) throw new Error('The loader did not generate a patched game core');
+          new vm.Script(captured, { filename: 'game-core.hotfixed.js' });
+          fs.writeFileSync('/tmp/game-core.hotfixed.js', captured);
+          NODE
+          node /tmp/validate-loader.mjs
+          node --check /tmp/game-core.hotfixed.js
+
+      - name: Commit repaired cache keys
+        run: |
+          git config user.name "Harley's Studios Repair"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/one-shot-hotfix-cache.yml
+          git add index.html js/game.js
+          git commit -m "Force fresh loader after URL import syntax repair"
+          git push origin HEAD:main
