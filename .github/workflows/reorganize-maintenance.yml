@@ -63,10 +63,10 @@ jobs:
           commit_phase styles "Organize styles and generated compatibility files"
           commit_phase pages "Organize invite and reset page resources"
           commit_phase validation "Add validation tools and browser tests"
-          commit_phase actions "Update GitHub Actions"
 
           python - <<'PY'
           from pathlib import Path
+
           Path('core/boot/project-paths.js').write_text(r"""(() => {
             'use strict';
             function scriptBase() {
@@ -91,6 +91,7 @@ jobs:
             window.CritterPaths = Object.freeze({ projectRoot, resolve, relative });
           })();
           """)
+
           Path('tools/check-links.mjs').write_text(r"""import fs from 'node:fs';
           import path from 'node:path';
           const pages = ['index.html','404.html','error.html','invite.html','invite/index.html','reset/index.html','core/error-system/index.html','core/error-system/fallback.html'];
@@ -111,6 +112,7 @@ jobs:
           }
           console.log('Relative links OK');
           """)
+
           invite = Path('invite/index.html')
           invite_html = invite.read_text()
           invite_html = invite_html.replace('"./assets/branding/', '"../assets/branding/')
@@ -122,10 +124,94 @@ jobs:
           invite_html = invite_html.replace("'./styles.css'", "'../styles.css'")
           invite_html = invite_html.replace("'styles.css'", "'../styles.css'")
           invite.write_text(invite_html)
+
+          api = Path('core/shared/github-issues.js')
+          api.parent.mkdir(parents=True, exist_ok=True)
+          api.write_text(r"""(() => {
+            'use strict';
+            const createUrl = 'https://github.com/markhitchk/critter-extraction/issues/new';
+            const viewerUrl = 'https://github.com/markhitchk/critter-extraction/issues';
+            function open(url) {
+              const popup = window.open(url, '_blank', 'noopener,noreferrer');
+              if (popup) popup.opener = null;
+              return popup;
+            }
+            window.CritterIssueAPI = Object.freeze({
+              createUrl,
+              viewerUrl,
+              createIssue: () => open(createUrl),
+              viewIssues: () => open(viewerUrl)
+            });
+          })();
+          """)
+
+          feedback = Path('core/ui/github-feedback.js')
+          feedback.parent.mkdir(parents=True, exist_ok=True)
+          feedback.write_text(r"""(() => {
+            'use strict';
+            function mount() {
+              if (document.getElementById('critter-github-feedback')) return;
+              const api = window.CritterIssueAPI;
+              if (!api) return;
+              const panel = document.createElement('details');
+              panel.id = 'critter-github-feedback';
+              panel.innerHTML = '<summary>Feedback</summary><div class="critter-feedback-menu"><a href="' + api.createUrl + '" target="_blank" rel="noopener noreferrer">Report an issue</a><a href="' + api.viewerUrl + '" target="_blank" rel="noopener noreferrer">View issues</a></div>';
+              const style = document.createElement('style');
+              style.textContent = '#critter-github-feedback{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;font:700 13px/1.2 system-ui,sans-serif;color:#f7fbff}#critter-github-feedback summary{list-style:none;cursor:pointer;padding:10px 14px;border:1px solid rgba(100,232,234,.7);border-radius:999px;background:#11152a;box-shadow:0 8px 28px rgba(0,0,0,.38)}#critter-github-feedback summary::-webkit-details-marker{display:none}#critter-github-feedback[open] summary{border-radius:12px 12px 0 0}.critter-feedback-menu{display:grid;gap:6px;min-width:170px;padding:8px;border:1px solid rgba(100,232,234,.7);border-top:0;border-radius:0 0 12px 12px;background:#11152a;box-shadow:0 12px 32px rgba(0,0,0,.45)}.critter-feedback-menu a{display:block;padding:9px 10px;border-radius:8px;color:#dffeff;text-decoration:none;background:rgba(100,232,234,.09)}.critter-feedback-menu a:hover,.critter-feedback-menu a:focus-visible{background:rgba(100,232,234,.2);outline:2px solid #64e8ea;outline-offset:1px}@media(max-height:520px){#critter-github-feedback{bottom:6px;right:6px}.critter-feedback-menu{max-height:160px;overflow:auto}}';
+              document.head.appendChild(style);
+              document.body.appendChild(panel);
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
+            else mount();
+          })();
+          """)
+
+          def add_feedback_scripts(file, api_src, ui_src):
+              page = Path(file)
+              if not page.exists():
+                  return
+              html = page.read_text()
+              if 'github-feedback.js' in html:
+                  return
+              scripts = f'  <script src="{api_src}"></script>\n  <script src="{ui_src}"></script>\n'
+              html = html.replace('</body>', scripts + '</body>')
+              page.write_text(html)
+
+          add_feedback_scripts('index.html', './core/shared/github-issues.js', './core/ui/github-feedback.js')
+          add_feedback_scripts('invite/index.html', '../core/shared/github-issues.js', '../core/ui/github-feedback.js')
+          add_feedback_scripts('reset/index.html', '../core/shared/github-issues.js', '../core/ui/github-feedback.js')
+          add_feedback_scripts('core/error-system/index.html', '../shared/github-issues.js', '../ui/github-feedback.js')
+
+          allowed = {'.html', '.js', '.mjs', '.css', '.md', '.json', '.yml', '.yaml', '.txt'}
+          old = 'Cartoon-Realistic Art Upgrade'
+          new = 'Cartoon-Realistic Extraction Shooter'
+          for item in Path('.').rglob('*'):
+              if not item.is_file() or item.suffix.lower() not in allowed:
+                  continue
+              if '.git' in item.parts or 'node_modules' in item.parts or '.reorg-payload' in item.parts:
+                  continue
+              try:
+                  text = item.read_text()
+              except UnicodeDecodeError:
+                  continue
+              if old in text:
+                  item.write_text(text.replace(old, new))
+
+          readme = Path('README.md')
+          readme_text = readme.read_text()
+          if '## Feedback and Issues' not in readme_text:
+              readme_text += '\n## Feedback and Issues\n\n- [Report a new issue](https://github.com/markhitchk/critter-extraction/issues/new)\n- [View existing issues](https://github.com/markhitchk/critter-extraction/issues)\n'
+              readme.write_text(readme_text)
           PY
+
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Add GitHub issue feedback system"
+          fi
 
           node tools/reorganize-repository.mjs docs-links
           rm -rf tools/.reorg-payload
+          git checkout origin/maintenance/full-project-organization -- .github/workflows/reorganize-maintenance.yml
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "Update documentation links"
