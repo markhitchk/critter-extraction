@@ -1,4 +1,27 @@
 (() => {
   'use strict';
   window.CritterBuildInfo = Object.freeze({ buildId: '', channel: 'github-pages', generatedAt: '' });
+
+  // Security must load before game-loader.js so it can add stable XML profile
+  // identifiers and wrap PeerJS before multiplayer connections are created.
+  const files = ['security-core.js', 'security-network.js', 'security-ui.js'];
+  const src = file => window.CritterPaths?.resolve
+    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.0`)
+    : `./core/security/${file}?v=1.0.0`;
+
+  if (document.readyState === 'loading') {
+    for (const file of files) {
+      const url = String(src(file)).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      document.write(`<script src="${url}" data-required-boot-file="core/security/${file}"><\/script>`);
+    }
+  } else {
+    let chain = Promise.resolve();
+    for (const file of files) chain = chain.then(() => new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src(file); script.async = false; script.dataset.requiredBootFile = `core/security/${file}`;
+      script.onload = resolve; script.onerror = () => reject(new Error(`Could not load ${file}`));
+      document.head.appendChild(script);
+    }));
+    chain.catch(error => console.error('Critter security startup failed', error));
+  }
 })();
