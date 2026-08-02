@@ -1,0 +1,141 @@
+name: PR 10 final consistency correction
+
+on:
+  push:
+    branches:
+      - maintenance/full-project-organization
+    paths:
+      - .github/workflows/pr10-final-consistency.yml
+
+permissions:
+  contents: write
+
+jobs:
+  correct:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v6
+        with:
+          ref: maintenance/full-project-organization
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Correct release wording and runtime version tokens
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          old_title = 'Cartoon-Realistic Art Upgrade'
+          new_title = 'Cartoon-Realistic Extraction Shooter'
+          allowed = {'.html', '.js', '.mjs', '.css', '.md', '.json', '.yml', '.yaml', '.txt'}
+
+          for item in Path('.').rglob('*'):
+              if not item.is_file() or item.suffix.lower() not in allowed:
+                  continue
+              if '.git' in item.parts or 'node_modules' in item.parts:
+                  continue
+              try:
+                  text = item.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              updated = text.replace(old_title, new_title)
+              if item.as_posix() == 'index.html':
+                  updated = updated.replace(
+                      './core/loader/game-loader.js?v=0.27.1-hotfix7" data-required-boot-file="js/game.js"',
+                      './core/loader/game-loader.js?v=0.22.0" data-required-boot-file="core/loader/game-loader.js"'
+                  )
+              if updated != text:
+                  item.write_text(updated, encoding='utf-8')
+
+          checker = Path('tools/check-release-consistency.mjs')
+          checker.write_text(r'''import fs from 'node:fs';
+          import path from 'node:path';
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const expected = String(pkg.version || '').trim();
+          const expectedDisplay = `v${expected}`;
+          const retiredTitle = 'Cartoon-Realistic Art Upgrade';
+          const currentTitle = 'Cartoon-Realistic Extraction Shooter';
+          const staleRuntime = /0\.27\.1-hotfix/i;
+          const textExtensions = new Set(['.html', '.js', '.mjs', '.css', '.md', '.json', '.yml', '.yaml', '.txt']);
+          const failures = [];
+
+          function walk(entry) {
+            if (!fs.existsSync(entry)) return [];
+            const stat = fs.statSync(entry);
+            if (stat.isFile()) return [entry];
+            return fs.readdirSync(entry, { withFileTypes: true }).flatMap(item => {
+              if (item.name === '.git' || item.name === 'node_modules') return [];
+              return walk(path.join(entry, item.name));
+            });
+          }
+
+          for (const file of walk('.')) {
+            if (!textExtensions.has(path.extname(file).toLowerCase())) continue;
+            const text = fs.readFileSync(file, 'utf8');
+            if (text.includes(retiredTitle)) failures.push(`${file}: retired product wording remains`);
+          }
+
+          const runtimeEntries = ['index.html', 'START_HERE.html', '404.html', 'error.html', 'invite.html', 'core', 'js', 'invite', 'reset', 'portable'];
+          for (const entry of runtimeEntries) {
+            for (const file of walk(entry)) {
+              if (!textExtensions.has(path.extname(file).toLowerCase())) continue;
+              const text = fs.readFileSync(file, 'utf8');
+              if (staleRuntime.test(text)) failures.push(`${file}: stale 0.27.1 hotfix token remains`);
+            }
+          }
+
+          const index = fs.readFileSync('index.html', 'utf8');
+          if (!index.includes(`Critter Extraction ${expectedDisplay} — ${currentTitle}`)) failures.push('index.html: current title/version is missing');
+          if (!index.includes(`game-loader.js?v=${expected}`)) failures.push('index.html: canonical loader cache token does not match package version');
+          if (!index.includes('data-required-boot-file="core/loader/game-loader.js"')) failures.push('index.html: loader required-file metadata is not canonical');
+
+          const issueApi = fs.readFileSync('core/shared/github-issues.js', 'utf8');
+          if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues/new')) failures.push('GitHub new-issue URL is missing');
+          if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues')) failures.push('GitHub issue-viewer URL is missing');
+
+          if (failures.length) {
+            console.error(failures.join('\n'));
+            process.exit(1);
+          }
+          console.log(`Release consistency OK (${expectedDisplay}, ${currentTitle})`);
+          ''', encoding='utf-8')
+
+          package_path = Path('package.json')
+          package_data = json.loads(package_path.read_text(encoding='utf-8'))
+          scripts = package_data.setdefault('scripts', {})
+          scripts['check:release'] = 'node tools/check-release-consistency.mjs'
+          validate = scripts.get('validate', '')
+          if 'npm run check:release' not in validate:
+              scripts['validate'] = validate.replace('npm run validate:pages', 'npm run check:release && npm run validate:pages')
+          package_path.write_text(json.dumps(package_data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+
+      - name: Install, build, and validate
+        run: |
+          npm ci
+          npm run build:styles
+          npm run build:portable
+          npm run validate
+          git diff --exit-code -- styles.css START_HERE.html portable/START_HERE.html
+
+      - name: Commit correction and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/pr10-final-consistency.yml
+          git add -A
+          git commit -m "Fix final PR 10 release consistency"
+          git push origin HEAD:maintenance/full-project-organization
