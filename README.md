@@ -18,9 +18,13 @@ The workflow validates required files and case-sensitive asset paths before ever
 ## Static-hosting behavior
 
 - Solo play, graphics, adaptive phone/tablet controls, mouse/keyboard controls, profiles, inventory, and settings run entirely in the browser.
+- A first-time visitor must create a named device account before playing or joining a shared room; the old automatic Rookie profile is no longer used.
 - Every device account has separate progress, stash, loadout, Petals, appearance, statistics, and settings in browser-local storage.
 - Use **Download Account** beside a profile to save its complete XML account file, then **Upload Account File** to restore it in another browser. These are portable local profiles, not secure cloud logins.
 - Multiplayer uses the included PeerJS client, secure PeerJS signaling, and STUN/TURN-assisted WebRTC connections. GitHub Pages supplies the required HTTPS origin; exceptionally restrictive networks can still block WebRTC.
+- Hosts can copy or share a project-safe join URL containing `?join=123456`. Opening it fills the room code and begins joining after account setup.
+- Fair Play v1.0 makes the host authoritative for movement, weapon timing, damage, loot, gear, consumables, and extraction inventory. It also validates interaction distance, input shape, message size, and action rate; repeated invalid actions can be disconnected.
+- Fair Play is best-effort protection for a static peer-hosted browser game. It cannot provide dedicated-server anti-cheat or prevent a modified host from changing its own browser code.
 - No service worker is installed, so updating the repository cannot leave an old cached game worker behind.
 
 ## Custom errors

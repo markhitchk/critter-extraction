@@ -24,7 +24,7 @@ for (const name of required) {
 const files = new Set();
 function walk(folder) {
   for (const entry of readdirSync(folder, { withFileTypes: true })) {
-    if (entry.isDirectory() && entry.name === '.git') continue;
+    if (entry.name === '.git') continue;
     const full = join(folder, entry.name);
     if (entry.isDirectory()) walk(full);
     else files.add(relative(root, full).replaceAll('\\', '/'));
@@ -57,10 +57,20 @@ for (const requiredControlFeature of ['inputDeviceProfile', 'detectPhoneOrTablet
 for (const requiredCoopFeature of ['0.peerjs.com', 'turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478', 'coOpReadinessError()', 'Room service timed out']) {
   if (!game.includes(requiredCoopFeature)) throw new Error(`GitHub Pages co-op support is missing: ${requiredCoopFeature}`);
 }
+for (const requiredFairPlayFeature of ['FAIR_PLAY_VERSION', 'sanitizeGuestInput', 'applyGuestLootSync', 'fairPlayRateAllowed', 'authoritativeInventory', 'p.spawnProtection=0']) {
+  if (!game.includes(requiredFairPlayFeature)) throw new Error(`System-wide Fair Play feature is missing: ${requiredFairPlayFeature}`);
+}
+for (const requiredInviteFeature of ['joinUrlForPin', "searchParams.set('join'", 'copyInviteLinkBtn', 'openJoinFromUrl']) {
+  if (!game.includes(requiredInviteFeature)) throw new Error(`Shared room URL support is missing: ${requiredInviteFeature}`);
+}
+for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'Create Your First Account', 'Create your account to continue']) {
+  if (!game.includes(requiredOnboardingFeature)) throw new Error(`First-visit account onboarding is missing: ${requiredOnboardingFeature}`);
+}
 
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 if (!index.includes('rel="icon" href="./icon.svg"') || !index.includes('rel="apple-touch-icon"')) throw new Error('Primary favicon and touch icon links are missing.');
 if (!index.includes('id="touchJump"') || !index.includes('Space</kbd> Jump')) throw new Error('Jump controls are missing from the interface.');
+if (!index.includes('id="copyInviteLinkBtn"') || !index.includes('FAIR PLAY ACTIVE')) throw new Error('Invite-link or Fair Play interface is missing.');
 
 const notFound = readFileSync(join(root, '404.html'), 'utf8');
 const errorPage = readFileSync(join(root, 'error.html'), 'utf8');

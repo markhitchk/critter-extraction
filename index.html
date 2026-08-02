@@ -351,7 +351,7 @@
         <button class="ghost" data-open="helpModal">Controls</button>
         <button class="ghost" data-open="settingsModal">Settings</button>
         <button class="petals-chip" id="topPetalsBtn" type="button" aria-label="Open Trading Post"><span aria-hidden="true">🌸</span><strong id="topPetals">0 Petals</strong></button>
-        <button class="account-chip" id="accountBtn"><span id="topAvatar" class="avatar"></span><span><strong id="topName">Rookie</strong><small>Device account</small></span></button>
+        <button class="account-chip" id="accountBtn"><span id="topAvatar" class="avatar"></span><span><strong id="topName">New Critter</strong><small>Device account</small></span></button>
       </div>
     </header>
 
@@ -365,7 +365,7 @@
             <div class="play-row">
               <button class="primary xl" id="soloBtn">Play Solo</button>
               <button class="secondary xl" id="hostBtn">Host Multiplayer</button>
-              <button class="secondary xl" id="joinBtn">Join Co-op</button>
+              <button class="secondary xl" id="joinBtn">Join Multiplayer</button>
             </div>
             <div class="notice"><strong>Controls:</strong> click the game to capture the mouse, use <kbd>W A S D</kbd> to move, <kbd>Space</kbd> to jump, left-click or <kbd>F</kbd> to fire, <kbd>Esc</kbd> for pause, <kbd>V</kbd> to switch views, and <kbd>B</kbd> to switch shoulders.</div>
           </div>
@@ -374,7 +374,7 @@
 
         <div class="dashboard">
           <article class="panel profile-panel">
-            <div class="panel-heading"><div><span class="eyebrow">ACTIVE ACCOUNT</span><h2 id="profileName">Rookie</h2></div><button class="mini" id="editProfileBtn">Name & Profile</button></div>
+            <div class="panel-heading"><div><span class="eyebrow">ACTIVE ACCOUNT</span><h2 id="profileName">New Critter</h2></div><button class="mini" id="editProfileBtn">Name & Profile</button></div>
             <div class="profile-summary"><span id="menuAvatar" class="avatar avatar-large"></span><div><strong id="profileHandle">@rookie</strong><p id="profileBio">Ready for the meadow.</p></div></div>
             <div class="progress"><div><span>Level <b id="levelText">1</b></span><span id="xpText">0 / 100 XP</span></div><i><b id="xpBar"></b></i></div>
             <div class="profile-petals"><span><small>ACCOUNT CURRENCY</small><strong id="profilePetals">🌸 0 Petals</strong></span><button class="mini" id="profileMerchantBtn" type="button">Trading Post</button></div>
@@ -412,7 +412,7 @@
           <aside class="hud squad-hud hud-left" aria-label="Squad status">
             <div class="squad-self">
               <span id="hudAvatar" class="avatar avatar-small"></span>
-              <div class="squad-self-info"><strong id="hudName">Rookie</strong><small id="networkBadge">SOLO</small><i><b id="squadSelfBar"></b></i></div>
+              <div class="squad-self-info"><strong id="hudName">New Critter</strong><small id="networkBadge">SOLO • FAIR PLAY</small><i><b id="squadSelfBar"></b></i></div>
             </div>
             <div id="squadMembers" class="squad-members"></div>
           </aside>
@@ -567,6 +567,7 @@
           <label class="span-2">Bio<textarea id="bioInput" maxlength="120" rows="3" placeholder="Tell other players about your critter."></textarea></label>
         </div>
       </div>
+      <p class="account-note" id="profileAccountHelp">Your first account is required before playing or joining a shared room. Its display name, username, appearance, progress, stash, and settings remain separate from every other account on this device.</p>
       <footer><button type="button" class="ghost" data-close="profileModal">Cancel</button><button class="primary" type="submit">Save Account</button></footer>
     </form>
   </dialog>
@@ -643,7 +644,7 @@
 
   <dialog id="hostModal" class="modal">
     <div class="modal-card network-card simple-network-card">
-      <header><div><span class="eyebrow">HOST GAME</span><h2>Create a Co-op Room</h2></div><button class="icon-close" data-close="hostModal">×</button></header>
+      <header><div><span class="eyebrow">HOST GAME</span><h2>Create an Online Room</h2></div><button class="icon-close" data-close="hostModal">×</button></header>
       <div class="network-status"><i id="hostNetworkDot"></i><div><strong id="hostNetworkStatus">Creating room…</strong><small id="hostNetworkHelp">Connecting to the online room service.</small></div></div>
       <section class="lobby-panel" aria-label="Multiplayer lobby"><div class="lobby-heading"><strong>PLAYERS</strong><span id="hostLobbyCount">1 / 4</span></div><div id="hostLobbyRoster" class="lobby-roster"></div></section>
       <section class="host-rules-panel" aria-label="Host match rules">
@@ -654,8 +655,9 @@
         </div>
         <label id="hostFriendlyFireRow" class="host-friendly-fire"><input id="hostFriendlyFire" type="checkbox"><span><strong>Allow friendly fire in Co-op</strong><small>When disabled, teammate shots pass through without causing damage.</small></span></label>
       </section>
-      <div class="simple-room-code"><span>ROOM CODE</span><output id="hostRoomPin" class="room-pin">------</output><button class="secondary" id="copyRoomPinBtn" type="button">Copy Code</button></div>
-      <div class="network-code-only"><strong>Send only this six-digit code.</strong><p>Up to three friends can open Join Co-op, enter the same code, and press Enter or Join Room.</p></div>
+      <div class="fair-play-note"><strong>FAIR PLAY ACTIVE</strong><span>The host validates movement, firing, loot, gear, healing, extraction, action distance, and network limits for every player.</span></div>
+      <div class="simple-room-code"><span>ROOM CODE</span><output id="hostRoomPin" class="room-pin">------</output><div class="room-share-actions"><button class="secondary" id="copyRoomPinBtn" type="button">Copy Code</button><button class="secondary" id="copyInviteLinkBtn" type="button">Copy Join URL</button><button class="ghost" id="shareInviteLinkBtn" type="button">Share Link</button></div></div>
+      <div class="network-code-only"><strong>Send the code or shared join URL.</strong><p>Up to three friends can enter the six-digit code manually or open the GitHub Pages link to connect automatically.</p></div>
       <div class="host-room-actions">
         <button id="refreshHostCodeBtn" class="ghost" type="button">New Room</button>
         <button class="primary" id="startCoopBtn" disabled>Waiting for Players…</button>
@@ -666,10 +668,11 @@
 
   <dialog id="joinModal" class="modal">
     <div class="modal-card network-card simple-network-card">
-      <header><div><span class="eyebrow">JOIN GAME</span><h2>Join a Co-op Room</h2></div><button class="icon-close" data-close="joinModal">×</button></header>
+      <header><div><span class="eyebrow">JOIN GAME</span><h2>Join an Online Room</h2></div><button class="icon-close" data-close="joinModal">×</button></header>
       <div class="network-status"><i id="joinNetworkDot"></i><div><strong id="joinNetworkStatus">Enter the room code</strong><small id="joinNetworkHelp">Ask the host for their six-digit code.</small></div></div>
       <section class="lobby-panel" aria-label="Multiplayer lobby"><div class="lobby-heading"><strong>PLAYERS</strong><span id="joinLobbyCount">1 / 4</span></div><div id="joinLobbyRoster" class="lobby-roster"></div></section>
       <div id="joinRulesSummary" class="join-rules-summary"><strong>ROOM RULES</strong><span>Waiting for the host’s match settings…</span></div>
+      <div class="fair-play-note"><strong>FAIR PLAY ACTIVE</strong><span>Shared rooms use host-authoritative combat, movement, loot, interaction, and extraction checks.</span></div>
       <label class="simple-pin-entry">6-DIGIT ROOM CODE<input id="joinRoomPin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="12" placeholder="000000" aria-describedby="joinActionHelp"></label>
       <div class="join-direct-action">
         <button class="primary full" id="joinRoomBtn" type="button">Join Room</button>
@@ -704,7 +707,7 @@
   </dialog>
 
   <dialog id="helpModal" class="modal">
-    <div class="modal-card wide"><header><div><span class="eyebrow">HOW TO PLAY</span><h2>Controls, Maps & Contracts</h2></div><button class="icon-close" data-close="helpModal">×</button></header><div class="help-grid"><section><h3>Movement</h3><p><kbd>W A S D</kbd> Move</p><p><kbd>Space</kbd> Jump</p><p><kbd>Shift</kbd> Sprint</p><p><kbd>C / Ctrl</kbd> Crouch behind train cars, containers, crates, and boulders</p><p><kbd>Click inside game</kbd> Capture mouse without covering the screen</p><p><kbd>Mouse</kbd> Look and aim with continuous 360° rotation</p><p><kbd>Esc</kbd> Open or close the pause menu</p><p><kbd>V</kbd> Switch first/third person</p><p><kbd>B</kbd> Switch third-person shoulder</p><p>Every drop selects a named region, terrain palette, extraction point, landmark orientation, cover layout, prop placement, enemy patrol, and loot arrangement from the run seed.</p></section><section><h3>Combat</h3><p><kbd>Left click / F</kbd> Fire</p><p>First-person shows species-colored paws and the equipped weapon. Third-person uses a collision-safe over-the-shoulder camera so the critter stays visible without covering the crosshair.</p><p><kbd>Right click</kbd> Aim down sights</p><p><kbd>R</kbd> Reload</p><p><kbd>Q</kbd> Use healing patch</p><p><kbd>I / Tab</kbd> Open backpack</p><p><kbd>1–4</kbd> Quick-use slots</p></section><section><h3>Touch Screens</h3><p>Phones and tablets automatically get a movement joystick, a right-side drag area for continuous 360° looking, and large controls for jump, fire, aim, reload, interact, healing, crouch, backpack, camera, shoulder, and pause. Touchscreen laptops stay in mouse/keyboard mode unless touch controls are forced in Settings.</p><p>Hold <kbd>FIRE</kbd>, <kbd>AIM</kbd>, or <kbd>USE</kbd> while moving and looking with other fingers. Tap <kbd>C</kbd> to toggle crouch. Landscape orientation gives the clearest view.</p></section><section><h3>Contracts & Extraction</h3><p>Each run rolls a required drop contract and an optional bonus contract from combat, scavenging, exploration, survival, and gear objectives. Locate the beacon, complete the required contract, carry at least five Moonberries, then hold <kbd>E</kbd> or <kbd>USE</kbd> at the beacon for two seconds. Extracted items move into your stash; failed-drop loot is lost.</p></section><section><h3>Multiplayer & Browsers</h3><p>One host and up to three guests join with the six-digit room code. The host chooses Co-op Extraction or Player vs Player. Co-op can keep friendly fire disabled or allow teammate damage; PvP always enables player damage and ends when one critter remains. GitHub Pages provides the HTTPS page; the included PeerJS client uses secure signaling plus STUN/TURN-assisted WebRTC connectivity. Internet is required for online rooms. Solo play works offline.</p></section></div></div>
+    <div class="modal-card wide"><header><div><span class="eyebrow">HOW TO PLAY</span><h2>Controls, Maps & Contracts</h2></div><button class="icon-close" data-close="helpModal">×</button></header><div class="help-grid"><section><h3>Movement</h3><p><kbd>W A S D</kbd> Move</p><p><kbd>Space</kbd> Jump</p><p><kbd>Shift</kbd> Sprint</p><p><kbd>C / Ctrl</kbd> Crouch behind train cars, containers, crates, and boulders</p><p><kbd>Click inside game</kbd> Capture mouse without covering the screen</p><p><kbd>Mouse</kbd> Look and aim with continuous 360° rotation</p><p><kbd>Esc</kbd> Open or close the pause menu</p><p><kbd>V</kbd> Switch first/third person</p><p><kbd>B</kbd> Switch third-person shoulder</p><p>Every drop selects a named region, terrain palette, extraction point, landmark orientation, cover layout, prop placement, enemy patrol, and loot arrangement from the run seed.</p></section><section><h3>Combat</h3><p><kbd>Left click / F</kbd> Fire</p><p>First-person shows species-colored paws and the equipped weapon. Third-person uses a collision-safe over-the-shoulder camera so the critter stays visible without covering the crosshair.</p><p><kbd>Right click</kbd> Aim down sights</p><p><kbd>R</kbd> Reload</p><p><kbd>Q</kbd> Use healing patch</p><p><kbd>I / Tab</kbd> Open backpack</p><p><kbd>1–4</kbd> Quick-use slots</p></section><section><h3>Touch Screens</h3><p>Phones and tablets automatically get a movement joystick, a right-side drag area for continuous 360° looking, and large controls for jump, fire, aim, reload, interact, healing, crouch, backpack, camera, shoulder, and pause. Touchscreen laptops stay in mouse/keyboard mode unless touch controls are forced in Settings.</p><p>Hold <kbd>FIRE</kbd>, <kbd>AIM</kbd>, or <kbd>USE</kbd> while moving and looking with other fingers. Tap <kbd>C</kbd> to toggle crouch. Landscape orientation gives the clearest view.</p></section><section><h3>Contracts & Extraction</h3><p>Each run rolls a required drop contract and an optional bonus contract from combat, scavenging, exploration, survival, and gear objectives. Locate the beacon, complete the required contract, carry at least five Moonberries, then hold <kbd>E</kbd> or <kbd>USE</kbd> at the beacon for two seconds. Extracted items move into your stash; failed-drop loot is lost.</p></section><section><h3>Multiplayer & Browsers</h3><p>One host and up to three guests join with a six-digit room code or a shared GitHub Pages join URL. Opening a link such as <kbd>?join=123456</kbd> fills the room code and starts connecting after the player has an account. The host chooses Co-op Extraction or Player vs Player. GitHub Pages supplies HTTPS; PeerJS supplies secure signaling and STUN/TURN-assisted WebRTC connectivity. Internet is required for online rooms. Solo play works offline.</p></section><section><h3>Fair Play</h3><p>Solo, Co-op, and PvP use the same weapon timing, movement, collision, spawn protection, gear ownership, and interaction-distance rules. In online matches the host simulates player movement and combat, validates loot and extraction inventory, sanitizes inputs, and limits malformed or repeated network actions.</p><p>Firing cancels spawn protection. Repeated invalid actions receive warnings and can be disconnected. Because this is a static peer-hosted browser game, Fair Play reduces casual exploits but cannot equal dedicated-server anti-cheat.</p></section></div></div>
   </dialog>
 
   <script src="./assets/models/harleys-model-library.js" data-required-boot-file="assets/models/harleys-model-library.js"></script>
