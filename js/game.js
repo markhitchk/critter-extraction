@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix2';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix3';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -16,7 +16,7 @@
     {
       name: 'enemy aggro on damage',
       find: String.raw`        const damage=weapon.damage*target.multiplier;target.enemy.hp-=damage;hitAny=true;hitKind='enemy';headshot=headshot||target.part==='head';`,
-      replace: String.raw`        const damage=weapon.damage*target.multiplier;target.enemy.hp-=damage;target.enemy.aggroTargetId=p.id;target.enemy.aggroUntil=performance.now()+15000;target.enemy.reactionAt=performance.now()+180;target.enemy.patrolTarget=null;target.enemy.attack=0;hitAny=true;hitKind='enemy';headshot=headshot||target.part==='head';`
+      replace: String.raw`        const damage=weapon.damage*target.multiplier;target.enemy.hp-=damage;target.enemy.aggroTargetId=p.id;target.enemy.aggroUntil=performance.now()+60000;target.enemy.reactionAt=performance.now()+180;target.enemy.patrolTarget=null;target.enemy.patrolWait=0;target.enemy.attack=0;hitAny=true;hitKind='enemy';headshot=headshot||target.part==='head';`
     },
     {
       name: 'training enemy retaliates when attacked',
@@ -30,15 +30,24 @@
       replace: String.raw`      const aggroNow=performance.now(),enemyWeapon=WEAPONS[e.weaponId]||WEAPONS.acorn_sprayer;
       let target=e.aggroUntil>aggroNow?players[e.aggroTargetId]:null,best=target&&target.alive&&!activeSafeZoneAt(target.x,target.z)?dist2(e,target):Infinity;
       const alerted=!!target&&Number.isFinite(best);
-      if(!alerted){e.aggroTargetId='';e.aggroUntil=0;e.reactionAt=0;target=null;best=Infinity;for(const p of Object.values(players)){if(!p.alive||activeSafeZoneAt(p.x,p.z))continue;const d=dist2(e,p);if(d<best){best=d;target=p;}}}
-      const detectRange=alerted?Math.max(tune.detect,Math.min(72,enemyWeapon.range*.92)):tune.detect;
+      if(!alerted){e.aggroTargetId='';e.aggroUntil=0;e.reactionAt=0;target=null;best=Infinity;for(const p of Object.values(players)){if(!p.alive||activeSafeZoneAt(p.x,p.z))continue;const d=dist2(e,p);if(d<best){best=d;target=p;}}}else e.aggroUntil=Math.max(e.aggroUntil,aggroNow+15000);
+      const detectRange=alerted?140:tune.detect;
       if(!target||best>detectRange){`
+    },
+    {
+      name: 'attacked training enemy pursuit speed',
+      find: String.raw`      const fx=dx/d,fz=dz/d,rx=fz,rz=-fx,nx=fx*move+rx*strafe,nz=fz*move+rz*strafe,nextX=e.x+nx*e.speed*tune.move*dt,nextZ=e.z+nz*e.speed*tune.move*dt;
+      e.moveBlend=Math.abs(move)+Math.abs(strafe)>.08?1:0;if(e.moveBlend)e.walkTime=(e.walkTime||0)+dt*7;
+      if(!activeSafeZoneAt(nextX,nextZ))moveEntityWithCollisions(e,nx*e.speed*tune.move*dt,nz*e.speed*tune.move*dt,.45);`,
+      replace: String.raw`      const effectiveSpeed=e.training&&alerted?1.65:e.speed,fx=dx/d,fz=dz/d,rx=fz,rz=-fx,nx=fx*move+rx*strafe,nz=fz*move+rz*strafe,nextX=e.x+nx*effectiveSpeed*tune.move*dt,nextZ=e.z+nz*effectiveSpeed*tune.move*dt;
+      e.moveBlend=Math.abs(move)+Math.abs(strafe)>.08?1:0;if(e.moveBlend)e.walkTime=(e.walkTime||0)+dt*7;
+      if(!activeSafeZoneAt(nextX,nextZ))moveEntityWithCollisions(e,nx*effectiveSpeed*tune.move*dt,nz*effectiveSpeed*tune.move*dt,.45);`
     },
     {
       name: 'enemy retaliation shooting range',
       find: String.raw`      if(best<tune.shoot&&!blocked&&e.attack<=0){e.attack=tune.coolMin+Math.random()*(tune.coolMax-tune.coolMin);enemyShoot(e,target,best,tune.damage);}else if(best<1.2&&e.attack<=0){`,
-      replace: String.raw`      const shootRange=alerted?Math.max(tune.shoot,Math.min(68,enemyWeapon.range*.88)):tune.shoot,retaliationReady=!alerted||aggroNow>=(e.reactionAt||0);
-      if(best<shootRange&&!blocked&&e.attack<=0&&retaliationReady){e.attack=tune.coolMin+Math.random()*(tune.coolMax-tune.coolMin);enemyShoot(e,target,best,tune.damage);if(alerted)e.aggroUntil=Math.max(e.aggroUntil,aggroNow+5000);}else if(best<1.2&&e.attack<=0){`
+      replace: String.raw`      const shootRange=alerted?Math.max(tune.shoot,enemyWeapon.range*.92):tune.shoot,retaliationReady=!alerted||aggroNow>=(e.reactionAt||0);
+      if(best<shootRange&&!blocked&&e.attack<=0&&retaliationReady){e.attack=tune.coolMin+Math.random()*(tune.coolMax-tune.coolMin);enemyShoot(e,target,best,tune.damage);if(alerted)e.aggroUntil=Math.max(e.aggroUntil,aggroNow+15000);}else if(best<1.2&&e.attack<=0){`
     }
   ];
 
