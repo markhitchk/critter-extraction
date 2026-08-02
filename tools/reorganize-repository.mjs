@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
+const dir = new URL('./.reorg-payload/', import.meta.url);
+const parts = fs.readdirSync(dir).filter(name => name.startsWith('part-')).sort().map(name => fs.readFileSync(new URL(name, dir), 'utf8')).join('');
+const file = path.join(os.tmpdir(), 'critter-reorganize-' + process.pid + '.mjs');
+fs.writeFileSync(file, gunzipSync(Buffer.from(parts, 'base64')));
+process.argv[1] = file;
+await import('file://' + file);
