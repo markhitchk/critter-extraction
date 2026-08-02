@@ -95,32 +95,29 @@ jobs:
               'Container_Long.gltf',
               'Barrier_Large.gltf'
             ],
-            sushi: ['Rabbit.gltf', 'Panda.gltf'],
-            animals: ['Husky.gltf', 'Shiba_Inu.gltf', 'Shiba Inu.gltf']
+            sushi: ['Rabbit_Bald.gltf', 'Panda.gltf'],
+            animals: ['Husky.gltf', 'ShibaInu.gltf']
           };
           const destinations = {
             toon: '/tmp/cc0-assets/toon-shooter',
             sushi: '/tmp/cc0-assets/sushi-restaurant',
             animals: '/tmp/cc0-assets/animated-animals'
           };
+          const normalizeName = value => value.toLowerCase().replaceAll('_', ' ');
 
           for (const [pack, wanted] of Object.entries(selections)) {
             const entries = JSON.parse(fs.readFileSync(`/tmp/cc0-index/${pack}.json`, 'utf8'));
             const output = destinations[pack];
             fs.mkdirSync(output, { recursive: true });
-            const normalizedWanted = new Set(wanted.map(value => value.toLowerCase().replaceAll('_', ' ')));
-            const matches = entries.filter(entry => {
-              const name = path.basename(entry.path).toLowerCase().replaceAll('_', ' ');
-              return normalizedWanted.has(name);
-            });
+            const normalizedWanted = new Set(wanted.map(normalizeName));
+            const matches = entries.filter(entry => normalizedWanted.has(normalizeName(path.basename(entry.path))));
             for (const target of wanted) {
-              const normalized = target.toLowerCase().replaceAll('_', ' ');
-              if (!matches.some(entry => path.basename(entry.path).toLowerCase().replaceAll('_', ' ') === normalized)) {
-                if (pack === 'animals' && normalized.startsWith('shiba ')) continue;
+              const normalized = normalizeName(target);
+              if (!matches.some(entry => normalizeName(path.basename(entry.path)) === normalized)) {
                 throw new Error(`Missing ${pack} source model: ${target}`);
               }
             }
-            const unique = [...new Map(matches.map(entry => [path.basename(entry.path).toLowerCase().replaceAll('_', ' '), entry])).values()];
+            const unique = [...new Map(matches.map(entry => [normalizeName(path.basename(entry.path)), entry])).values()];
             for (const entry of unique) {
               const destination = path.join(output, path.basename(entry.path).replaceAll(' ', '_'));
               console.log(`Downloading ${entry.path} -> ${destination}`);
