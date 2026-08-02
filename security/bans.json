@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-02T14:01:00Z",
+  "updatedAt": "2026-08-02T14:04:00Z",
   "bans": [
     {
       "id": "ban-2026-001",
       "enabled": true,
-      "scope": "multiplayer",
+      "scope": "all",
       "reason": "Owner-requested permanent account ban.",
       "createdAt": "2026-08-02T14:01:00Z",
       "expiresAt": null,
