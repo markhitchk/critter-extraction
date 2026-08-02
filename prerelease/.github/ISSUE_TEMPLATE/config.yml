@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: View existing Critter Extraction issues
+    url: https://github.com/markhitchk/critter-extraction/issues
+    about: Search open and closed reports before creating a duplicate.

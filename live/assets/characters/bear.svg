@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Bear Heavy Support">
+<title>Bear Heavy Support — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3a2b2d"/><stop offset="1" stop-color="#151524"/></linearGradient>
+  <linearGradient id="vest" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#94704d"/><stop offset="1" stop-color="#5c4235"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#050817" flood-opacity=".65"/></filter>
+</defs>
+<rect x="5" y="5" width="246" height="246" rx="42" fill="url(#bg)" stroke="#d29a64" stroke-width="6"/>
+<path d="M17 186C58 159 181 159 239 190v56H17z" fill="#302322"/><circle cx="210" cy="42" r="22" fill="#ffd36f" opacity=".1"/>
+<g filter="url(#shadow)">
+  <circle cx="72" cy="174" r="16" fill="#6b4432"/>
+  <rect x="84" y="172" width="28" height="41" rx="12" fill="#a36f4c"/><rect x="144" y="172" width="28" height="41" rx="12" fill="#a36f4c"/>
+  <path d="M79 205h39v18H73c0-10 2-14 6-18zm59 0h39c4 4 6 8 6 18h-45z" fill="#35313b"/>
+  <ellipse cx="128" cy="153" rx="57" ry="58" fill="#a36f4c"/>
+  <path d="M76 136q52-34 104 0l-10 55H86z" fill="url(#vest)" stroke="#d9aa73" stroke-width="4"/><path d="M128 129v65" stroke="#49332f" stroke-width="6"/>
+  <rect x="105" y="145" width="46" height="34" rx="6" fill="#523b33"/><path d="M112 153h32v7h-32zm0 12h23v7h-23z" fill="#d8a65e"/>
+  <ellipse cx="74" cy="155" rx="18" ry="38" fill="#a36f4c" transform="rotate(21 74 155)"/><ellipse cx="182" cy="153" rx="18" ry="38" fill="#a36f4c" transform="rotate(-23 182 153)"/>
+  <g transform="rotate(-7 169 164)"><rect x="138" y="149" width="84" height="27" rx="7" fill="#ff8b52"/><rect x="197" y="157" width="39" height="10" rx="4" fill="#252d39"/><rect x="153" y="173" width="17" height="26" rx="4" fill="#3a414d"/><rect x="166" y="154" width="21" height="17" rx="4" fill="#6b4432"/></g>
+  <circle cx="83" cy="66" r="26" fill="#6b4432"/><circle cx="173" cy="66" r="26" fill="#6b4432"/><circle cx="83" cy="66" r="13" fill="#b98862"/><circle cx="173" cy="66" r="13" fill="#b98862"/>
+  <circle cx="128" cy="96" r="57" fill="#a36f4c" stroke="#e8c7a8" stroke-width="5"/>
+  <ellipse cx="128" cy="119" rx="37" ry="26" fill="#e8c7a8"/><path d="M99 81l18-5m40 5-18-5" stroke="#6b4432" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="108" cy="95" r="7" fill="#292737"/><circle cx="148" cy="95" r="7" fill="#292737"/><path d="M120 112q8-8 16 0-2 12-8 12t-8-12z" fill="#342b31"/>
+</g>
+<text x="20" y="229" fill="#fff" font-family="Arial,sans-serif" font-size="17" font-weight="800">BEAR</text>
+<text x="20" y="243" fill="#e2b47c" font-family="Arial,sans-serif" font-size="9" font-weight="700" letter-spacing="1.4">HEAVY SUPPORT</text>
+</svg>

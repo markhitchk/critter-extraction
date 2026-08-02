@@ -1,0 +1,328 @@
+html.critter-account-banned,
+html.critter-account-banned body {
+  min-height: 100%;
+  overflow: auto !important;
+  background: #090a17 !important;
+}
+
+html.critter-account-banned #app,
+html.critter-account-banned #studioBoot,
+html.critter-account-banned #dropLoading,
+html.critter-account-banned #critter-emergency,
+html.critter-account-banned .critter-error-overlay {
+  display: none !important;
+}
+
+#critter-ban-screen {
+  --ban-bg: #101125;
+  --ban-panel: rgba(27, 29, 57, .94);
+  --ban-panel-2: rgba(17, 19, 41, .96);
+  --ban-text: #f7f7ff;
+  --ban-muted: #adb2d2;
+  --ban-mint: #7ef7d4;
+  --ban-cyan: #63dff5;
+  --ban-purple: #8e82ff;
+  --ban-danger: #ff6f91;
+  --ban-line: rgba(255, 255, 255, .11);
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: clamp(14px, 3vw, 30px);
+  color: var(--ban-text);
+  font-family: Inter, Arial, system-ui, sans-serif;
+  background:
+    linear-gradient(180deg, rgba(8, 9, 23, .46), rgba(8, 9, 23, .94)),
+    url("../../assets/loading/cinematic-gameplay-fullhd.webp") center / cover fixed,
+    radial-gradient(circle at 20% 0, #292a59 0, #111225 48%, #090a17 100%);
+  isolation: isolate;
+}
+
+#critter-ban-screen,
+#critter-ban-screen * { box-sizing: border-box; }
+
+#critter-ban-screen .ban-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 100%, rgba(99, 223, 245, .09), transparent 44%);
+}
+
+#critter-ban-screen .ban-orb {
+  position: absolute;
+  width: 34vw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: .24;
+  animation: critterBanFloat 12s ease-in-out infinite alternate;
+}
+
+#critter-ban-screen .ban-orb-a { left: -12vw; top: -15vw; background: var(--ban-purple); }
+#critter-ban-screen .ban-orb-b { right: -13vw; bottom: -17vw; background: var(--ban-cyan); animation-delay: -5s; }
+
+#critter-ban-screen .ban-grid-lines {
+  position: absolute;
+  inset: 0;
+  opacity: .08;
+  background-image:
+    linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
+}
+
+#critter-ban-screen .ban-shell {
+  width: min(1120px, 100%);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(38, 40, 76, .96), rgba(18, 20, 42, .97));
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .62), 0 0 55px rgba(99, 223, 245, .09);
+  animation: critterBanEnter .42s cubic-bezier(.2,.85,.25,1) both;
+}
+
+#critter-ban-screen .ban-topbar {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--ban-line);
+  background: rgba(12, 14, 31, .76);
+  backdrop-filter: blur(18px);
+}
+
+#critter-ban-screen .ban-brand { display: flex; align-items: center; gap: 12px; }
+#critter-ban-screen .ban-brand img { filter: drop-shadow(0 8px 14px rgba(0,0,0,.35)); }
+#critter-ban-screen .ban-brand span { display: grid; gap: 2px; }
+#critter-ban-screen .ban-brand strong { font: 800 18px Arial, sans-serif; }
+#critter-ban-screen .ban-brand small { color: var(--ban-muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+
+#critter-ban-screen .ban-server-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 111, 145, .32);
+  border-radius: 999px;
+  color: #ffc1cf;
+  background: rgba(255, 111, 145, .09);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+#critter-ban-screen .ban-server-state i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ban-danger);
+  box-shadow: 0 0 12px var(--ban-danger);
+  animation: critterBanPulse 1.5s ease-in-out infinite;
+}
+
+#critter-ban-screen .ban-layout { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(0, 1.18fr); }
+
+#critter-ban-screen .ban-scene {
+  position: relative;
+  min-height: 610px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 34px;
+  overflow: hidden;
+  background: url("../../assets/loading/cinematic-gameplay-fullhd.webp") center / cover;
+  border-right: 1px solid var(--ban-line);
+}
+
+#critter-ban-screen .ban-scene-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(12, 13, 30, .18), rgba(12, 13, 30, .55) 48%, rgba(12, 13, 30, .97)),
+    linear-gradient(135deg, rgba(142, 130, 255, .25), transparent 52%);
+}
+
+#critter-ban-screen .ban-emblem {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: 154px;
+  height: 154px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 34px;
+  background: rgba(15, 17, 37, .72);
+  box-shadow: 0 22px 60px rgba(0,0,0,.44), inset 0 0 30px rgba(126,247,212,.08);
+  backdrop-filter: blur(14px);
+}
+
+#critter-ban-screen .ban-emblem::before,
+#critter-ban-screen .ban-emblem::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border: 1px solid rgba(126, 247, 212, .22);
+  border-radius: 42px;
+  transform: rotate(8deg);
+}
+
+#critter-ban-screen .ban-emblem::after { transform: rotate(-8deg); border-color: rgba(142, 130, 255, .25); }
+#critter-ban-screen .ban-emblem img { width: 94px; filter: drop-shadow(0 12px 20px rgba(0,0,0,.4)) saturate(.82); }
+
+#critter-ban-screen .ban-lock-mark {
+  position: absolute;
+  right: -11px;
+  bottom: -11px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #1a1c38;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #ff7897, #e8446b);
+  box-shadow: 0 10px 24px rgba(232,68,107,.45);
+  font-size: 29px;
+  font-weight: 900;
+}
+
+#critter-ban-screen .ban-scene-copy { position: relative; z-index: 1; display: grid; }
+#critter-ban-screen .ban-scene-copy span { color: var(--ban-mint); font-size: 10px; font-weight: 900; letter-spacing: .2em; }
+#critter-ban-screen .ban-scene-copy strong { margin-top: 3px; font: 900 clamp(44px, 6vw, 72px)/.9 Arial, sans-serif; letter-spacing: -.04em; }
+#critter-ban-screen .ban-scene-copy small { margin-top: 12px; color: #d8daed; font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+
+#critter-ban-screen .ban-content { padding: clamp(28px, 4vw, 50px); background: linear-gradient(160deg, rgba(35, 37, 72, .95), rgba(17, 19, 41, .98)); }
+#critter-ban-screen .ban-kicker { display: flex; align-items: center; gap: 9px; color: var(--ban-mint); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
+#critter-ban-screen .ban-kicker span { color: var(--ban-cyan); }
+
+#critter-ban-screen h1 {
+  max-width: 640px;
+  margin: 13px 0 14px;
+  font: 800 clamp(34px, 5vw, 58px)/1 Arial, sans-serif;
+  letter-spacing: -.035em;
+}
+
+#critter-ban-screen .ban-summary { max-width: 650px; margin: 0 0 25px; color: #c9cce2; font-size: 14px; line-height: 1.7; }
+
+#critter-ban-screen .ban-account-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 17px;
+  background: rgba(255,255,255,.045);
+}
+
+#critter-ban-screen .ban-account-avatar {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,.28);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ban-mint), var(--ban-purple));
+}
+#critter-ban-screen .ban-account-avatar img { width: 37px; height: 37px; }
+#critter-ban-screen .ban-account-copy { min-width: 0; display: grid; gap: 3px; }
+#critter-ban-screen .ban-account-copy small { color: var(--ban-muted); font-size: 9px; font-weight: 900; letter-spacing: .13em; }
+#critter-ban-screen .ban-account-copy strong { overflow-wrap: anywhere; font-size: 17px; }
+#critter-ban-screen .ban-account-copy em { color: #ffb9c8; font-size: 11px; font-style: normal; }
+
+#critter-ban-screen .ban-status-pill {
+  padding: 8px 10px;
+  border: 1px solid rgba(255,111,145,.42);
+  border-radius: 10px;
+  color: #ffc0ce;
+  background: rgba(255,111,145,.1);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
+
+#critter-ban-screen .ban-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 11px 0; }
+#critter-ban-screen .ban-stat-row > div { min-width: 0; padding: 13px 14px; border: 1px solid rgba(255,255,255,.075); border-radius: 14px; background: rgba(10,12,29,.38); }
+#critter-ban-screen .ban-stat-row small { display: block; margin-bottom: 5px; color: var(--ban-muted); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+#critter-ban-screen .ban-stat-row strong { display: block; overflow-wrap: anywhere; font-size: 12px; }
+
+#critter-ban-screen .ban-reason-panel { margin-top: 11px; padding: 16px; border: 1px solid rgba(142,130,255,.25); border-radius: 16px; background: linear-gradient(145deg, rgba(142,130,255,.09), rgba(99,223,245,.035)); }
+#critter-ban-screen .ban-section-title { display: flex; align-items: center; gap: 11px; color: #dfe1f3; font-size: 9px; font-weight: 900; letter-spacing: .15em; }
+#critter-ban-screen .ban-section-title i { height: 1px; flex: 1; background: linear-gradient(90deg, rgba(126,247,212,.42), transparent); }
+#critter-ban-screen .ban-reason-panel > p { margin: 13px 0; color: #fff; font-size: 13px; line-height: 1.55; }
+#critter-ban-screen .ban-reason-panel dl { margin: 0; display: grid; gap: 8px; }
+#critter-ban-screen .ban-reason-panel dl > div { display: flex; justify-content: space-between; gap: 16px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.07); }
+#critter-ban-screen .ban-reason-panel dt { color: var(--ban-muted); font-size: 10px; }
+#critter-ban-screen .ban-reason-panel dd { margin: 0; color: #e8eaff; text-align: right; font-size: 10px; font-weight: 800; }
+
+#critter-ban-screen .ban-warning { display: grid; grid-template-columns: 30px 1fr; gap: 11px; align-items: start; margin-top: 14px; padding: 13px 14px; border-left: 3px solid var(--ban-danger); border-radius: 12px; color: #ffd4de; background: rgba(255,111,145,.08); }
+#critter-ban-screen .ban-warning > span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 8px; color: #15162b; background: var(--ban-danger); font-weight: 900; }
+#critter-ban-screen .ban-warning p { margin: 0; font-size: 11px; line-height: 1.55; }
+#critter-ban-screen .ban-warning strong { color: #fff; }
+
+#critter-ban-screen .ban-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 17px; }
+#critter-ban-screen .ban-actions button,
+#critter-ban-screen .ban-actions a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 16px; border-radius: 12px; font: inherit; font-size: 12px; font-weight: 850; text-decoration: none; transition: .18s transform, .18s filter, .18s background; }
+#critter-ban-screen .ban-actions button:hover,
+#critter-ban-screen .ban-actions a:hover { transform: translateY(-1px); filter: brightness(1.06); }
+#critter-ban-screen .ban-primary-action { border: 0; color: #111526; background: linear-gradient(135deg, var(--ban-mint), var(--ban-cyan)); box-shadow: 0 10px 28px rgba(99,223,245,.18); cursor: pointer; }
+#critter-ban-screen .ban-secondary-action { border: 1px solid rgba(142,130,255,.45); color: var(--ban-text); background: rgba(142,130,255,.12); }
+
+#critter-ban-screen .ban-footer { display: flex; align-items: center; gap: 10px; margin-top: 22px; color: #797f9f; font-size: 8px; font-weight: 900; letter-spacing: .15em; }
+#critter-ban-screen .ban-footer i { height: 1px; flex: 1; background: rgba(255,255,255,.08); }
+
+@keyframes critterBanEnter { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes critterBanPulse { 50% { opacity: .35; transform: scale(.8); } }
+@keyframes critterBanFloat { to { transform: translate3d(5vw, 4vw, 0) scale(1.08); } }
+
+@media (max-width: 860px) {
+  #critter-ban-screen .ban-layout { grid-template-columns: 1fr; }
+  #critter-ban-screen .ban-scene { min-height: 220px; border-right: 0; border-bottom: 1px solid var(--ban-line); }
+  #critter-ban-screen .ban-emblem { top: 45%; width: 108px; height: 108px; border-radius: 25px; }
+  #critter-ban-screen .ban-emblem img { width: 66px; }
+  #critter-ban-screen .ban-scene-copy strong { font-size: 43px; }
+}
+
+@media (max-width: 560px) {
+  #critter-ban-screen { padding: 0; place-items: stretch; background-attachment: scroll; }
+  #critter-ban-screen .ban-shell { min-height: 100%; border: 0; border-radius: 0; }
+  #critter-ban-screen .ban-topbar { min-height: 67px; padding: 10px 14px; }
+  #critter-ban-screen .ban-brand img { width: 42px; height: 42px; }
+  #critter-ban-screen .ban-brand strong { font-size: 16px; }
+  #critter-ban-screen .ban-server-state { padding: 7px 8px; font-size: 7px; }
+  #critter-ban-screen .ban-scene { min-height: 178px; padding: 20px; }
+  #critter-ban-screen .ban-emblem { width: 86px; height: 86px; border-radius: 21px; }
+  #critter-ban-screen .ban-emblem img { width: 52px; }
+  #critter-ban-screen .ban-lock-mark { width: 37px; height: 37px; font-size: 23px; }
+  #critter-ban-screen .ban-scene-copy span,
+  #critter-ban-screen .ban-scene-copy small { display: none; }
+  #critter-ban-screen .ban-scene-copy strong { font-size: 34px; }
+  #critter-ban-screen .ban-content { padding: 25px 17px 30px; }
+  #critter-ban-screen h1 { font-size: 37px; }
+  #critter-ban-screen .ban-account-card { grid-template-columns: auto minmax(0, 1fr); }
+  #critter-ban-screen .ban-status-pill { grid-column: 1 / -1; text-align: center; }
+  #critter-ban-screen .ban-stat-row { grid-template-columns: 1fr; }
+  #critter-ban-screen .ban-reason-panel dl > div { display: grid; gap: 4px; }
+  #critter-ban-screen .ban-reason-panel dd { text-align: left; }
+  #critter-ban-screen .ban-actions,
+  #critter-ban-screen .ban-actions button,
+  #critter-ban-screen .ban-actions a,
+  #critter-ban-screen [data-appeal-slot] { width: 100%; }
+  #critter-ban-screen .ban-footer { line-height: 1.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #critter-ban-screen *,
+  #critter-ban-screen *::before,
+  #critter-ban-screen *::after { animation: none !important; transition: none !important; }
+}

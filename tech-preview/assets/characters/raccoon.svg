@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Raccoon Loot Runner">
+<title>Raccoon Loot Runner — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#292748"/><stop offset="1" stop-color="#111326"/></linearGradient>
+  <linearGradient id="vest" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7275a5"/><stop offset="1" stop-color="#444665"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#050817" flood-opacity=".65"/></filter>
+</defs>
+<rect x="5" y="5" width="246" height="246" rx="42" fill="url(#bg)" stroke="#a491ff" stroke-width="6"/>
+<path d="M17 186C58 159 181 159 239 190v56H17z" fill="#20213c"/><path d="M196 25h28v28h-28z" fill="none" stroke="#a491ff" stroke-width="5" opacity=".14"/>
+<g filter="url(#shadow)">
+  <path d="M83 160c-30-5-44 14-37 27 7 13 26 7 36-7" fill="none" stroke="#8f98a3" stroke-width="16" stroke-linecap="round"/><path d="M50 178l11 11m4-24 13 11" stroke="#353846" stroke-width="8"/>
+  <rect x="86" y="174" width="25" height="39" rx="11" fill="#8f98a3"/><rect x="145" y="174" width="25" height="39" rx="11" fill="#8f98a3"/>
+  <path d="M81 207h36v16H76c0-9 2-13 5-16zm58 0h36c4 3 6 7 6 16h-42z" fill="#2b3042"/>
+  <ellipse cx="128" cy="155" rx="52" ry="55" fill="#8f98a3"/>
+  <path d="M82 139q46-31 92 0l-9 50H91z" fill="url(#vest)" stroke="#aeb0ee" stroke-width="3"/><path d="M128 132v61" stroke="#343650" stroke-width="5"/>
+  <rect x="108" y="147" width="40" height="29" rx="6" fill="#3a3c5c"/><path d="M117 155h22l-4 13h-14z" fill="#ffd36f"/>
+  <ellipse cx="79" cy="155" rx="15" ry="34" fill="#8f98a3" transform="rotate(24 79 155)"/><ellipse cx="177" cy="154" rx="15" ry="34" fill="#8f98a3" transform="rotate(-24 177 154)"/>
+  <g transform="rotate(-8 170 164)"><rect x="143" y="151" width="75" height="22" rx="7" fill="#8e82ff"/><rect x="198" y="157" width="31" height="8" rx="4" fill="#263347"/><rect x="155" y="170" width="14" height="24" rx="4" fill="#3b485a"/><circle cx="180" cy="162" r="7" fill="#63dff5"/></g>
+  <path d="M76 78l11-49 40 40m53 9-11-49-40 40" fill="#353846" stroke="#8f98a3" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="128" cy="95" r="54" fill="#8f98a3" stroke="#c8cbd0" stroke-width="5"/>
+  <path d="M77 91q51-34 102 0l-17 35q-34-18-68 0z" fill="#353846"/>
+  <ellipse cx="128" cy="117" rx="31" ry="22" fill="#c8cbd0"/><circle cx="108" cy="94" r="7" fill="#f5f6f8"/><circle cx="148" cy="94" r="7" fill="#f5f6f8"/><circle cx="108" cy="94" r="3" fill="#202233"/><circle cx="148" cy="94" r="3" fill="#202233"/>
+  <path d="M121 111q7-7 14 0-2 11-7 11t-7-11z" fill="#292b38"/>
+</g>
+<text x="20" y="229" fill="#fff" font-family="Arial,sans-serif" font-size="17" font-weight="800">RACCOON</text>
+<text x="20" y="243" fill="#b9b1ff" font-family="Arial,sans-serif" font-size="9" font-weight="700" letter-spacing="1.4">LOOT RUNNER</text>
+</svg>

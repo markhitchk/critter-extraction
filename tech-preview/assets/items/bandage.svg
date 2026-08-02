@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Berry Patch">
+<title>Berry Patch — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#15162b"/><stop offset="1" stop-color="#252947"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect x="6" y="6" width="244" height="244" rx="48" fill="url(#bg)" stroke="#ff8eaa" stroke-width="8"/>
+<g filter="url(#glow)"><rect x="63" y="91" width="130" height="72" rx="36" fill="#ffe1ea" stroke="#ff8eaa" stroke-width="8" transform="rotate(-22 128 127)"/><rect x="63" y="91" width="130" height="72" rx="36" fill="#ffe1ea" stroke="#ff8eaa" stroke-width="8" transform="rotate(22 128 127)"/><circle cx="128" cy="127" r="25" fill="#ff6f91"/><path d="M128 109v36M110 127h36" stroke="#fff" stroke-width="10" stroke-linecap="round"/></g>
+<path d="M76 225h104" stroke="#ff8eaa" stroke-width="7" stroke-linecap="round" opacity=".65"/>
+<circle cx="128" cy="226" r="5" fill="#ff8eaa"/>
+</svg>

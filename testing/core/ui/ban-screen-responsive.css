@@ -1,0 +1,242 @@
+/*
+ * Critter Extraction ban-screen viewport fixes.
+ * Loaded after ban-screen.css so the security presentation follows the
+ * browser's visible viewport, including mobile browser chrome and keyboards.
+ */
+
+html.critter-account-banned,
+html.critter-account-banned body {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+#critter-ban-screen {
+  --ban-edge: clamp(8px, 2vmin, 24px);
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100svh;
+  height: var(--ban-viewport-height, 100dvh);
+  min-width: 0;
+  min-height: 0;
+  max-width: 100vw;
+  max-height: var(--ban-viewport-height, 100dvh);
+  padding:
+    max(var(--ban-edge), env(safe-area-inset-top))
+    max(var(--ban-edge), env(safe-area-inset-right))
+    max(var(--ban-edge), env(safe-area-inset-bottom))
+    max(var(--ban-edge), env(safe-area-inset-left));
+  overflow: hidden;
+  place-items: center;
+  background-attachment: scroll;
+}
+
+#critter-ban-screen .ban-shell {
+  width: min(1120px, 100%);
+  height: min(760px, 100%);
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+#critter-ban-screen .ban-topbar {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+#critter-ban-screen .ban-layout {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  grid-template-columns: minmax(260px, .82fr) minmax(0, 1.18fr);
+}
+
+#critter-ban-screen .ban-scene {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+#critter-ban-screen .ban-content {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+#critter-ban-screen .ban-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+#critter-ban-screen .ban-content::-webkit-scrollbar-track {
+  background: rgba(7, 9, 23, .28);
+}
+
+#critter-ban-screen .ban-content::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(126, 247, 212, .34);
+  background-clip: padding-box;
+}
+
+/* Short laptop and Chromebook windows. */
+@media (max-height: 820px) and (min-width: 861px) {
+  #critter-ban-screen { --ban-edge: clamp(8px, 1.35vmin, 16px); }
+  #critter-ban-screen .ban-shell { height: 100%; }
+  #critter-ban-screen .ban-topbar { min-height: 60px; padding: 8px 16px; }
+  #critter-ban-screen .ban-brand img { width: 42px; height: 42px; }
+  #critter-ban-screen .ban-brand strong { font-size: 16px; }
+  #critter-ban-screen .ban-content { padding: clamp(18px, 2.4vw, 30px); }
+  #critter-ban-screen h1 { margin: 9px 0 10px; font-size: clamp(29px, 4.2vw, 46px); }
+  #critter-ban-screen .ban-summary { margin-bottom: 15px; line-height: 1.5; }
+  #critter-ban-screen .ban-account-card { padding: 11px 12px; }
+  #critter-ban-screen .ban-reason-panel { padding: 13px; }
+  #critter-ban-screen .ban-warning { margin-top: 10px; padding: 10px 12px; }
+  #critter-ban-screen .ban-actions { margin-top: 12px; }
+  #critter-ban-screen .ban-footer { margin-top: 13px; }
+  #critter-ban-screen .ban-emblem { width: 124px; height: 124px; }
+  #critter-ban-screen .ban-emblem img { width: 76px; }
+  #critter-ban-screen .ban-scene-copy strong { font-size: clamp(40px, 5vw, 60px); }
+}
+
+@media (max-height: 640px) and (min-width: 861px) {
+  #critter-ban-screen .ban-topbar { min-height: 52px; }
+  #critter-ban-screen .ban-brand small,
+  #critter-ban-screen .ban-scene-copy small { display: none; }
+  #critter-ban-screen .ban-content { padding: 15px 20px 18px; }
+  #critter-ban-screen .ban-kicker { font-size: 8px; }
+  #critter-ban-screen h1 { font-size: clamp(27px, 4vw, 39px); }
+  #critter-ban-screen .ban-summary { font-size: 12px; }
+  #critter-ban-screen .ban-emblem { width: 96px; height: 96px; border-radius: 24px; }
+  #critter-ban-screen .ban-emblem img { width: 58px; }
+  #critter-ban-screen .ban-lock-mark { width: 37px; height: 37px; font-size: 22px; }
+}
+
+/* Tablets and narrow windows use a compact cinematic header plus a scrollable briefing. */
+@media (max-width: 860px) {
+  #critter-ban-screen .ban-shell { height: 100%; }
+  #critter-ban-screen .ban-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: clamp(118px, 25vh, 210px) minmax(0, 1fr);
+  }
+  #critter-ban-screen .ban-scene {
+    min-height: 0;
+    height: auto;
+    padding: clamp(16px, 3vw, 26px);
+  }
+  #critter-ban-screen .ban-content { height: auto; }
+}
+
+@media (max-width: 560px) {
+  #critter-ban-screen {
+    --ban-edge: 0px;
+    width: 100%;
+    max-width: none;
+    place-items: stretch;
+  }
+
+  #critter-ban-screen .ban-shell {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  #critter-ban-screen .ban-topbar {
+    min-height: 58px;
+    padding:
+      max(7px, env(safe-area-inset-top))
+      max(11px, env(safe-area-inset-right))
+      7px
+      max(11px, env(safe-area-inset-left));
+  }
+
+  #critter-ban-screen .ban-server-state {
+    max-width: 42%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  #critter-ban-screen .ban-layout {
+    grid-template-rows: clamp(96px, 20vh, 145px) minmax(0, 1fr);
+  }
+
+  #critter-ban-screen .ban-scene {
+    min-height: 0;
+    padding: 13px 16px;
+  }
+
+  #critter-ban-screen .ban-emblem {
+    top: 44%;
+    width: clamp(66px, 18vw, 82px);
+    height: clamp(66px, 18vw, 82px);
+  }
+
+  #critter-ban-screen .ban-content {
+    min-height: 0;
+    padding:
+      19px
+      max(15px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(15px, env(safe-area-inset-left));
+  }
+
+  #critter-ban-screen h1 {
+    margin: 9px 0 11px;
+    font-size: clamp(29px, 10vw, 38px);
+  }
+
+  #critter-ban-screen .ban-summary {
+    margin-bottom: 16px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+}
+
+/* Landscape phones and very short embedded browser areas. */
+@media (max-height: 500px) {
+  #critter-ban-screen { --ban-edge: 0px; place-items: stretch; }
+  #critter-ban-screen .ban-shell { width: 100%; height: 100%; border-radius: 0; border: 0; }
+  #critter-ban-screen .ban-topbar { min-height: 48px; padding: 5px 10px; }
+  #critter-ban-screen .ban-brand img { width: 36px; height: 36px; }
+  #critter-ban-screen .ban-brand small { display: none; }
+  #critter-ban-screen .ban-server-state { padding: 6px 8px; font-size: 7px; }
+  #critter-ban-screen .ban-layout {
+    grid-template-columns: minmax(150px, 34vw) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  #critter-ban-screen .ban-scene { min-height: 0; height: 100%; padding: 14px; border-right: 1px solid var(--ban-line); border-bottom: 0; }
+  #critter-ban-screen .ban-emblem { width: 74px; height: 74px; border-radius: 19px; }
+  #critter-ban-screen .ban-emblem img { width: 45px; }
+  #critter-ban-screen .ban-lock-mark { width: 31px; height: 31px; border-width: 3px; font-size: 19px; }
+  #critter-ban-screen .ban-scene-copy span,
+  #critter-ban-screen .ban-scene-copy small { display: none; }
+  #critter-ban-screen .ban-scene-copy strong { font-size: clamp(25px, 5vw, 36px); }
+  #critter-ban-screen .ban-content { padding: 13px 16px 18px; }
+  #critter-ban-screen .ban-kicker { font-size: 8px; }
+  #critter-ban-screen h1 { margin: 7px 0 8px; font-size: clamp(24px, 5vw, 34px); }
+  #critter-ban-screen .ban-summary { margin-bottom: 10px; font-size: 11px; line-height: 1.4; }
+}
+
+/* JavaScript sets this when visualViewport reports a particularly short area. */
+#critter-ban-screen[data-ban-viewport="short"] .ban-shell {
+  height: 100%;
+}
+
+#critter-ban-screen[data-ban-viewport="short"] .ban-content {
+  scrollbar-gutter: auto;
+}
