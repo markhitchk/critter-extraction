@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix4';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix5';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -14,7 +14,7 @@
       replace: String.raw`  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.search='';url.searchParams.set('join',clean);url.hash='';return url.toString();}catch(_){return '';}}`
     },
     {
-      name: 'matching active account import overwrite',
+      name: 'matching account import overwrite and duplicate cleanup',
       find: String.raw`  function installImportedAccount(account) {
     const a = normalizeImportedAccount(account), previousActiveId = db.activeId;
     db.accounts.push(a); db.activeId = a.id;
@@ -25,29 +25,57 @@
     refreshAccountUI(); renderAccounts(); toast('Separate account restored'); return true;
   }`,
       replace: String.raw`  function installImportedAccount(account) {
-    const source = account && typeof account === 'object' ? account : {}, active = activeAccount();
-    const importedUsername = safeText(source.username, 18).replace(/[^A-Za-z0-9_-]/g, '').toLowerCase();
-    const activeUsername = String(active?.username || '').trim().toLowerCase();
-    const overwriteActive = !!active && ((source.id && source.id === active.id) || (importedUsername && importedUsername === activeUsername));
-    const previousDb = deepCopy(db), activeIndex = overwriteActive ? db.accounts.findIndex(x => x.id === active.id) : -1;
-    if (overwriteActive && activeIndex >= 0) db.accounts.splice(activeIndex, 1);
+    const source = account && typeof account === 'object' ? deepCopy(account) : {}, previousDb = deepCopy(db);
+    const cleanUsername = value => safeText(value, 18).replace(/[^A-Za-z0-9_-]/g, '');
+    const importedUsername = cleanUsername(source.username), importedLower = importedUsername.toLowerCase();
+    const sameProgressIdentity = candidate => {
+      if (!candidate) return false;
+      const sameName = String(candidate.displayName || '').trim().toLowerCase() === String(source.displayName || '').trim().toLowerCase();
+      const sameXp = Math.max(0, Number(candidate.xp) || 0) === Math.max(0, Number(source.xp) || 0);
+      const sameExtracts = Math.max(0, Number(candidate.stats?.extracts) || 0) === Math.max(0, Number(source.stats?.extracts) || 0);
+      return sameName && sameXp && sameExtracts;
+    };
+    let canonicalUsername = importedUsername, targetIndex = -1;
+    const suffix = importedUsername.match(/^(.*)_([2-9]\d*)$/);
+    if (suffix) {
+      const baseLower = suffix[1].toLowerCase(), baseIndex = db.accounts.findIndex(x => String(x.username || '').trim().toLowerCase() === baseLower);
+      if (baseIndex >= 0 && sameProgressIdentity(db.accounts[baseIndex])) {
+        targetIndex = baseIndex;
+        canonicalUsername = db.accounts[baseIndex].username;
+      }
+    }
+    if (targetIndex < 0 && source.id) targetIndex = db.accounts.findIndex(x => x.id === source.id);
+    if (targetIndex < 0 && importedLower) targetIndex = db.accounts.findIndex(x => String(x.username || '').trim().toLowerCase() === importedLower);
+    const target = targetIndex >= 0 ? db.accounts[targetIndex] : null;
+    if (target && !canonicalUsername) canonicalUsername = target.username;
+    const canonicalLower = String(canonicalUsername || '').toLowerCase();
+    const escaped = canonicalLower.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&');
+    const staleAlias = escaped ? new RegExp('^' + escaped + '_[2-9]\\d*$', 'i') : null;
+    const removeIndexes = new Set();
+    if (targetIndex >= 0) removeIndexes.add(targetIndex);
+    if (staleAlias) db.accounts.forEach((candidate, index) => {
+      if (index !== targetIndex && staleAlias.test(String(candidate.username || '').trim()) && sameProgressIdentity(candidate)) removeIndexes.add(index);
+    });
+    const removedDuplicates = Math.max(0, removeIndexes.size - (targetIndex >= 0 ? 1 : 0));
+    db.accounts = db.accounts.filter((_, index) => !removeIndexes.has(index));
+    if (canonicalUsername) source.username = canonicalUsername;
     const a = normalizeImportedAccount(source);
-    if (overwriteActive && activeIndex >= 0) {
-      a.id = active.id;
-      db.accounts.splice(activeIndex, 0, a);
-    } else db.accounts.push(a);
-    db.activeId = a.id;
+    if (target) a.id = target.id;
+    const insertAt = targetIndex >= 0 ? Math.min(targetIndex, db.accounts.length) : db.accounts.length;
+    db.accounts.splice(insertAt, 0, a); db.activeId = a.id;
     if (!saveDB()) {
       db = previousDb; refreshAccountUI(); renderAccounts();
       toast('Account restore failed: browser storage may be full'); return false;
     }
-    refreshAccountUI(); renderAccounts(); toast(overwriteActive ? 'Active account overwritten from import' : 'Separate account restored'); return true;
+    refreshAccountUI(); renderAccounts();
+    toast(target ? (removedDuplicates ? 'Account overwritten; duplicate device account removed' : 'Existing account overwritten from import') : 'Separate account restored');
+    return true;
   }`
     },
     {
       name: 'import help explains overwrite behavior',
       find: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. It restores a separate local account with its profile, progress, stash, loadout, currency, settings, and statistics.';`,
-      replace: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. A matching active username or account ID overwrites the active account; a different username restores as a separate local account.';`
+      replace: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. Any matching username or account ID is overwritten instead of creating _2 or another duplicate; different usernames restore as separate accounts.';`
     },
     {
       name: 'enemy aggro on damage',
