@@ -1,5 +1,9 @@
 # Project Name Ideas
 
+## README.md
+
+# Project Name Ideas
+
 Possible replacement names for **Critter Extraction**.
 
 ## Top Recommendations
