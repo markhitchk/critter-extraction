@@ -1,3 +1,4 @@
+const path = require('node:path');
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
@@ -19,7 +20,7 @@ module.exports = defineConfig({
     video: 'retain-on-failure'
   },
   webServer: {
-    command: 'node tests/browser/static-server.cjs',
+    command: `node "${path.join(__dirname, 'static-server.cjs')}"`,
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 20_000,
