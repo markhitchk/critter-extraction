@@ -1,0 +1,71 @@
+name: One-time full project organization
+
+on:
+  push:
+    branches:
+      - maintenance/full-project-organization
+    paths:
+      - tools/reorganize-repository.mjs
+      - tools/.reorg-payload/**
+      - .github/workflows/reorganize-maintenance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reorganize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: maintenance/full-project-organization
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure commit identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run staged repository migration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          commit_phase() {
+            local phase="$1"
+            local message="$2"
+            echo "::group::$message"
+            node tools/reorganize-repository.mjs "$phase"
+            git add -A
+            if ! git diff --cached --quiet; then
+              git commit -m "$message"
+            fi
+            echo "::endgroup::"
+          }
+
+          commit_phase docs "Organize documentation and screenshots"
+          commit_phase assets "Organize branding and runtime assets"
+          commit_phase boot "Create core boot and path systems"
+          commit_phase errors "Move the error system under core"
+          commit_phase game "Organize game loader and game core"
+          commit_phase styles "Organize styles and generated compatibility files"
+          commit_phase pages "Organize invite and reset page resources"
+          commit_phase validation "Add validation tools and browser tests"
+          commit_phase actions "Update GitHub Actions"
+
+          node tools/reorganize-repository.mjs docs-links
+          rm -rf tools/.reorg-payload
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Update documentation links"
+          fi
+
+      - name: Push organized commits
+        run: git push origin HEAD:maintenance/full-project-organization
