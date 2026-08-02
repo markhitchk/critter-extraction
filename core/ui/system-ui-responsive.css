@@ -1,0 +1,74 @@
+/* Responsive behavior */
+@media(max-width:1120px){
+  .critter-ui-refresh .lobby-shell{grid-template-columns:minmax(0,1fr) 330px}
+  .critter-ui-refresh .lobby-hero .hero-copy{width:76%;padding:42px}
+  .critter-ui-refresh .lobby-hero h1{font-size:clamp(42px,6vw,66px)}
+  .critter-ui-refresh .lobby-action-dock{grid-template-columns:repeat(3,1fr)}
+}
+
+@media(max-width:900px){
+  .critter-ui-refresh .lobby-shell{grid-template-columns:1fr}
+  .critter-ui-refresh .lobby-hero{min-height:570px}
+  .critter-ui-refresh .lobby-hero .hero-copy{width:76%}
+  .critter-ui-refresh .lobby-sidebar{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .critter-ui-refresh .lobby-profile-card{grid-column:1/-1}
+  .critter-ui-refresh .lobby-stats-card .stat-grid{grid-template-columns:repeat(4,1fr)}
+  .critter-ui-refresh .settings-grid{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:700px){
+  .critter-ui-refresh .topbar{height:64px;padding:0 10px}
+  .critter-ui-refresh .brand img{width:40px;height:40px}
+  .critter-ui-refresh .top-actions{gap:5px}
+  .critter-ui-refresh .top-actions>.ghost{display:none}
+  .critter-ui-refresh .petals-chip{padding:7px 9px;font-size:10px}
+  .critter-ui-refresh .account-chip>span:last-child{display:none}
+  .critter-ui-refresh .account-chip{padding:4px}
+  .critter-ui-refresh .screen{padding:12px 10px 30px}
+  .critter-ui-refresh .lobby-screen{padding-top:10px}
+  .critter-ui-refresh .lobby-hero{min-height:640px;border-radius:22px}
+  .critter-ui-refresh .lobby-hero::before{background:linear-gradient(0deg,rgba(5,8,18,.97) 0%,rgba(5,8,18,.88) 52%,rgba(5,8,18,.2) 100%)}
+  .critter-ui-refresh .lobby-hero .hero-scene>img{object-position:62% center}
+  .critter-ui-refresh .lobby-hero .studio-stamp{display:none}
+  .critter-ui-refresh .lobby-hero .hero-copy{justify-content:flex-end;width:100%;padding:28px 22px 24px}
+  .critter-ui-refresh .lobby-hero h1{font-size:clamp(40px,12vw,56px)}
+  .critter-ui-refresh .lobby-hero .play-row{grid-template-columns:1fr}
+  .critter-ui-refresh .lobby-quick-join{grid-template-columns:1fr}
+  .critter-ui-refresh .quick-join-button{width:100%}
+  .critter-ui-refresh .lobby-sidebar{grid-template-columns:1fr}
+  .critter-ui-refresh .lobby-profile-card{grid-column:auto}
+  .critter-ui-refresh .lobby-action-dock{grid-template-columns:repeat(2,1fr);bottom:8px}
+  .critter-ui-refresh .lobby-dock-button{min-height:48px}
+  .critter-ui-refresh .lobby-dock-button small{display:none}
+  .critter-ui-refresh .settings-grid{grid-template-columns:1fr}
+  .critter-ui-refresh .modal-card>header{padding:17px 16px 14px}
+  .critter-ui-refresh .modal-card>header+*{margin-left:16px;margin-right:16px}
+  .critter-ui-refresh .modal-card>footer{padding:13px 16px 16px;flex-wrap:wrap}
+  .critter-ui-refresh .modal-card>footer>*{flex:1 1 auto}
+  .critter-ui-refresh .network-status,.critter-ui-refresh .lobby-panel,.critter-ui-refresh .host-rules-panel,.critter-ui-refresh .fair-play-note,.critter-ui-refresh .join-rules-summary,.critter-ui-refresh .simple-room-code,.critter-ui-refresh .network-code-only,.critter-ui-refresh .join-direct-action,.critter-ui-refresh .host-room-actions,.critter-ui-refresh .simple-pin-entry{margin-left:16px;margin-right:16px}
+  .critter-ui-refresh .profile-editor,.critter-ui-refresh .customize-grid{padding:16px}
+  .critter-ui-refresh .help-grid{padding:16px 16px 0}
+}
+
+@media(max-width:430px){
+  .critter-ui-refresh .brand strong{display:block;font-size:14px}
+  .critter-ui-refresh .brand small{display:none}
+  .critter-ui-refresh .petals-chip strong{font-size:0}
+  .critter-ui-refresh .petals-chip strong::after{content:"Petals";font-size:10px}
+  .critter-ui-refresh .lobby-hero{min-height:680px}
+  .critter-ui-refresh .lobby-feature-strip span{font-size:8px}
+  .critter-ui-refresh .lobby-stats-card .stat-grid{grid-template-columns:1fr 1fr}
+  .critter-ui-refresh .lobby-action-dock{grid-template-columns:1fr 1fr}
+  .critter-ui-refresh .room-pin{font-size:34px}
+  .critter-ui-refresh .simple-pin-entry input{font-size:24px;letter-spacing:.2em}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html.critter-ui-refresh{scroll-behavior:auto}
+  .critter-ui-refresh *,.critter-ui-refresh *::before,.critter-ui-refresh *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+@media(prefers-contrast:more){
+  :root{--ui-line:rgba(255,255,255,.32);--ui-line-strong:rgba(126,247,212,.75)}
+  .critter-ui-refresh .panel,.critter-ui-refresh .modal-card,.critter-ui-refresh input,.critter-ui-refresh select,.critter-ui-refresh textarea{border-width:2px}
+}
