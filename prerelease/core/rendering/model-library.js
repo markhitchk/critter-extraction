@@ -30,6 +30,18 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     'arms','paws','legs','feet','tail','weapon','accessory'
   ],
   weaponModels: ['pea_popper','acorn_sprayer','honey_carbine','carrot_scatter','moonbeam'],
+  authoredRuntimeAssets: {
+    peaPopper: 'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
+    peaPopperLod1: 'assets/models/weapons/pea_popper/pea_popper_lod1.glb',
+    peaPopperLod2: 'assets/models/weapons/pea_popper/pea_popper_lod2.glb',
+    acornSprayerLod2: 'assets/models/weapons/acorn_sprayer/acorn_sprayer_lod2.glb',
+    supplyCrate: 'assets/models/loot/supply_crate/supply_crate.glb',
+    pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
+    pineRock: 'assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb',
+    pineGrass: 'assets/models/vegetation/pine_grass/pine_grass_cluster.glb',
+    pineRail: 'assets/models/railway/pine_rail_segment/pine_rail_segment.glb',
+    pineDirtBaseColor: 'assets/textures/terrain/pine_valley/dirt_basecolor.webp'
+  },
   combatRig: {
     zones: [
       { id:'head', y:2.23, radius:0.62, damageMultiplier:1.65 },
@@ -41,3 +53,24 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     tracerSource: 'weapon-muzzle'
   }
 });
+
+/* Load authored GLB bridges synchronously before game-loader.js fetches
+   game-core.js. Procedural rendering remains available as a safe fallback. */
+function loadAuthoredBridge(path) {
+  if (document.readyState === 'loading') {
+    document.write(`<script src="${path}" data-required-boot-file="${path.replace(/^\.\//, '')}"><\/script>`);
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = path;
+  script.dataset.requiredBootFile = path.replace(/^\.\//, '');
+  document.head.appendChild(script);
+}
+
+if (!window.HarleyHighEndRuntime) loadAuthoredBridge('./core/rendering/high-end-glb-runtime.js');
+if (!window.HarleyHighEndWorldPatches) loadAuthoredBridge('./core/rendering/high-end-world-patches.js');
+if (!window.HarleyHighEndRockPatches) loadAuthoredBridge('./core/rendering/high-end-rock-patches.js');
+if (!window.HarleyHighEndGroundPatches) loadAuthoredBridge('./core/rendering/high-end-ground-patches.js');
+if (!window.HarleyHighEndTerrainPatches) loadAuthoredBridge('./core/rendering/high-end-terrain-patches.js');
+if (!window.HarleyHighEndLodPatches) loadAuthoredBridge('./core/rendering/high-end-lod-patches.js');
+if (!window.HarleyHighEndAcornPatches) loadAuthoredBridge('./core/rendering/high-end-acorn-patches.js');
