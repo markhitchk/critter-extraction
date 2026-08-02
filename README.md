@@ -14,7 +14,12 @@ Explore the map, fight enemy critters, collect weapons and gear, complete object
 
 ## Play
 
-[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/live/)
+Choose a Critter Extraction channel:
+
+- **[Live](https://markhitchk.github.io/critter-extraction/live/)** — current public game
+- **[Prerelease](https://markhitchk.github.io/critter-extraction/prerelease/)** — upcoming release builds
+- **[Testing](https://markhitchk.github.io/critter-extraction/testing/)** — UI, UX, and gameplay testing
+- **[Tech Preview](https://markhitchk.github.io/critter-extraction/tech-preview/)** — early experimental features
 
 ## Features
 
