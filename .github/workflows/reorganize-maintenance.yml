@@ -111,6 +111,17 @@ jobs:
           }
           console.log('Relative links OK');
           """)
+          invite = Path('invite/index.html')
+          invite_html = invite.read_text()
+          invite_html = invite_html.replace('"./assets/branding/', '"../assets/branding/')
+          invite_html = invite_html.replace('"assets/branding/', '"../assets/branding/')
+          invite_html = invite_html.replace("'./assets/branding/", "'../assets/branding/")
+          invite_html = invite_html.replace("'assets/branding/", "'../assets/branding/")
+          invite_html = invite_html.replace('"./styles.css"', '"../styles.css"')
+          invite_html = invite_html.replace('"styles.css"', '"../styles.css"')
+          invite_html = invite_html.replace("'./styles.css'", "'../styles.css'")
+          invite_html = invite_html.replace("'styles.css'", "'../styles.css'")
+          invite.write_text(invite_html)
           PY
 
           node tools/reorganize-repository.mjs docs-links
