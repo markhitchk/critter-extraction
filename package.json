@@ -1,0 +1,23 @@
+{
+  "name": "critter-extraction",
+  "version": "0.22.0",
+  "private": true,
+  "description": "Critter Extraction browser game by Harley’s Studios",
+  "scripts": {
+    "build:styles": "node tools/build-styles.mjs",
+    "build:portable": "node tools/build-portable.mjs",
+    "check:js": "node tools/check-js-syntax.mjs",
+    "check:inline": "node tools/check-inline-scripts.mjs",
+    "check:errors": "node tools/check-error-catalog.mjs",
+    "check:links": "node tools/check-links.mjs",
+    "check:assets": "node tools/check-assets.mjs",
+    "check:portable": "node tools/verify-portable-parity.mjs",
+    "validate:pages": "node tools/validate-pages.mjs",
+    "validate": "npm run check:js && npm run check:inline && npm run check:errors && npm run check:links && npm run check:assets && npm run check:portable && npm run validate:pages",
+    "test:browser": "playwright test",
+    "test": "npm run build:styles && npm run build:portable && npm run validate && npm run test:browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.0"
+  }
+}
