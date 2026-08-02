@@ -48,10 +48,22 @@ Critter Extraction is still being developed. Features, gameplay, and artwork may
 - `assets/` — branding, characters, items, loading media, vendor libraries, and weapons
 - `docs/` — architecture, guides, credits, error documentation, design notes, and release notes
 - `portable/START_HERE.html` — canonical portable build
+- `tests/browser/playwright.config.js` — browser-test configuration
 - `tests/` — browser, smoke, unit, integration, multiplayer, fixture, and error coverage
 - `tools/` — build and validation utilities
 
-Root `404.html`, `error.html`, `invite.html`, `START_HERE.html`, `styles.css`, and legacy JavaScript/asset URLs are compatibility adapters or generated files.
+### Intentional root files
+
+The following files intentionally remain at the repository root because they are GitHub Pages entry points, generated compatibility files, standard repository metadata, or package-manager files:
+
+- `index.html`, `404.html`, `error.html`, `invite.html`, and `START_HERE.html`
+- `styles.css` and `.nojekyll`
+- `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, and `LICENSE`
+- `package.json`, `package-lock.json`, `.editorconfig`, and `.gitignore`
+
+Root `404.html`, `error.html`, `invite.html`, `START_HERE.html`, and `styles.css` are compatibility adapters or generated files. Their canonical editable implementations live in the organized folders documented above.
+
+The canonical icon is `assets/branding/icon.svg`. There is no duplicate root `icon.svg`.
 
 ## Development
 
@@ -65,6 +77,12 @@ Generate compatibility files with:
 ```bash
 npm run build:styles
 npm run build:portable
+```
+
+Run the browser suite with its organized configuration:
+
+```bash
+npm run test:browser
 ```
 
 ## Credits
