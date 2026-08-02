@@ -2,6 +2,15 @@ const { test, expect } = require('@playwright/test');
 
 const repoApi = 'https://api.github.com/repos/markhitchk/critter-extraction';
 
+async function dismissBlockingProfileModal(page) {
+  await page.locator('#profileModal').waitFor({ state: 'attached', timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(150);
+  await page.evaluate(() => {
+    const dialog = document.getElementById('profileModal');
+    if (dialog && dialog.open && typeof dialog.close === 'function') dialog.close();
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route(`${repoApi}/issues?**`, async route => route.fulfill({
     status: 200,
@@ -67,6 +76,7 @@ test.beforeEach(async ({ page }) => {
 
 test('feedback report is drafted and reviewed inside the game', async ({ page }) => {
   await page.goto('/');
+  await dismissBlockingProfileModal(page);
   await page.locator('#critter-feedback-launcher').click();
   await expect(page.locator('#critter-feedback-center')).toBeVisible();
   await expect(page.locator('#critter-feedback-center a')).toHaveCount(0);
@@ -79,12 +89,14 @@ test('feedback report is drafted and reviewed inside the game', async ({ page })
 
   await expect(page.locator('#cfc-report-review')).toBeVisible();
   await expect(page.locator('#cfc-review-title')).toContainText('[Bug]');
-  await expect(page.locator('#cfc-report-preview')).toContainText('Crosshair is above the shot');
+  await expect(page.locator('#cfc-review-title')).toContainText('Crosshair is above the shot');
+  await expect(page.locator('#cfc-report-preview')).toContainText('Shots sometimes land above the center of the crosshair.');
   await expect(page.locator('#cfc-report-preview')).toContainText('Privacy-safe environment');
 });
 
 test('issues and comments are viewed inside the game', async ({ page }) => {
   await page.goto('/?feedback=1');
+  await dismissBlockingProfileModal(page);
   await expect(page.locator('#critter-feedback-center')).toBeVisible();
   await page.getByRole('button', { name: 'Issues & Updates' }).click();
 
