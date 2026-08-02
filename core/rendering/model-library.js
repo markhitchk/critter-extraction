@@ -47,15 +47,18 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
   }
 });
 
-/* Load the authored GLB bridge synchronously before game-loader.js fetches
+/* Load authored GLB bridges synchronously before game-loader.js fetches
    game-core.js. Procedural rendering remains available as a safe fallback. */
-if (!window.HarleyHighEndRuntime) {
+function loadAuthoredBridge(path) {
   if (document.readyState === 'loading') {
-    document.write('<script src="./core/rendering/high-end-glb-runtime.js" data-required-boot-file="core/rendering/high-end-glb-runtime.js"><\/script>');
-  } else {
-    const script = document.createElement('script');
-    script.src = './core/rendering/high-end-glb-runtime.js';
-    script.dataset.requiredBootFile = 'core/rendering/high-end-glb-runtime.js';
-    document.head.appendChild(script);
+    document.write(`<script src="${path}" data-required-boot-file="${path.replace(/^\.\//, '')}"><\/script>`);
+    return;
   }
+  const script = document.createElement('script');
+  script.src = path;
+  script.dataset.requiredBootFile = path.replace(/^\.\//, '');
+  document.head.appendChild(script);
 }
+
+if (!window.HarleyHighEndRuntime) loadAuthoredBridge('./core/rendering/high-end-glb-runtime.js');
+if (!window.HarleyHighEndWorldPatches) loadAuthoredBridge('./core/rendering/high-end-world-patches.js');
