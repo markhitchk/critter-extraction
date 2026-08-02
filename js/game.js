@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix7';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix8';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -14,7 +14,7 @@
       replace: String.raw`  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.search='';url.searchParams.set('join',clean);url.hash='';return url.toString();}catch(_){return '';}}`
     },
     {
-      name: 'matching account import overwrite and duplicate cleanup',
+      name: 'matching account import overwrite confirmation and duplicate cleanup',
       find: String.raw`  function installImportedAccount(account) {
     const a = normalizeImportedAccount(account), previousActiveId = db.activeId;
     db.accounts.push(a); db.activeId = a.id;
@@ -24,7 +24,40 @@
     }
     refreshAccountUI(); renderAccounts(); toast('Separate account restored'); return true;
   }`,
-      replace: String.raw`  function installImportedAccount(account) {
+      replace: String.raw`  function confirmImportedAccountOverwrite(target, source) {
+    return new Promise(resolve => {
+      document.getElementById('accountOverwriteConfirmModal')?.remove();
+      const dialog = document.createElement('dialog');
+      dialog.id = 'accountOverwriteConfirmModal';
+      dialog.className = 'modal';
+      dialog.setAttribute('aria-labelledby', 'accountOverwriteConfirmTitle');
+      const card = document.createElement('div');
+      card.className = 'modal-card';
+      card.style.maxWidth = '560px';
+      card.innerHTML = '<header><div><span class="eyebrow">ACCOUNT IMPORT WARNING</span><h2 id="accountOverwriteConfirmTitle">Overwrite Account File?</h2></div><button class="icon-close" type="button" aria-label="Cancel account overwrite">×</button></header><div class="account-note"><strong class="overwrite-question"></strong><br><span class="overwrite-details"></span></div><footer><button class="ghost overwrite-cancel" type="button">Cancel Import</button><button class="danger-button overwrite-confirm" type="button">Overwrite Account</button></footer>';
+      const currentName = safeText(target?.displayName || target?.username || 'this account', 40) || 'this account';
+      const incomingName = safeText(source?.displayName || source?.username || currentName, 40) || currentName;
+      card.querySelector('.overwrite-question').textContent = 'Do you wish to proceed with overwriting the existing account file for “' + currentName + '”?';
+      card.querySelector('.overwrite-details').textContent = 'The imported account “' + incomingName + '” will replace this device account’s progress, stash, loadout, Petals, appearance, settings, and statistics. This cannot be undone unless you downloaded a backup first.';
+      dialog.appendChild(card);
+      document.body.appendChild(dialog);
+      let settled = false;
+      const finish = confirmed => {
+        if (settled) return;
+        settled = true;
+        if (dialog.open && typeof dialog.close === 'function') dialog.close();
+        dialog.remove();
+        resolve(confirmed);
+      };
+      dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+      card.querySelector('.icon-close').onclick = () => finish(false);
+      card.querySelector('.overwrite-cancel').onclick = () => finish(false);
+      card.querySelector('.overwrite-confirm').onclick = () => finish(true);
+      if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+      card.querySelector('.overwrite-confirm').focus();
+    });
+  }
+  async function installImportedAccount(account) {
     const source = account && typeof account === 'object' ? deepCopy(account) : {}, previousDb = deepCopy(db);
     const cleanUsername = value => safeText(value, 18).replace(/[^A-Za-z0-9_-]/g, '');
     const importedUsername = cleanUsername(source.username), importedLower = importedUsername.toLowerCase();
@@ -51,6 +84,10 @@
     if (targetIndex < 0 && source.id) targetIndex = db.accounts.findIndex(x => x.id === source.id);
     if (targetIndex < 0 && importedLower) targetIndex = db.accounts.findIndex(x => String(x.username || '').trim().toLowerCase() === importedLower);
     const target = targetIndex >= 0 ? db.accounts[targetIndex] : null;
+    if (target && !(await confirmImportedAccountOverwrite(target, source))) {
+      toast('Account import cancelled');
+      return false;
+    }
     if (target && !canonicalUsername) canonicalUsername = target.username;
     const canonicalLower = String(canonicalUsername || '').toLowerCase();
     const aliasPrefix = canonicalLower ? canonicalLower + '_' : '';
@@ -80,9 +117,29 @@
   }`
     },
     {
+      name: 'await account overwrite confirmation for XML imports',
+      find: String.raw`  async function importProfileXmlText(text) { if (installImportedAccount(accountFromXml(text)) && dom.accountsModal.open) dom.accountsModal.close(); }`,
+      replace: String.raw`  async function importProfileXmlText(text) { if (await installImportedAccount(accountFromXml(text)) && dom.accountsModal.open) dom.accountsModal.close(); }`
+    },
+    {
+      name: 'await account overwrite confirmation for backup-code imports',
+      find: String.raw`  dom.applyImportBtn.onclick = () => {
+    try {
+      const pack = decodeBackup(dom.backupCode.value); if (!pack || pack.type !== 'critter-account-v3' || !pack.account) throw new Error('Invalid backup');
+      if (installImportedAccount(pack.account)) dom.backupModal.close();
+    } catch (_) { toast('That backup code is not valid'); }
+  };`,
+      replace: String.raw`  dom.applyImportBtn.onclick = async () => {
+    try {
+      const pack = decodeBackup(dom.backupCode.value); if (!pack || pack.type !== 'critter-account-v3' || !pack.account) throw new Error('Invalid backup');
+      if (await installImportedAccount(pack.account)) dom.backupModal.close();
+    } catch (_) { toast('That backup code is not valid'); }
+  };`
+    },
+    {
       name: 'import help explains overwrite behavior',
       find: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. It restores a separate local account with its profile, progress, stash, loadout, currency, settings, and statistics.';`,
-      replace: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. Any matching username or account ID is overwritten instead of creating _2 or another duplicate; different usernames restore as separate accounts.';`
+      replace: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. A matching username or account ID opens an overwrite confirmation instead of creating _2 or another duplicate; different usernames restore as separate accounts.';`
     },
     {
       name: 'enemy aggro on damage',
