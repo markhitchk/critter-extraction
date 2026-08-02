@@ -1,3 +1,4 @@
+// Enforced by npm run validate for PRs, releases, and Pages deployment.
 import fs from 'node:fs';
 import path from 'node:path';
 
