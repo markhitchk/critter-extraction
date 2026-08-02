@@ -46,6 +46,12 @@ const issueApi = fs.readFileSync('core/shared/github-issues.js', 'utf8');
 if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues/new')) failures.push('GitHub new-issue URL is missing');
 if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues')) failures.push('GitHub issue-viewer URL is missing');
 
+if (fs.existsSync('icon.svg')) failures.push('icon.svg: duplicate root icon must stay removed; use assets/branding/icon.svg');
+if (!fs.existsSync('assets/branding/icon.svg')) failures.push('assets/branding/icon.svg: canonical branding icon is missing');
+if (fs.existsSync('playwright.config.js')) failures.push('playwright.config.js: browser config must not be stored at repository root');
+if (!fs.existsSync('tests/browser/playwright.config.js')) failures.push('tests/browser/playwright.config.js: organized browser config is missing');
+if (pkg.scripts?.['test:browser'] !== 'playwright test --config=tests/browser/playwright.config.js') failures.push('package.json: test:browser must use the organized browser config');
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exit(1);
