@@ -17,10 +17,18 @@ The workflow validates required files and case-sensitive asset paths before ever
 
 ## Static-hosting behavior
 
-- Solo play, graphics, touch controls, profiles, inventory, and settings run entirely in the browser.
-- Save data uses browser-local storage and does not automatically move between devices.
-- Multiplayer uses the included PeerJS client, an external room-signaling service, and direct WebRTC connections. Some restrictive networks may still require a TURN relay, which GitHub Pages cannot provide.
+- Solo play, graphics, adaptive phone/tablet controls, mouse/keyboard controls, profiles, inventory, and settings run entirely in the browser.
+- Every device account has separate progress, stash, loadout, Petals, appearance, statistics, and settings in browser-local storage.
+- Use **Download Account** beside a profile to save its complete XML account file, then **Upload Account File** to restore it in another browser. These are portable local profiles, not secure cloud logins.
+- Multiplayer uses the included PeerJS client, secure PeerJS signaling, and STUN/TURN-assisted WebRTC connections. GitHub Pages supplies the required HTTPS origin; exceptionally restrictive networks can still block WebRTC.
 - No service worker is installed, so updating the repository cannot leave an old cached game worker behind.
+
+## Custom errors
+
+- GitHub Pages automatically serves the branded `404.html` when a path does not exist.
+- `error.html?code=500` is the general error center and supports 400, 403, 404, 408, 429, 500, 503, and offline states.
+- Error pages include retry, back, return-to-game, and copyable diagnostic actions without exposing account or stash data.
+- Startup and runtime boot failures continue to use the in-game diagnostic screen with a downloadable support report.
 
 ## Local check
 

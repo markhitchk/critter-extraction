@@ -10,6 +10,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const dist2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  const wrapAngle = value => Math.atan2(Math.sin(Number(value) || 0), Math.cos(Number(value) || 0));
   const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   const deepCopy = v => JSON.parse(JSON.stringify(v));
   const fmtTime = sec => `${String(Math.max(0, Math.floor(sec / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(sec % 60))).padStart(2, '0')}`;
@@ -193,6 +194,19 @@
     hudScale: 100, volume: 70, touchAlways: false
   };
 
+  function detectPhoneOrTablet() {
+    const nav = globalThis.navigator || {}, touchPoints = Number(nav.maxTouchPoints || 0);
+    if (!touchPoints) return false;
+    const ua = String(nav.userAgent || ''), platform = String(nav.platform || '');
+    const mobileUserAgent = !!nav.userAgentData?.mobile || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
+    const primaryCoarse = !!globalThis.matchMedia?.('(pointer: coarse)')?.matches;
+    const noHover = !!globalThis.matchMedia?.('(hover: none)')?.matches;
+    const screenWidth = Number(globalThis.screen?.width || globalThis.innerWidth || 0), screenHeight = Number(globalThis.screen?.height || globalThis.innerHeight || 0);
+    const shortSide = Math.min(screenWidth || Infinity, screenHeight || Infinity);
+    return mobileUserAgent || (primaryCoarse && noHover && shortSide <= 1366);
+  }
+  const inputDeviceProfile = { phoneOrTablet: detectPhoneOrTablet(), mode: detectPhoneOrTablet() ? 'touch' : 'mouse-keyboard' };
+
   const GRAPHICS_PROFILES = {
     low: {
       key: 'low', sphereLat: 6, sphereLon: 8, cylinderSides: 8, coneSides: 6, capsuleRings: 2, capsuleSides: 6, crystalSides: 5,
@@ -324,10 +338,12 @@
     try {
       db.schemaVersion = SAVE_SCHEMA_VERSION; db.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    } catch (e) { console.warn('Local save unavailable', e); return false; }
+    try {
       const account = activeAccount();
       if (account && typeof accountToXml === 'function') localStorage.setItem(PROFILE_XML_CACHE_KEY, accountToXml(account));
-      return true;
-    } catch (e) { console.warn('Local save unavailable', e); return false; }
+    } catch (e) { console.warn('Account recovery cache unavailable', e); }
+    return true;
   }
 
   const dom = Object.fromEntries([
@@ -423,14 +439,24 @@
       info.innerHTML = `<strong>${safeText(a.displayName)}</strong><small>@${safeText(a.username)} • Level ${levelForXP(a.xp)} • ${a.stats.extracts} extracts • ${formatPetals(a.petals)}</small>`;
       const actions = document.createElement('span'); actions.className = 'account-actions';
       const select = document.createElement('button'); select.className = 'secondary'; select.textContent = a.id === db.activeId ? 'Active' : 'Use';
-      select.disabled = a.id === db.activeId; select.onclick = () => { db.activeId = a.id; saveDB(); renderAccounts(); refreshAccountUI(); };
+      select.disabled = a.id === db.activeId; select.onclick = () => {
+        const previousActiveId = db.activeId; db.activeId = a.id;
+        if (!saveDB()) { db.activeId = previousActiveId; return toast('Account switch could not be saved'); }
+        renderAccounts(); refreshAccountUI();
+      };
       const edit = document.createElement('button'); edit.className = 'ghost'; edit.textContent = 'Edit'; edit.onclick = () => openProfileEditor(a.id);
-      const exp = document.createElement('button'); exp.className = 'ghost'; exp.textContent = 'Export XML'; exp.onclick = () => downloadProfileXml(a);
+      const exp = document.createElement('button'); exp.className = 'ghost'; exp.textContent = 'Download Account'; exp.title = 'Download this complete account as a restorable file'; exp.onclick = () => downloadProfileXml(a);
       const urlBtn = document.createElement('button'); urlBtn.className = 'ghost'; urlBtn.textContent = 'Copy Profile URL'; urlBtn.onclick = () => copyProfileUrl(a);
       actions.append(select, edit, exp, urlBtn);
       if (db.accounts.length > 1) {
         const del = document.createElement('button'); del.className = 'danger-button'; del.textContent = 'Delete';
-        del.onclick = () => { if (!confirm(`Delete ${a.displayName}'s device account?`)) return; db.accounts = db.accounts.filter(x => x.id !== a.id); if (db.activeId === a.id) db.activeId = db.accounts[0].id; saveDB(); renderAccounts(); refreshAccountUI(); };
+        del.onclick = () => {
+          if (!confirm(`Delete ${a.displayName}'s device account? Download it first if you may want it back.`)) return;
+          const previousAccounts = db.accounts, previousActiveId = db.activeId;
+          db.accounts = db.accounts.filter(x => x.id !== a.id); if (db.activeId === a.id) db.activeId = db.accounts[0].id;
+          if (!saveDB()) { db.accounts = previousAccounts; db.activeId = previousActiveId; return toast('Account deletion could not be saved'); }
+          renderAccounts(); refreshAccountUI();
+        };
         actions.append(del);
       }
       row.append(av, info, actions); dom.accountList.append(row);
@@ -453,12 +479,14 @@
     const displayName = safeText(dom.displayNameInput.value, 24);
     if (!username || !displayName) return toast('Enter a valid username and display name');
     if (db.accounts.some(a => a.username.toLowerCase() === username.toLowerCase() && a.id !== editingAccountId)) return toast('That username already exists on this device');
+    const previousDb = deepCopy(db);
     if (editingAccountId) {
       const a = db.accounts.find(x => x.id === editingAccountId); Object.assign(a, { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar });
     } else {
       const a = makeAccount(displayName, username); a.bio = safeText(dom.bioInput.value, 120); a.avatar = pendingAvatar; db.accounts.push(a); db.activeId = a.id;
     }
-    saveDB(); dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved');
+    if (!saveDB()) { db = previousDb; refreshAccountUI(); renderAccounts(); return toast('Account could not be saved: browser storage may be full'); }
+    dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved');
   });
   [dom.displayNameInput, dom.usernameInput].forEach(field => field.addEventListener('input', () => setAvatar(dom.editAvatarPreview, { displayName: dom.displayNameInput.value, username: dom.usernameInput.value, avatar: pendingAvatar })));
   dom.avatarInput.addEventListener('change', async () => {
@@ -500,7 +528,7 @@
   }
   function accountToXml(account) {
     const doc = document.implementation.createDocument('', 'CritterExtractionProfile', null);
-    const root = doc.documentElement; root.setAttribute('version', '5'); root.setAttribute('studio', "Harley's Studios");
+    const root = doc.documentElement; root.setAttribute('version', '5'); root.setAttribute('studio', "Harley's Studios"); root.setAttribute('gameVersion', GAME_VERSION); root.setAttribute('exportedAt', new Date().toISOString());
     const add = (name, value) => { const node = doc.createElement(name); node.textContent = String(value ?? ''); root.appendChild(node); return node; };
     add('DisplayName', account.displayName); add('Username', account.username); add('Bio', account.bio || '');
     if (/^https?:/i.test(account.avatar || '')) add('AvatarURL', account.avatar);
@@ -532,12 +560,20 @@
     return a;
   }
   function installImportedAccount(account) {
-    const a = normalizeImportedAccount(account); db.accounts.push(a); db.activeId = a.id; saveDB(); refreshAccountUI(); renderAccounts(); toast('XML profile imported');
+    const a = normalizeImportedAccount(account), previousActiveId = db.activeId;
+    db.accounts.push(a); db.activeId = a.id;
+    if (!saveDB()) {
+      db.accounts = db.accounts.filter(x => x.id !== a.id); db.activeId = previousActiveId;
+      toast('Account restore failed: browser storage may be full'); return false;
+    }
+    refreshAccountUI(); renderAccounts(); toast('Separate account restored'); return true;
   }
   function downloadProfileXml(account) {
-    const xml = accountToXml(account), blob = new Blob([xml], { type:'application/xml;charset=utf-8' }), url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = `${safeText(account.username,18) || 'critter'}-profile.xml`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500);
-    toast('Profile saved as XML');
+    try {
+      const xml = accountToXml(account), blob = new Blob([xml], { type:'application/xml;charset=utf-8' }), url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url; link.download = `${safeText(account.username,18) || 'critter'}-critter-extraction-account.xml`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast('Full account downloaded');
+    } catch (error) { console.error(error); toast('Account download failed: try Copy Profile URL'); }
   }
   function profileUrlFor(account) {
     const base = location.href.split('#')[0];
@@ -551,10 +587,10 @@
   async function importProfileUrlValue(value) {
     const raw=String(value||'').trim(), hash=raw.match(/[#&]profile=([^&]+)/i);
     if(hash){const xml=decodeUtf8Base64Url(decodeURIComponent(hash[1]));await importProfileXmlText(xml);return;}
-    if(!/^https?:\/\//i.test(raw))throw new Error('Not a profile URL');
+    if(!/^https?:\/\//i.test(raw))throw new Error('Not an account URL');
     const response=await fetch(raw,{mode:'cors',cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);await importProfileXmlText(await response.text());
   }
-  async function importProfileXmlText(text) { installImportedAccount(accountFromXml(text)); if (dom.accountsModal.open) dom.accountsModal.close(); }
+  async function importProfileXmlText(text) { if (installImportedAccount(accountFromXml(text)) && dom.accountsModal.open) dom.accountsModal.close(); }
 
   // -------------------- Profile backup, customization, settings --------------------
   function encodeBackup(data) {
@@ -572,14 +608,13 @@
     dom.accountsModal.close(); dom.backupModal.showModal();
   }
   function openBackupImport() {
-    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. Imported data is stored only in this browser.';
+    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. It restores a separate local account with its profile, progress, stash, loadout, currency, settings, and statistics.';
     dom.backupCode.readOnly = false; dom.backupCode.value = ''; dom.applyImportBtn.hidden = false; dom.accountsModal.close(); dom.backupModal.showModal();
   }
   dom.applyImportBtn.onclick = () => {
     try {
       const pack = decodeBackup(dom.backupCode.value); if (!pack || pack.type !== 'critter-account-v3' || !pack.account) throw new Error('Invalid backup');
-      const a = normalizeImportedAccount(pack.account);
-      db.accounts.push(a); db.activeId = a.id; saveDB(); dom.backupModal.close(); refreshAccountUI(); toast('Account imported');
+      if (installImportedAccount(pack.account)) dom.backupModal.close();
     } catch (_) { toast('That backup code is not valid'); }
   };
 
@@ -685,14 +720,27 @@
     }
   }
   function applySettings() {
-    const s = activeAccount().settings, showTouch = touchControlsEnabled(); document.documentElement.style.setProperty('--hud-scale', s.hudScale / 100); document.documentElement.classList.toggle('compat-mode', !!s.compatibilityMode);
-    dom.controlHint.style.display = s.showHints ? '' : 'none'; dom.touchControls.hidden = !showTouch; document.body.classList.toggle('touch-ui', showTouch);
+    const s = activeAccount().settings; document.documentElement.style.setProperty('--hud-scale', s.hudScale / 100); document.documentElement.classList.toggle('compat-mode', !!s.compatibilityMode);
+    dom.controlHint.style.display = s.showHints ? '' : 'none'; applyInputVisibility();
     refreshGraphicsDescription(s.quality);
     if (renderer) renderer.resize();
   }
   function touchControlsEnabled() {
     const settings = activeAccount()?.settings || DEFAULT_SETTINGS;
-    return !!(settings.touchAlways || Number(globalThis.navigator?.maxTouchPoints || 0) > 0 || globalThis.matchMedia?.('(any-pointer:coarse)')?.matches || globalThis.matchMedia?.('(pointer:coarse)')?.matches);
+    return !!(settings.touchAlways || (inputDeviceProfile.phoneOrTablet && inputDeviceProfile.mode === 'touch'));
+  }
+  function usingTouchInput() {
+    return inputDeviceProfile.mode === 'touch' && touchControlsEnabled();
+  }
+  function applyInputVisibility() {
+    const showTouch = touchControlsEnabled();
+    dom.touchControls.hidden = !showTouch; document.body.classList.toggle('touch-ui', showTouch); document.body.dataset.inputMode = inputDeviceProfile.mode;
+  }
+  function setInputMode(mode) {
+    if (!['touch','mouse-keyboard'].includes(mode) || inputDeviceProfile.mode === mode) return;
+    inputDeviceProfile.mode = mode;
+    if (mode === 'mouse-keyboard') resetTouchControls();
+    applyInputVisibility();
   }
   function persistSettingsForm(showMessage = false) {
     const s = activeAccount().settings;
@@ -736,14 +784,14 @@
   $('#legacyImportBtn').onclick = openBackupImport;
   $('#profileXmlFileInput').addEventListener('change', async e => {
     const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return toast('Profile XML must be under 2 MB');
-    try { await importProfileXmlText(await file.text()); } catch (err) { console.error(err); toast('That XML profile is not valid'); }
+    if (file.size > 2 * 1024 * 1024) return toast('Account file must be under 2 MB');
+    try { await importProfileXmlText(await file.text()); } catch (err) { console.error(err); toast('That account file is not valid'); }
     e.target.value = '';
   });
   $('#importProfileUrlBtn').onclick = async () => {
-    const url = String($('#profileXmlUrlInput').value || '').trim(); if (!url) return toast('Paste an XML or Profile URL');
+    const url = String($('#profileXmlUrlInput').value || '').trim(); if (!url) return toast('Paste an account or Profile URL');
     try { await importProfileUrlValue(url); }
-    catch (err) { console.error(err); toast('Could not import that profile URL'); }
+    catch (err) { console.error(err); toast('Could not import that account URL'); }
   };
 
   // -------------------- Inventory interface --------------------
@@ -1312,7 +1360,7 @@
   ];
   let world = { statics: [], cover: [], blockers: [], enemies: [], pickups: [], chests: [], effects: [], safeZones: [{x:0,z:0,r:8.5,label:'Rookie Camp',kind:'spawn'}], landmarks:[], spawn:{x:0,z:0}, spawnPoints:[], route:[], extract: { x: 24, z: 24 }, map:MAP_VARIANTS[0], seed: 1, validation:null };
   let players = {};
-  const input = { keys: new Set(), fire: false, fireQueued: 0, aim: false, interact: false, shotSeq: 0, useSeq: 0, reloadSeq: 0, healSeq: 0 };
+  const input = { keys: new Set(), fire: false, fireQueued: 0, aim: false, interact: false, shotSeq: 0, jumpSeq: 0, useSeq: 0, reloadSeq: 0, healSeq: 0 };
   let lastFrame = performance.now(), cameraMode = 'third', shoulderSide = 1, cameraRigEye = null, cameraRigTime = performance.now(), paused = false, pauseMenuOpen = false, pauseSubmenuOpen = false, extracting = 0, currentInteract = null, lastShotDebug = null;
   let guestInputs = Object.create(null), lastGuestShots = Object.create(null), localPlayerId = 'host';
   function seeded(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; }; }
@@ -1356,7 +1404,7 @@
     const loadoutId = LOADOUTS[profile?.loadoutId] ? profile.loadoutId : defaultLoadoutId;
     const kit = LOADOUTS[loadoutId], weaponId = WEAPONS[profile?.equippedWeaponId] ? profile.equippedWeaponId : kit.weapon, armorId = ARMORS[profile?.equippedArmorId] ? profile.equippedArmorId : kit.armorId;
     const weapon = WEAPONS[weaponId], armor = ARMORS[armorId];
-    return { id, x, y: .9, z, yaw: 0, pitch: -.08, cameraMode:profile?.settings?.cameraMode||'third', shoulderSide:profile?.settings?.shoulderSide==='left'?-1:1, hp: 100, maxShield: armor.shield, shield: armor.shield, armorId, alive: true, speed: kit.speed + armor.speedMod, speedBoost: 0, weaponId, mag: weapon.mag, reload: 0, cooldown: 0, kills: 0, remote, profile: { displayName: profile.displayName, username: profile.username || '', avatar: safeAvatar(profile.avatar), appearance: profile.appearance || activeAccount().appearance, loadoutId, equippedWeaponId: weaponId, equippedArmorId: armorId }, invuln: 0, spawnProtection: 3, walkTime: 0, moveBlend: 0, weaponKick: 0, muzzleFlash: 0, crouch: 0 };
+    return { id, x, y: .9, z, yaw: 0, pitch: -.08, velocityY: 0, grounded: true, lastJumpSeq: 0, cameraMode:profile?.settings?.cameraMode||'third', shoulderSide:profile?.settings?.shoulderSide==='left'?-1:1, hp: 100, maxShield: armor.shield, shield: armor.shield, armorId, alive: true, speed: kit.speed + armor.speedMod, speedBoost: 0, weaponId, mag: weapon.mag, reload: 0, cooldown: 0, kills: 0, remote, profile: { displayName: profile.displayName, username: profile.username || '', avatar: safeAvatar(profile.avatar), appearance: profile.appearance || activeAccount().appearance, loadoutId, equippedWeaponId: weaponId, equippedArmorId: armorId }, invuln: 0, spawnProtection: 3, walkTime: 0, moveBlend: 0, weaponKick: 0, muzzleFlash: 0, crouch: 0 };
   }
   function generateWorld(seed) {
     const normalizedSeed=seed>>>0,r=seeded(normalizedSeed),variantIndex=((normalizedSeed^(normalizedSeed>>>16))>>>0)%MAP_VARIANTS.length,variant=MAP_VARIANTS[variantIndex];
@@ -1638,8 +1686,20 @@
     const values = [e.code, String(e.key || '').toLowerCase()].filter(Boolean);
     values.forEach(value => down ? input.keys.add(value) : input.keys.delete(value));
   };
+  window.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') setInputMode('touch');
+    else if (e.pointerType === 'mouse' || e.pointerType === 'pen') setInputMode('mouse-keyboard');
+  }, true);
+  window.addEventListener('mousemove', e => {
+    if (e.sourceCapabilities?.firesTouchEvents) return;
+    if (Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0) > 0) setInputMode('mouse-keyboard');
+  }, { passive:true });
+  window.addEventListener('orientationchange', () => {
+    inputDeviceProfile.phoneOrTablet = detectPhoneOrTablet(); applyInputVisibility();
+  }, { passive:true });
   window.addEventListener('keydown', e => {
     if (isTypingTarget(e.target)) return;
+    setInputMode('mouse-keyboard');
     if (match && ['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
     if (!match) return;
     if (e.code === 'Escape' && !e.repeat) {
@@ -1653,13 +1713,14 @@
     if ((e.code === 'KeyI' || e.code === 'Tab') && !e.repeat) { if (dom.inventoryModal.open) { dom.inventoryModal.close(); resumePointer(); } else openInventory('match'); }
     if (e.code === 'KeyV' && !e.repeat) toggleCamera();
     if (e.code === 'KeyB' && !e.repeat) toggleShoulder();
-    if ((e.code === 'KeyF' || e.code === 'Space') && !e.repeat) queueShot();
+    if (e.code === 'KeyF' && !e.repeat) queueShot();
+    if (e.code === 'Space' && !e.repeat) input.jumpSeq++;
     if (e.code === 'KeyR' && !e.repeat) { input.reloadSeq++; reloadPlayer(getLocalPlayer()); }
     if (e.code === 'KeyQ' && !e.repeat) useQuickItem(countItem(backpack,'medkit')?'medkit':'bandage');
     if (/^Digit[1-4]$/.test(e.code) && !e.repeat) quickUseNumber(Number(e.code.slice(-1))-1);
     if (e.code === 'KeyE') input.interact = true;
   });
-  window.addEventListener('keyup', e => { if (isTypingTarget(e.target)) return; rememberKey(e, false); if(e.code==='KeyE'||String(e.key).toLowerCase()==='e')input.interact=false; if(e.code==='KeyF'||e.code==='Space'||String(e.key).toLowerCase()==='f'||e.key===' ')input.fire=false; });
+  window.addEventListener('keyup', e => { if (isTypingTarget(e.target)) return; rememberKey(e, false); if(e.code==='KeyE'||String(e.key).toLowerCase()==='e')input.interact=false; if(e.code==='KeyF'||String(e.key).toLowerCase()==='f')input.fire=false; });
   window.addEventListener('blur', () => { input.keys.clear(); input.fire=false; input.fireQueued=0; input.aim=false; input.interact=false; resetTouchControls(); });
   let dragLooking=false,lastDragX=0,lastDragY=0,suppressNextUnlockPause=false,lastPointerPauseAt=0;
   function armMouseCapture(){if(dom.playOverlay)dom.playOverlay.hidden=true;}
@@ -1667,14 +1728,14 @@
     if(!match||paused||dom.inventoryModal.open||match.ended)return;
     input.fire=true; input.fireQueued=Math.min(4,(input.fireQueued||0)+1); input.shotSeq++;
   }
-  async function requestGamePointer(){if(!match||paused)return;if(touchControlsEnabled()){dom.playOverlay.hidden=true;dom.gameCanvas.focus();return;}dom.gameCanvas.focus();if(dom.gameCanvas.requestPointerLock){try{const result=dom.gameCanvas.requestPointerLock({unadjustedMovement:false});if(result?.catch)await result;}catch(_){try{await dom.gameCanvas.requestPointerLock();}catch(__){dragLooking=true;dom.playOverlay.hidden=true;toast('Mouse capture blocked — drag to aim; click, F, or Space to shoot');}}}else{dragLooking=true;dom.playOverlay.hidden=true;toast('Drag to aim; click, F, or Space to shoot');}}
+  async function requestGamePointer(){if(!match||paused)return;if(usingTouchInput()){dom.playOverlay.hidden=true;dom.gameCanvas.focus();return;}dom.gameCanvas.focus();if(dom.gameCanvas.requestPointerLock){try{const result=dom.gameCanvas.requestPointerLock({unadjustedMovement:false});if(result?.catch)await result;}catch(_){try{await dom.gameCanvas.requestPointerLock();}catch(__){dragLooking=true;dom.playOverlay.hidden=true;toast('Mouse capture blocked — drag to aim; click or press F to fire, Space to jump');}}}else{dragLooking=true;dom.playOverlay.hidden=true;toast('Drag to aim; click or press F to fire, Space to jump');}}
   dom.captureBtn.addEventListener('click',requestGamePointer);
   document.addEventListener('pointerlockchange',()=>{
     if(!match)return;const locked=document.pointerLockElement===dom.gameCanvas;
     dom.playOverlay.hidden=true;
     if(locked){suppressNextUnlockPause=false;return;}
     if(suppressNextUnlockPause){suppressNextUnlockPause=false;return;}
-    if(touchControlsEnabled())return;
+    if(usingTouchInput())return;
     // Chrome reserves Esc to release pointer lock. Treat that release as opening the pause menu.
     if(!paused&&!pauseMenuOpen&&!dom.inventoryModal.open&&!dom.settingsModal.open&&!dom.helpModal.open){lastPointerPauseAt=performance.now();openPauseMenu();}
   });
@@ -1695,9 +1756,9 @@
     const locked=document.pointerLockElement===dom.gameCanvas;if(!locked&&!dragLooking)return;
     const p=getLocalPlayer(); if(!p)return; const s=activeAccount().settings.sensitivity*.0022;
     const mx=locked?e.movementX:e.clientX-lastDragX,my=locked?e.movementY:e.clientY-lastDragY;lastDragX=e.clientX;lastDragY=e.clientY;
-    p.yaw += mx*s; p.pitch += my*s*(activeAccount().settings.invertY?1:-1); p.pitch=clamp(p.pitch,-1.25,1.15);
+    p.yaw = wrapAngle(p.yaw + mx*s); p.pitch += my*s*(activeAccount().settings.invertY?1:-1); p.pitch=clamp(p.pitch,-1.25,1.15);
   });
-  function resumePointer(){if(!match||pauseMenuOpen||paused)return;if(dom.playOverlay)dom.playOverlay.hidden=true;if(!touchControlsEnabled())requestGamePointer();}
+  function resumePointer(){if(!match||pauseMenuOpen||paused)return;if(dom.playOverlay)dom.playOverlay.hidden=true;if(!usingTouchInput())requestGamePointer();}
   function toggleCamera(){
     cameraMode=cameraMode==='first'?'third':'first';cameraRigEye=null;cameraRigTime=performance.now();
     const p=getLocalPlayer();if(p)p.cameraMode=cameraMode;
@@ -1747,6 +1808,7 @@
   bindTouchTap('touchInventory',()=>{resetTouchControls();openInventory('match');});
   bindTouchTap('touchCamera',toggleCamera);
   bindTouchTap('touchShoulder',toggleShoulder);
+  bindTouchTap('touchJump',()=>input.jumpSeq++);
   bindTouchTap('touchReload',()=>{input.reloadSeq++;reloadPlayer(getLocalPlayer());});
   bindTouchTap('touchHeal',()=>useQuickItem(countItem(backpack,'medkit')?'medkit':'bandage'));
   bindTouchTap('touchCrouch',()=>{touchCrouched=!touchCrouched;if(touchCrouched)input.keys.add('KeyC');else input.keys.delete('KeyC');const button=$('#touchCrouch');button?.classList.toggle('pressed',touchCrouched);button?.setAttribute('aria-pressed',String(touchCrouched));});
@@ -1761,7 +1823,7 @@
     dom.moveStick.addEventListener('pointerup',stopMove);dom.moveStick.addEventListener('pointercancel',stopMove);dom.moveStick.addEventListener('lostpointercapture',stopMove);
     const stopLook=e=>{if(touchLookPointer===null||(e&&e.pointerId!==touchLookPointer))return;touchLookPointer=null;e?.preventDefault();};let lx=0,ly=0;
     dom.lookArea.addEventListener('pointerdown',e=>{if(!match||paused||touchLookPointer!==null||(e.pointerType==='mouse'&&e.button!==0))return;e.preventDefault();touchLookPointer=e.pointerId;lx=e.clientX;ly=e.clientY;try{dom.lookArea.setPointerCapture(touchLookPointer);}catch(_){ }});
-    dom.lookArea.addEventListener('pointermove',e=>{if(e.pointerId!==touchLookPointer||!match||paused)return;e.preventDefault();const p=getLocalPlayer();if(!p)return;const s=activeAccount().settings.sensitivity*.006;p.yaw+=(e.clientX-lx)*s;p.pitch+=(e.clientY-ly)*s*(activeAccount().settings.invertY?1:-1);p.pitch=clamp(p.pitch,-1.25,1.15);lx=e.clientX;ly=e.clientY;});
+    dom.lookArea.addEventListener('pointermove',e=>{if(e.pointerId!==touchLookPointer||!match||paused)return;e.preventDefault();const p=getLocalPlayer();if(!p)return;const s=activeAccount().settings.sensitivity*.006;p.yaw=wrapAngle(p.yaw+(e.clientX-lx)*s);p.pitch+=(e.clientY-ly)*s*(activeAccount().settings.invertY?1:-1);p.pitch=clamp(p.pitch,-1.25,1.15);lx=e.clientX;ly=e.clientY;});
     dom.lookArea.addEventListener('pointerup',stopLook);dom.lookArea.addEventListener('pointercancel',stopLook);dom.lookArea.addEventListener('lostpointercapture',stopLook);
   }
   setupTouchStick();
@@ -1879,10 +1941,14 @@
     if(!p||!p.alive)return; const weapon=weaponFor(p);
     p.cooldown=Math.max(0,p.cooldown-dt);p.invuln=Math.max(0,p.invuln-dt);p.spawnProtection=Math.max(0,(p.spawnProtection||0)-dt);p.speedBoost=Math.max(0,(p.speedBoost||0)-dt);p.weaponKick=Math.max(0,(p.weaponKick||0)-dt*7.5);p.muzzleFlash=Math.max(0,(p.muzzleFlash||0)-dt);
     if(p.reload>0){p.reload-=dt;if(p.reload<=0)finishReload(p);}
-    if(src.yaw!=null){p.yaw=src.yaw;p.pitch=src.pitch;}if(src.aim!=null)p.aim=!!src.aim;if(src.cameraMode==='first'||src.cameraMode==='third')p.cameraMode=src.cameraMode;if(src.shoulderSide===-1||src.shoulderSide===1)p.shoulderSide=src.shoulderSide;
+    if(src.yaw!=null){p.yaw=wrapAngle(src.yaw);p.pitch=clamp(Number(src.pitch)||0,-1.25,1.15);}if(src.aim!=null)p.aim=!!src.aim;if(src.cameraMode==='first'||src.cameraMode==='third')p.cameraMode=src.cameraMode;if(src.shoulderSide===-1||src.shoulderSide===1)p.shoulderSide=src.shoulderSide;
     const mv=movementFromInput(src,p),boost=p.speedBoost>0?1.22:1;
+    const jumpSeq=Math.max(0,Math.floor(Number(src.jumpSeq)||0));
+    if(jumpSeq!==p.lastJumpSeq){p.lastJumpSeq=jumpSeq;if(p.grounded&&!mv.crouch){p.velocityY=5.7;p.grounded=false;}}
+    p.velocityY=(Number(p.velocityY)||0)-15.5*dt;p.y+=(Number(p.velocityY)||0)*dt;
+    if(p.y<=.9){p.y=.9;p.velocityY=0;p.grounded=true;}else p.grounded=false;
     p.crouch=lerp(p.crouch||0,mv.crouch?1:0,Math.min(1,dt*12));
-    const speed=p.speed*boost*(mv.sprint&&!mv.crouch?1.45:mv.crouch?.58:1),moving=Math.hypot(mv.x,mv.z)>0.05;
+    const speed=p.speed*boost*(mv.sprint&&!mv.crouch?1.45:mv.crouch?.58:1)*(p.grounded?1:.78),moving=Math.hypot(mv.x,mv.z)>0.05;
     moveEntityWithCollisions(p,mv.x*speed*dt,mv.z*speed*dt,.48);
     p.moveBlend=lerp(p.moveBlend||0,moving?1:0,Math.min(1,dt*9));if(moving)p.walkTime=(p.walkTime||0)+dt*(mv.sprint?12:mv.crouch?5:8);
     const wantsFire=(src.fireQueued||0)>0||(weapon.auto&&!!src.fire);
@@ -2471,10 +2537,12 @@
     const f=cam.forward,r=cam.right,u=cam.up||[0,1,0],ap=p.profile?.appearance||activeAccount().appearance;
     const speciesStyle=SPECIES[ap.species]||SPECIES.puppy,species=ap.species||'puppy',body=ap.bodyColor,accent=ap.accentColor,paw=speciesStyle.paw,w=weaponFor(p),armColor=species==='panda'||species==='raccoon'?accent:body,pawMesh=species==='bunny'?'capsule':'sphere',pawW=species==='bear'?.26:species==='bunny'?.20:.22,pawH=species==='bunny'?.25:species==='bear'?.21:.18;
     const ads=input.aim?1:0,kick=(p.weaponKick||0)*.12,bob=Math.sin(p.walkTime||0)*.012*(p.moveBlend||0),lift=Math.abs(Math.cos(p.walkTime||0))*.008*(p.moveBlend||0);
-    const baseForward=lerp(2.72,2.40,ads)-kick,baseRight=lerp(.34,0,ads),baseUp=lerp(-.48,-.22,ads)+lift;
+    // Keep the view-model close to the critter's chest instead of making the
+    // paws look detached or fully stretched across the screen.
+    const baseForward=lerp(2.10,1.88,ads)-kick,baseRight=lerp(.30,0,ads),baseUp=lerp(-.45,-.21,ads)+lift;
     const point=(fo,ri,up)=>[cam.eye[0]+f[0]*fo+r[0]*ri+u[0]*up,cam.eye[1]+f[1]*fo+r[1]*ri+u[1]*up,cam.eye[2]+f[2]*fo+r[2]*ri+u[2]*up];
-    const leftArm=point(1.72,-.38,-.58-bob),rightArm=point(1.66,.43,-.56+bob),leftPaw=point(2.10,-.24,-.40),rightPaw=point(2.05,.28,-.39);
-    renderer.draw('capsule',leftArm[0],leftArm[1],leftArm[2],.17,.50,.17,armColor,p.yaw,-p.pitch,-.26);renderer.draw('capsule',rightArm[0],rightArm[1],rightArm[2],.17,.50,.17,armColor,p.yaw,-p.pitch,.28);
+    const leftArm=point(1.04,-.34,-.56-bob),rightArm=point(1.00,.38,-.54+bob),leftPaw=point(1.55,-.22,-.39),rightPaw=point(1.51,.25,-.38);
+    renderer.draw('capsule',leftArm[0],leftArm[1],leftArm[2],.17,.42,.17,armColor,p.yaw,-p.pitch,-.26);renderer.draw('capsule',rightArm[0],rightArm[1],rightArm[2],.17,.42,.17,armColor,p.yaw,-p.pitch,.28);
     renderer.draw('capsule',leftArm[0]-f[0]*.13,leftArm[1]-f[1]*.13,leftArm[2]-f[2]*.13,.19,.22,.19,accent,p.yaw,-p.pitch,-.26);renderer.draw('capsule',rightArm[0]-f[0]*.13,rightArm[1]-f[1]*.13,rightArm[2]-f[2]*.13,.19,.22,.19,accent,p.yaw,-p.pitch,.28);
     renderer.draw(pawMesh,leftPaw[0],leftPaw[1],leftPaw[2],pawW,pawH,.23,paw,p.yaw,-p.pitch);renderer.draw(pawMesh,rightPaw[0],rightPaw[1],rightPaw[2],pawW,pawH,.23,paw,p.yaw,-p.pitch);
     if(species==='kitty'||species==='fox'||species==='redpanda'){for(const q of [leftPaw,rightPaw])for(const side of [-1,0,1])renderer.draw('cone',q[0]+r[0]*side*.07+f[0]*.12,q[1]+r[1]*side*.07+f[1]*.12,q[2]+r[2]*side*.07+f[2]*.12,.035,.12,.035,'#fff4df',p.yaw,-p.pitch,Math.PI/2);}else if(species==='bunny'){for(const q of [leftPaw,rightPaw])renderer.draw('capsule',q[0]+f[0]*.08,q[1]+f[1]*.08,q[2]+f[2]*.08,.12,.18,.08,'#efadc7',p.yaw,-p.pitch);}else if(species==='panda'){for(const q of [leftPaw,rightPaw])renderer.draw('sphere',q[0]+f[0]*.08,q[1]+f[1]*.08,q[2]+f[2]*.08,.12,.10,.07,'#292b38',p.yaw,-p.pitch);}else if(species==='raccoon'){for(const q of [leftPaw,rightPaw])renderer.draw('cube',q[0]+f[0]*.08,q[1]+f[1]*.08,q[2]+f[2]*.08,.16,.05,.08,'#353846',p.yaw,-p.pitch);}else{for(const q of [leftPaw,rightPaw])renderer.draw('sphere',q[0]+f[0]*.08,q[1]+f[1]*.08,q[2]+f[2]*.08,.11,.09,.07,accent,p.yaw,-p.pitch);}
@@ -2625,7 +2693,7 @@
     netInputClock += dt;
     if (netInputClock >= .04) {
       netInputClock = 0;
-      sendNet({type:'input', keys:[...input.keys], fire:input.fire, shotSeq:input.shotSeq, aim:input.aim, interact:input.interact, yaw:p.yaw, pitch:p.pitch, cameraMode, shoulderSide, berries:countItem(backpack,'moonberry'), reloadSeq:input.reloadSeq});
+      sendNet({type:'input', keys:[...input.keys], fire:input.fire, shotSeq:input.shotSeq, jumpSeq:input.jumpSeq, aim:input.aim, interact:input.interact, yaw:p.yaw, pitch:p.pitch, cameraMode, shoulderSide, berries:countItem(backpack,'moonberry'), reloadSeq:input.reloadSeq});
     }
   }
   function frame(now) {
@@ -2716,7 +2784,8 @@
   function currentRoster(){const r=normalizeRoster(lobbyProfiles);if(networkRole==='host'){r.host=profilePacket();}else if(networkRole==='guest'){if(assignedGuestId)r[assignedGuestId]=profilePacket();else if(!Object.keys(r).length)r.guest1=profilePacket();}else if(!r.host)r.host=profilePacket();return r;}
   function setNetworkStatus(role,text,state='',help=''){const status=role==='host'?dom.hostNetworkStatus:dom.joinNetworkStatus,dot=role==='host'?dom.hostNetworkDot:dom.joinNetworkDot,helper=role==='host'?dom.hostNetworkHelp:dom.joinNetworkHelp;if(status)status.textContent=text;if(dot)dot.className=state;if(helper)helper.textContent=help||'';}
   function ensurePeerJs(){if(window.Peer)return Promise.resolve(window.Peer);if(peerJsPromise)return peerJsPromise;peerJsPromise=new Promise((resolve,reject)=>{let i=0;const next=()=>{if(window.Peer)return resolve(window.Peer);if(i>=PEERJS_SOURCES.length)return reject(new Error('Online room service library could not load'));const script=document.createElement('script');script.src=PEERJS_SOURCES[i++];script.async=true;script.crossOrigin='anonymous';script.dataset.optionalNetworkScript='true';script.onload=()=>window.Peer?resolve(window.Peer):(script.remove(),next());script.onerror=()=>{script.remove();next();};document.head.appendChild(script);};next();}).catch(err=>{peerJsPromise=null;throw err;});return peerJsPromise;}
-  function peerOptions(){return {debug:1,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};}
+  function peerOptions(){return {host:'0.peerjs.com',port:443,path:'/',secure:true,key:'peerjs',debug:1,config:{iceCandidatePoolSize:4,iceTransportPolicy:'all',iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}]}};}
+  function coOpReadinessError(){if(globalThis.navigator?.onLine===false)return 'You are offline. Reconnect before using online co-op.';if(!globalThis.RTCPeerConnection)return 'This browser does not provide the WebRTC data channels required for co-op.';if(location.protocol==='http:')return 'Online co-op requires HTTPS. Open the GitHub Pages address instead of an insecure copy.';return '';}
   function cleanJoinPin(){return String(dom.joinRoomPin?.value||'').replace(/\D/g,'').slice(0,6);}
   function copyText(text,label){if(!text)return toast(`No ${label.toLowerCase()} is ready`);const fallback=()=>{const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();document.execCommand('copy');area.remove();toast(`${label} copied`);};if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast(`${label} copied`)).catch(fallback);else fallback();}
   function makeAdapter(conn){return {conn,get readyState(){return conn.open?'open':(conn._closed?'closed':'connecting');},send(data){conn.send(data);},close(){conn.close();}};}
@@ -2739,13 +2808,13 @@
   function attachHostConnection(conn,playerId){const adapter=makeAdapter(conn);hostChannels.set(playerId,adapter);let opened=false;const onOpen=()=>{if(opened||hostChannels.get(playerId)!==adapter)return;opened=true;setNetworkStatus('host',`${hostChannels.size} player${hostChannels.size===1?'':'s'} connected`,'connected',`Lobby has ${hostChannels.size+1} of ${MAX_PLAYERS} players.`);sendVia(adapter,{type:'welcome',playerId,hostProfile:profilePacket(),roster:currentRoster(),rules:normalizeRoomRules(roomRules),maxPlayers:MAX_PLAYERS});updateHostStartButton();renderLobbyRoster();};conn.on('open',onOpen);conn.on('data',data=>{try{handleNet(typeof data==='string'?JSON.parse(data):data,playerId);}catch(err){console.warn('Bad network message',err);}});conn.on('close',()=>{if(hostChannels.get(playerId)===adapter)hostChannels.delete(playerId);delete guestInputs[playerId];delete lastGuestShots[playerId];delete lobbyProfiles[playerId];broadcastRoster();setNetworkStatus('host',hostChannels.size?'Player disconnected — room still open':'Room ready — waiting for players',hostChannels.size?'connected':'working',`Lobby has ${hostChannels.size+1} of ${MAX_PLAYERS} players.`);if(match&&!match.ended){const departed=players[playerId]?.profile?.displayName||'A player';delete players[playerId];renderSquadHUD();toast(`${departed} disconnected`);}});conn.on('error',err=>console.error('Peer connection error',err));if(conn.open)setTimeout(onOpen,0);}
   function attachGuestConnection(conn){const adapter=makeAdapter(conn);guestChannel=adapter;let opened=false;const onOpen=()=>{if(opened||guestChannel!==adapter)return;opened=true;joinBusy=false;setNetworkStatus('join','Connected — joining lobby','connected','Loading player profiles…');sendVia(adapter,{type:'profile',profile:profilePacket()});refreshJoinAction();};conn.on('open',onOpen);conn.on('data',data=>{try{handleNet(typeof data==='string'?JSON.parse(data):data,'host');}catch(err){console.warn('Bad network message',err);}});conn.on('close',()=>{if(guestChannel===adapter)guestChannel=null;joinBusy=false;setNetworkStatus('join','Connection closed','','Enter the room code again to reconnect.');refreshJoinAction();if(match&&!match.ended)toast('Disconnected from host');});conn.on('error',err=>{console.error('Peer connection error',err);joinBusy=false;setNetworkStatus('join','Connection error','','The network may be blocking the direct WebRTC connection.');refreshJoinAction();});if(conn.open)setTimeout(onOpen,0);}
   function peerErrorText(err){if(err?.type==='peer-unavailable')return ['Room not found','Check the six-digit code and make sure the host room is still open.'];if(err?.type==='unavailable-id')return ['Room code already in use','Creating a different six-digit code…'];if(['network','server-error','socket-error','socket-closed'].includes(err?.type))return ['Room service unavailable','Check the internet connection and try again.'];return ['Connection failed',safeText(err?.message||'Try again or create a new room.',120)];}
-  async function createHost(){closePeer();syncHostRulesFromUI();networkRole='host';lobbyProfiles={host:profilePacket()};renderLobbyRoster();const session=networkSession;if(!dom.hostModal.open)dom.hostModal.showModal();if(dom.hostRoomPin)dom.hostRoomPin.textContent='------';setNetworkStatus('host','Connecting to room service','working','Creating a six-digit online room for up to four players…');try{const PeerCtor=await ensurePeerJs();if(session!==networkSession)return;const openRoom=(attempt=0)=>{if(session!==networkSession)return;roomPin=makeRoomPin();if(dom.hostRoomPin)dom.hostRoomPin.textContent=roomPin;peer=new PeerCtor(roomPeerId(roomPin),peerOptions());peer.on('open',()=>{if(session!==networkSession)return;setNetworkStatus('host','Room ready — waiting for players','working',`Send code ${roomPin} to up to three friends.`);});peer.on('connection',conn=>{if(session!==networkSession){conn.close();return;}if(match){conn.on('open',()=>{try{conn.send(JSON.stringify({type:'matchStarted'}));}catch(_){}setTimeout(()=>conn.close(),150);});return;}const playerId=GUEST_IDS.find(id=>!hostChannels.has(id));if(!playerId){conn.on('open',()=>{try{conn.send(JSON.stringify({type:'roomFull'}));}catch(_){}setTimeout(()=>conn.close(),150);});toast('Lobby is full (4/4)');return;}setNetworkStatus('host','Player found — connecting','working','Opening a direct game connection…');attachHostConnection(conn,playerId);});peer.on('disconnected',()=>{if(session===networkSession&&!networkConnected())setNetworkStatus('host','Room service disconnected','','Create a new room to reconnect.');});peer.on('error',err=>{console.error('Host peer error',err);if(session!==networkSession)return;if(err?.type==='unavailable-id'&&attempt<8){try{peer.destroy();}catch(_){}setNetworkStatus('host','Choosing another room code','working','The first code was already being used.');setTimeout(()=>openRoom(attempt+1),120);return;}const [title,help]=peerErrorText(err);setNetworkStatus('host',title,'',help);});};openRoom();}catch(err){console.error(err);setNetworkStatus('host','Online room service did not load','','Internet access is required for code-only hosting.');toast('Could not load online co-op service');}}
-  async function runJoinAction(){const pin=cleanJoinPin();if(!/^\d{6}$/.test(pin)){setNetworkStatus('join','Enter the complete room code','','The room code must contain exactly six digits.');toast('Enter all 6 digits');dom.joinRoomPin?.focus();refreshJoinAction();return;}closePeer();networkRole='guest';roomPin=pin;lobbyProfiles={};renderLobbyRoster();joinBusy=true;const session=networkSession;refreshJoinAction();setNetworkStatus('join','Connecting to room service','working',`Looking for room ${pin}…`);try{const PeerCtor=await ensurePeerJs();if(session!==networkSession)return;peer=new PeerCtor(undefined,peerOptions());let connectTimer=0;peer.on('open',()=>{if(session!==networkSession)return;setNetworkStatus('join','Room found — connecting','working','Opening the direct game connection…');const conn=peer.connect(roomPeerId(pin),{reliable:true,metadata:{game:'critter-extraction',pin}});attachGuestConnection(conn);connectTimer=setTimeout(()=>{if(session===networkSession&&!networkConnected()){joinBusy=false;setNetworkStatus('join','Connection timed out','','Make sure the host is still waiting in the room, then try again.');refreshJoinAction();}},15000);conn.on('open',()=>clearTimeout(connectTimer));conn.on('close',()=>clearTimeout(connectTimer));});peer.on('error',err=>{console.error('Guest peer error',err);if(session!==networkSession)return;clearTimeout(connectTimer);joinBusy=false;const [title,help]=peerErrorText(err);setNetworkStatus('join',title,'',help);refreshJoinAction();});}catch(err){console.error(err);joinBusy=false;setNetworkStatus('join','Online room service did not load','','Internet access is required for code-only joining.');toast('Could not load online co-op service');refreshJoinAction();}}
+  async function createHost(){const readiness=coOpReadinessError();if(readiness){if(!dom.hostModal.open)dom.hostModal.showModal();setNetworkStatus('host','Co-op unavailable','',readiness);return toast(readiness,3600);}closePeer();syncHostRulesFromUI();networkRole='host';lobbyProfiles={host:profilePacket()};renderLobbyRoster();const session=networkSession;if(!dom.hostModal.open)dom.hostModal.showModal();if(dom.hostRoomPin)dom.hostRoomPin.textContent='------';setNetworkStatus('host','Connecting to room service','working','Creating a six-digit online room for up to four players…');try{const PeerCtor=await ensurePeerJs();if(session!==networkSession)return;const openRoom=(attempt=0)=>{if(session!==networkSession)return;roomPin=makeRoomPin();if(dom.hostRoomPin)dom.hostRoomPin.textContent=roomPin;const currentPeer=peer=new PeerCtor(roomPeerId(roomPin),peerOptions()),openTimer=setTimeout(()=>{if(session!==networkSession||currentPeer.open)return;setNetworkStatus('host','Room service timed out','','Check the connection, then create a new room.');try{currentPeer.destroy();}catch(_){}},15000);currentPeer.on('open',()=>{clearTimeout(openTimer);if(session!==networkSession)return;setNetworkStatus('host','Room ready — waiting for players','working',`Send code ${roomPin} to up to three friends.`);});currentPeer.on('connection',conn=>{if(session!==networkSession){conn.close();return;}if(match){conn.on('open',()=>{try{conn.send(JSON.stringify({type:'matchStarted'}));}catch(_){}setTimeout(()=>conn.close(),150);});return;}const playerId=GUEST_IDS.find(id=>!hostChannels.has(id));if(!playerId){conn.on('open',()=>{try{conn.send(JSON.stringify({type:'roomFull'}));}catch(_){}setTimeout(()=>conn.close(),150);});toast('Lobby is full (4/4)');return;}setNetworkStatus('host','Player found — connecting','working','Opening a direct game connection…');attachHostConnection(conn,playerId);});currentPeer.on('disconnected',()=>{if(session===networkSession&&!networkConnected())setNetworkStatus('host','Room service disconnected','','Create a new room to reconnect.');});currentPeer.on('error',err=>{clearTimeout(openTimer);console.error('Host peer error',err);if(session!==networkSession)return;if(err?.type==='unavailable-id'&&attempt<8){try{currentPeer.destroy();}catch(_){}setNetworkStatus('host','Choosing another room code','working','The first code was already being used.');setTimeout(()=>openRoom(attempt+1),120);return;}const [title,help]=peerErrorText(err);setNetworkStatus('host',title,'',help);});};openRoom();}catch(err){console.error(err);setNetworkStatus('host','Online room service did not load','','Internet access is required for code-only hosting.');toast('Could not load online co-op service');}}
+  async function runJoinAction(){const pin=cleanJoinPin();if(!/^\d{6}$/.test(pin)){setNetworkStatus('join','Enter the complete room code','','The room code must contain exactly six digits.');toast('Enter all 6 digits');dom.joinRoomPin?.focus();refreshJoinAction();return;}const readiness=coOpReadinessError();if(readiness){setNetworkStatus('join','Co-op unavailable','',readiness);return toast(readiness,3600);}closePeer();networkRole='guest';roomPin=pin;lobbyProfiles={};renderLobbyRoster();joinBusy=true;const session=networkSession;refreshJoinAction();setNetworkStatus('join','Connecting to room service','working',`Looking for room ${pin}…`);try{const PeerCtor=await ensurePeerJs();if(session!==networkSession)return;const currentPeer=peer=new PeerCtor(undefined,peerOptions());let connectTimer=0,serviceTimer=setTimeout(()=>{if(session!==networkSession||currentPeer.open)return;joinBusy=false;setNetworkStatus('join','Room service timed out','','Check the connection and try the room code again.');refreshJoinAction();try{currentPeer.destroy();}catch(_){}},15000);currentPeer.on('open',()=>{clearTimeout(serviceTimer);if(session!==networkSession)return;setNetworkStatus('join','Room found — connecting','working','Opening the direct game connection…');const conn=currentPeer.connect(roomPeerId(pin),{reliable:true,metadata:{game:'critter-extraction',pin}});attachGuestConnection(conn);connectTimer=setTimeout(()=>{if(session===networkSession&&!networkConnected()){joinBusy=false;setNetworkStatus('join','Connection timed out','','Make sure the host is still waiting in the room, then try again.');refreshJoinAction();}},15000);conn.on('open',()=>clearTimeout(connectTimer));conn.on('close',()=>clearTimeout(connectTimer));});currentPeer.on('error',err=>{clearTimeout(serviceTimer);console.error('Guest peer error',err);if(session!==networkSession)return;clearTimeout(connectTimer);joinBusy=false;const [title,help]=peerErrorText(err);setNetworkStatus('join',title,'',help);refreshJoinAction();});}catch(err){console.error(err);joinBusy=false;setNetworkStatus('join','Online room service did not load','','Internet access is required for code-only joining.');toast('Could not load online co-op service');refreshJoinAction();}}
   $('#hostBtn').onclick=createHost;
   $('#joinBtn').onclick=()=>{closePeer();networkRole='guest';lobbyProfiles={};renderLobbyRoster();if(dom.joinRoomPin)dom.joinRoomPin.value='';setNetworkStatus('join','Enter the room code','','Ask the host for their six-digit code.');refreshJoinAction();dom.joinModal.showModal();setTimeout(()=>dom.joinRoomPin?.focus(),40);};
   dom.joinRoomPin?.addEventListener('input',refreshJoinAction);dom.joinRoomPin?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runJoinAction();}});dom.joinRoomBtn.onclick=runJoinAction;$('#refreshHostCodeBtn').onclick=createHost;dom.startCoopBtn.onclick=()=>startMatch('host',Math.floor(Math.random()*0xffffffff),{roster:lobbyProfiles,rules:syncHostRulesFromUI()});$('#copyRoomPinBtn').onclick=()=>copyText(roomPin,'Room code');
   [dom.hostModeCoop,dom.hostModePvp,dom.hostFriendlyFire].forEach(control=>control?.addEventListener('change',()=>{syncHostRulesFromUI();broadcastRoomRules();}));renderRoomRules();
-  function sendSnapshot(){if(!match||match.role!=='host')return;const ps={};for(const [id,p] of Object.entries(players))ps[id]={id:p.id,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxShield:p.maxShield,shield:p.shield,speed:p.speed,speedBoost:p.speedBoost,weaponId:p.weaponId,armorId:p.armorId,alive:p.alive,mag:p.mag,reload:p.reload,kills:p.kills,profile:p.profile,walkTime:p.walkTime,moveBlend:p.moveBlend,weaponKick:p.weaponKick,muzzleFlash:p.muzzleFlash};sendNet({type:'snapshot',timer:match.timer,elapsed:match.elapsed,mode:match.mode,friendlyFire:match.friendlyFire,objectives:match.objectives,metrics:match.metrics,players:ps,enemies:world.enemies.map(e=>({id:e.id,type:e.type,species:e.species,body:e.body,accent:e.accent,weaponId:e.weaponId,training:!!e.training,x:e.x,y:e.y,z:e.z,yaw:e.yaw,hp:e.hp,maxHp:e.maxHp,bob:e.bob,walkTime:e.walkTime,moveBlend:e.moveBlend,alive:e.alive})),pickups:world.pickups,chests:world.chests.map(c=>({id:c.id,kind:c.kind||'supply',ownerName:c.ownerName||'',x:c.x,z:c.z,opened:c.opened})),extract:world.extract});}
+  function sendSnapshot(){if(!match||match.role!=='host')return;const ps={};for(const [id,p] of Object.entries(players))ps[id]={id:p.id,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,velocityY:p.velocityY,grounded:p.grounded,hp:p.hp,maxShield:p.maxShield,shield:p.shield,speed:p.speed,speedBoost:p.speedBoost,weaponId:p.weaponId,armorId:p.armorId,alive:p.alive,mag:p.mag,reload:p.reload,kills:p.kills,profile:p.profile,walkTime:p.walkTime,moveBlend:p.moveBlend,weaponKick:p.weaponKick,muzzleFlash:p.muzzleFlash};sendNet({type:'snapshot',timer:match.timer,elapsed:match.elapsed,mode:match.mode,friendlyFire:match.friendlyFire,objectives:match.objectives,metrics:match.metrics,players:ps,enemies:world.enemies.map(e=>({id:e.id,type:e.type,species:e.species,body:e.body,accent:e.accent,weaponId:e.weaponId,training:!!e.training,x:e.x,y:e.y,z:e.z,yaw:e.yaw,hp:e.hp,maxHp:e.maxHp,bob:e.bob,walkTime:e.walkTime,moveBlend:e.moveBlend,alive:e.alive})),pickups:world.pickups,chests:world.chests.map(c=>({id:c.id,kind:c.kind||'supply',ownerName:c.ownerName||'',x:c.x,z:c.z,opened:c.opened})),extract:world.extract});}
   function applySnapshot(msg){if(!match||match.role!=='guest')return;match.timer=msg.timer;if(msg.mode==='pvp'||msg.mode==='coop')match.mode=msg.mode;if(typeof msg.friendlyFire==='boolean')match.friendlyFire=msg.friendlyFire;if(Number.isFinite(Number(msg.elapsed)))match.elapsed=Number(msg.elapsed);if(msg.objectives)match.objectives=deepCopy(msg.objectives);if(msg.metrics)match.metrics=deepCopy(msg.metrics);for(const [id,data] of Object.entries(msg.players||{})){if(!players[id])players[id]=createPlayer(id,data.x,data.z,data.profile||{displayName:id,appearance:{}},id!==localPlayerId);const p=players[id],keepLook=id===localPlayerId?{yaw:p.yaw,pitch:p.pitch}:null;Object.assign(p,data);if(keepLook){p.yaw=keepLook.yaw;p.pitch=keepLook.pitch;}}world.enemies=(msg.enemies||[]).map(e=>{const maxHp=Math.max(1,Number(e.maxHp)||70);return {...e,maxHp,hp:clamp(Number.isFinite(Number(e.hp))?Number(e.hp):maxHp,0,maxHp),speed:e.type==='slime'?1.65:2.1,attack:0};});world.pickups=msg.pickups||[];const chestMap=new Map(world.chests.map(c=>[c.id,c]));world.chests=(msg.chests||[]).map(c=>({...chestMap.get(c.id),...c,loot:chestMap.get(c.id)?.loot||emptySlots(15)}));world.extract=msg.extract||world.extract;}
   function handleNet(msg,sourceId='host'){
     if(msg.type==='matchStarted'){setNetworkStatus('join','Match already started','','Ask the host to create a new room after the current drop.');try{guestChannel?.close();}catch(_){}return;}
@@ -2822,7 +2891,7 @@
     appearance:()=>deepCopy(activeAccount().appearance),
     loadout:()=>activeAccount().loadoutId,
     weapon:()=>weaponFor(getLocalPlayer()).name,
-    camera:()=>cameraMode,cameraPose:()=>{const p=getLocalPlayer();return p?deepCopy(cameraFor(p,{instant:true})):null;},lastShot:()=>deepCopy(lastShotDebug),setLook:(yaw,pitch)=>{const p=getLocalPlayer();if(!p)return false;p.yaw=Number(yaw)||0;p.pitch=clamp(Number(pitch)||0,-1.25,1.15);cameraRigEye=null;return {yaw:p.yaw,pitch:p.pitch};},setCameraMode:mode=>{if(mode!=='first'&&mode!=='third')return false;cameraMode=mode;const p=getLocalPlayer();if(p)p.cameraMode=mode;cameraRigEye=null;return mode;},setShoulder:side=>{shoulderSide=side==='left'?-1:1;const p=getLocalPlayer();if(p)p.shoulderSide=shoulderSide;cameraRigEye=null;return shoulderSide>0?'right':'left';},inventoryCategories:()=>backpack.filter(Boolean).map((item,index)=>({index,id:item.id,category:inventoryCategory(item.id),qty:item.qty})),
+    camera:()=>cameraMode,cameraPose:()=>{const p=getLocalPlayer();return p?deepCopy(cameraFor(p,{instant:true})):null;},lastShot:()=>deepCopy(lastShotDebug),setLook:(yaw,pitch)=>{const p=getLocalPlayer();if(!p)return false;p.yaw=wrapAngle(yaw);p.pitch=clamp(Number(pitch)||0,-1.25,1.15);cameraRigEye=null;return {yaw:p.yaw,pitch:p.pitch};},setCameraMode:mode=>{if(mode!=='first'&&mode!=='third')return false;cameraMode=mode;const p=getLocalPlayer();if(p)p.cameraMode=mode;cameraRigEye=null;return mode;},setShoulder:side=>{shoulderSide=side==='left'?-1:1;const p=getLocalPlayer();if(p)p.shoulderSide=shoulderSide;cameraRigEye=null;return shoulderSide>0?'right':'left';},inventoryCategories:()=>backpack.filter(Boolean).map((item,index)=>({index,id:item.id,category:inventoryCategory(item.id),qty:item.qty})),
     backpack:()=>deepCopy(backpack),
     playerPosition:()=>{const p=getLocalPlayer();return p?{x:p.x,y:p.y,z:p.z}:null;},
     teleport:(x,z)=>{const p=getLocalPlayer();if(!p)return false;p.x=Number(x)||0;p.z=Number(z)||0;updateHUD();return {x:p.x,z:p.z};},
@@ -2836,7 +2905,7 @@
     equipmentLoot:()=>world.chests.map(c=>({kind:c.kind,gear:(c.loot||[]).filter(Boolean).map(i=>i.id).filter(id=>ITEMS[id]?.equipment)})),
     map:()=>deepCopy({id:world.map?.id,name:world.map?.name,seed:world.seed,seedCode:world.map?.seedCode,assetPack:world.map?.assetPack,feature:world.map?.feature,themeDecorCount:world.map?.themeDecor?.length||0,layoutIndex:world.map?.layoutIndex,rotation:world.map?.rotation,mirror:world.map?.mirror,spawn:world.spawn,spawnPoints:world.spawnPoints,route:world.route,extract:world.extract,rail:world.map?.rail,landmarks:world.landmarks,validation:world.validation,cover:world.cover.map(c=>({type:c.type,x:c.x,z:c.z,w:c.w,d:c.d,h:c.h,rot:c.rot||0})),chests:world.chests.map(c=>({id:c.id,x:c.x,z:c.z,kind:c.kind})),enemies:world.enemies.map(e=>({id:e.id,x:e.x,z:e.z,training:!!e.training}))}),
     regenerateWorld:seed=>{generateWorld(Number(seed)>>>0);return deepCopy({name:world.map?.name,seed:world.seed,spawn:world.spawn,spawnPoints:world.spawnPoints,route:world.route,extract:world.extract,validation:world.validation,cover:world.cover.map(c=>({type:c.type,x:c.x,z:c.z,w:c.w,d:c.d,h:c.h,rot:c.rot||0})),chests:world.chests.map(c=>({x:c.x,z:c.z})),pickups:world.pickups.map(p=>({x:p.x,z:p.z})),enemies:world.enemies.map(e=>({x:e.x,z:e.z,training:!!e.training}))});},
-    applyLookDelta:(dx,dy,invertY=activeAccount().settings.invertY)=>{const p=getLocalPlayer();if(!p)return false;const sensitivity=activeAccount().settings.sensitivity*.0022;p.yaw+=Number(dx||0)*sensitivity;p.pitch+=Number(dy||0)*sensitivity*(invertY?1:-1);p.pitch=clamp(p.pitch,-1.25,1.15);cameraRigEye=null;return {yaw:p.yaw,pitch:p.pitch};},
+    applyLookDelta:(dx,dy,invertY=activeAccount().settings.invertY)=>{const p=getLocalPlayer();if(!p)return false;const sensitivity=activeAccount().settings.sensitivity*.0022;p.yaw=wrapAngle(p.yaw+Number(dx||0)*sensitivity);p.pitch+=Number(dy||0)*sensitivity*(invertY?1:-1);p.pitch=clamp(p.pitch,-1.25,1.15);cameraRigEye=null;return {yaw:p.yaw,pitch:p.pitch};},
     setAim:value=>{input.aim=!!value;const p=getLocalPlayer();if(p)p.aim=input.aim;cameraRigEye=null;return input.aim;},
     mapCatalog:()=>MAP_VARIANTS.map(m=>m.name),
     mapAssetCatalog:()=>MAP_VARIANTS.map(m=>({id:m.id,assetPack:m.assetPack,featureType:m.featureType,decorType:m.decorType})),
