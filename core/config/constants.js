@@ -6,20 +6,28 @@
     PROJECT_NAME: 'Critter Extraction'
   });
 
-  const revampVersion = '0.22.0-1';
-  if (!document.getElementById('settingsAccountsRevampStyles')) {
-    const style = document.createElement('link');
-    style.id = 'settingsAccountsRevampStyles';
-    style.rel = 'stylesheet';
-    style.href = `./core/ui/settings-accounts-revamp.css?v=${revampVersion}`;
-    document.head.appendChild(style);
-  }
+  const uiAssetVersion = '0.22.0-2';
 
-  if (!document.getElementById('settingsAccountsRevampScript')) {
+  const loadStyle = (id, href) => {
+    if (document.getElementById(id)) return;
+    const style = document.createElement('link');
+    style.id = id;
+    style.rel = 'stylesheet';
+    style.href = `${href}?v=${uiAssetVersion}`;
+    document.head.appendChild(style);
+  };
+
+  const loadScript = (id, src) => {
+    if (document.getElementById(id)) return;
     const script = document.createElement('script');
-    script.id = 'settingsAccountsRevampScript';
-    script.src = `./core/ui/settings-accounts-revamp.js?v=${revampVersion}`;
+    script.id = id;
+    script.src = `${src}?v=${uiAssetVersion}`;
     script.async = false;
     document.head.appendChild(script);
-  }
+  };
+
+  loadStyle('settingsAccountsRevampStyles', './core/ui/settings-accounts-revamp.css');
+  loadScript('settingsAccountsRevampScript', './core/ui/settings-accounts-revamp.js');
+  loadStyle('critterUiMotionStyles', './core/ui/ui-motion.css');
+  loadScript('critterUiMotionScript', './core/ui/ui-motion.js');
 })();
