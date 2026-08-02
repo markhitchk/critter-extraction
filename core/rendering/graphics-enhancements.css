@@ -1,0 +1,92 @@
+/* Critter Extraction enhanced graphics layer.
+   Screen-space polish only; gameplay HUD remains above these effects. */
+
+.game-shell {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 70% 18%, rgba(134, 232, 255, .16), transparent 30%),
+    #111225;
+}
+
+.game-shell > canvas {
+  position: relative;
+  z-index: 1;
+  transition: filter 260ms ease;
+  filter: saturate(1.035) contrast(1.025);
+}
+
+.game-shell::before,
+.game-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.game-shell::before {
+  background:
+    radial-gradient(circle at 78% 13%, rgba(255, 243, 177, .14), transparent 18%),
+    radial-gradient(circle at 50% 42%, transparent 45%, rgba(4, 7, 20, .16) 76%, rgba(3, 5, 15, .38) 100%);
+  mix-blend-mode: soft-light;
+}
+
+.game-shell::after {
+  opacity: .18;
+  background:
+    repeating-linear-gradient(118deg, rgba(255,255,255,.012) 0 1px, transparent 1px 5px),
+    radial-gradient(circle at 50% 100%, rgba(77, 240, 211, .09), transparent 34%);
+}
+
+html[data-graphics-quality='low'] .game-shell > canvas {
+  filter: none;
+}
+
+html[data-graphics-quality='low'] .game-shell::before,
+html[data-graphics-quality='low'] .game-shell::after,
+html.compat-mode .game-shell::before,
+html.compat-mode .game-shell::after {
+  display: none;
+}
+
+html[data-graphics-quality='medium'] .game-shell > canvas {
+  filter: saturate(1.06) contrast(1.035) brightness(1.01);
+}
+
+html[data-graphics-quality='high'] .game-shell > canvas {
+  filter: saturate(1.11) contrast(1.055) brightness(1.018);
+}
+
+html[data-graphics-quality='high'] .game-shell::before {
+  background:
+    radial-gradient(circle at 78% 13%, rgba(255, 244, 180, .23), transparent 20%),
+    radial-gradient(circle at 18% 70%, rgba(92, 239, 211, .08), transparent 27%),
+    radial-gradient(circle at 50% 43%, transparent 42%, rgba(4, 7, 20, .17) 73%, rgba(3, 5, 15, .42) 100%);
+}
+
+html[data-graphics-quality='high'] .game-shell::after {
+  opacity: .28;
+}
+
+html[data-graphics-quality='high'] .renderer-badge {
+  border-color: rgba(126, 247, 212, .38);
+  box-shadow: 0 8px 28px rgba(4, 7, 20, .32), 0 0 18px rgba(99, 223, 245, .12);
+}
+
+html[data-graphics-quality='high'] .world-nameplate,
+html[data-graphics-quality='high'] .world-label {
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .48));
+}
+
+html[data-graphics-quality='high'] .crosshair i,
+html[data-graphics-quality='high'] .crosshair b,
+html[data-graphics-quality='high'] .crosshair em,
+html[data-graphics-quality='high'] .crosshair span {
+  box-shadow: 0 0 5px #000, 0 0 9px rgba(255, 255, 255, .32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-shell > canvas {
+    transition: none;
+  }
+}
