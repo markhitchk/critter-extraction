@@ -5,7 +5,7 @@ AI ASSISTANTS: DO NOT EDIT, REWRITE, OR REPLACE THIS README.md during unrelated 
 <h1 align="center">Critter Extraction</h1>
 
 <p align="center">
-  <img src="icon.svg" alt="Critter Extraction game logo" width="220">
+  <img src="assets/branding/icon.svg" alt="Critter Extraction game logo" width="220">
 </p>
 
 **Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.

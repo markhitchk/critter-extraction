@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15162b">
   <meta name="description" content="Harley’s Studios presents Critter Extraction — a cute first-person and third-person browser extraction shooter with custom critters, weapons, loadouts, inventory, and direct co-op.">
-  <title>Critter Extraction v0.27.1 — Cartoon-Realistic Art Upgrade — Harley’s Studios</title>
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any">
-  <link rel="shortcut icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./assets/HTG.png">
+  <title>Critter Extraction v0.22.0 — Cartoon-Realistic Art Upgrade — Harley’s Studios</title>
+  <link rel="icon" href="./assets/branding/icon.svg" type="image/svg+xml" sizes="any">
+  <link rel="shortcut icon" href="./assets/branding/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/branding/HTG.png">
   <link rel="stylesheet" href="./styles.css" data-required-boot-file="styles.css">
   <script>
-    /* Critter Extraction v0.27.1 startup diagnostics.
+    /* Critter Extraction v0.22.0 startup diagnostics.
        Gives exact file/runtime details, lets the player copy a support report,
        and treats slow loading as recoverable instead of immediately failing. */
     (function () {
       'use strict';
 
       var state = window.__CRITTER_BOOT__ = {
-        version: '27.1',
+        version: '22.0',
         startedAt: Date.now(),
         gameStarted: false,
         initialized: false,
@@ -181,7 +181,7 @@
         var help = document.createElement('p');
         help.textContent = location.protocol === 'file:'
           ? 'Keep the extracted folder together. START_HERE.html is the portable build. The support report below records the exact stage, browser, viewport, and failed file without including account or stash data.'
-          : 'Reload once. On GitHub Pages, index.html must be at the published repository root—not inside another Critter-Extraction folder. Also verify that styles.css, assets/models/harleys-model-library.js, and js/game.js kept their original case-sensitive paths.';
+          : 'Reload once. On GitHub Pages, index.html must be at the published repository root—not inside another Critter-Extraction folder. Also verify that styles.css, core/rendering/model-library.js, and js/game.js kept their original case-sensitive paths.';
         help.style.cssText = 'margin:0 0 16px;color:#aeb5cb;font-size:12px;line-height:1.5;';
 
         var status = document.createElement('div');
@@ -211,7 +211,7 @@
             var blob = new Blob([supportReport()], { type: 'application/json' });
             var link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'critter-extraction-v0.27.1-support-report.json';
+            link.download = 'critter-extraction-v0.22.0-support-report.json';
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -323,7 +323,7 @@
   <div id="studioBoot" class="studio-loading" aria-live="polite">
     <div class="studio-loading-bg"></div>
     <div class="studio-loading-card">
-      <img class="studio-logo" src="./assets/HTG.png" alt="Harley’s Studios puppy logo">
+      <img class="studio-logo" src="./assets/branding/HTG.png" alt="Harley’s Studios puppy logo">
       <span class="eyebrow">HARLEY’S STUDIOS PRESENTS</span>
       <h1>Critter Extraction</h1>
       <p>Cinematic critters. Tactical cover. Bigger extraction runs.</p>
@@ -334,7 +334,7 @@
   <div id="dropLoading" class="studio-loading drop-loading" hidden aria-live="polite">
     <div class="drop-loading-bg"></div>
     <div class="studio-loading-card compact-load">
-      <img class="studio-logo small-logo" src="./assets/HTG.png" alt="">
+      <img class="studio-logo small-logo" src="./assets/branding/HTG.png" alt="">
       <span class="eyebrow">PREPARING DROP</span>
       <h2 id="dropLoadingTitle">Packing the Meadow Kit</h2>
       <div class="loading-track"><b id="dropLoadingBar"></b></div>
@@ -344,8 +344,8 @@
   <div id="app">
     <header class="topbar">
       <button class="brand" id="brandBtn" aria-label="Return to menu">
-        <img src="./assets/icon.svg" alt="Harley’s Studios puppy icon" width="46" height="46">
-        <span><strong>Critter Extraction</strong><small>v0.27.1 • Harley’s Studios • Cartoon-Realistic Art Upgrade</small></span>
+        <img src="./assets/branding/icon.svg" alt="Harley’s Studios puppy icon" width="46" height="46">
+        <span><strong>Critter Extraction</strong><small>v0.22.0 • Harley’s Studios • Cartoon-Realistic Art Upgrade</small></span>
       </button>
       <div class="top-actions">
         <button class="ghost" data-open="helpModal">Controls</button>
@@ -369,7 +369,7 @@
             </div>
             <div class="notice"><strong>Controls:</strong> click the game to capture the mouse, use <kbd>W A S D</kbd> to move, <kbd>Space</kbd> to jump, left-click or <kbd>F</kbd> to fire, <kbd>Esc</kbd> for pause, <kbd>V</kbd> to switch views, and <kbd>B</kbd> to switch shoulders.</div>
           </div>
-          <div class="hero-scene studio-hero" aria-hidden="true"><img src="./assets/loading/cinematic-gameplay-fullhd.webp" alt=""><div class="studio-stamp"><img src="./assets/icon.svg" alt=""><span>ORIGINAL GAME ASSETS<br>BY HARLEY’S STUDIOS</span></div></div>
+          <div class="hero-scene studio-hero" aria-hidden="true"><img src="./assets/loading/cinematic-gameplay-fullhd.webp" alt=""><div class="studio-stamp"><img src="./assets/branding/icon.svg" alt=""><span>ORIGINAL GAME ASSETS<br>BY HARLEY’S STUDIOS</span></div></div>
         </div>
 
         <div class="dashboard">
@@ -399,7 +399,7 @@
             <div class="button-pair triple"><button class="secondary" id="inventoryBtn">Stash</button><button class="secondary" id="merchantBtn" type="button">Trading Post</button><button class="secondary" data-open="customizeModal">Character</button></div>
           </article>
         </div>
-        <footer class="studio-footer"><img src="./assets/HTG.png" alt="Harley the Gamer puppy logo"><div><strong>Made by Harley’s Studios</strong><small>Original character, weapon, item, regional map, interface, and loading assets created for Critter Extraction.</small></div></footer>
+        <footer class="studio-footer"><img src="./assets/branding/HTG.png" alt="Harley the Gamer puppy logo"><div><strong>Made by Harley’s Studios</strong><small>Original character, weapon, item, regional map, interface, and loading assets created for Critter Extraction.</small></div></footer>
       </section>
 
       <section id="gameScreen" class="screen game-screen">
@@ -711,7 +711,7 @@
     <div class="modal-card wide"><header><div><span class="eyebrow">HOW TO PLAY</span><h2>Controls, Maps & Contracts</h2></div><button class="icon-close" data-close="helpModal">×</button></header><div class="help-grid"><section><h3>Movement</h3><p><kbd>W A S D</kbd> Move</p><p><kbd>Space</kbd> Jump</p><p><kbd>Shift</kbd> Sprint</p><p><kbd>C / Ctrl</kbd> Crouch behind train cars, containers, crates, and boulders</p><p><kbd>Click inside game</kbd> Capture mouse without covering the screen</p><p><kbd>Mouse</kbd> Look and aim with continuous 360° rotation</p><p><kbd>Esc</kbd> Open or close the pause menu</p><p><kbd>V</kbd> Switch first/third person</p><p><kbd>B</kbd> Switch third-person shoulder</p><p>Every drop selects a named region, terrain palette, extraction point, landmark orientation, cover layout, prop placement, enemy patrol, and loot arrangement from the run seed.</p></section><section><h3>Combat</h3><p><kbd>Left click / F</kbd> Fire</p><p>First-person shows species-colored paws and the equipped weapon. Third-person uses a collision-safe over-the-shoulder camera so the critter stays visible without covering the crosshair.</p><p><kbd>Right click</kbd> Aim down sights</p><p><kbd>R</kbd> Reload</p><p><kbd>Q</kbd> Use healing patch</p><p><kbd>I / Tab</kbd> Open backpack</p><p><kbd>1–4</kbd> Quick-use slots</p></section><section><h3>Touch Screens</h3><p>Phones and tablets automatically get a movement joystick, a right-side drag area for continuous 360° looking, and large controls for jump, fire, aim, reload, interact, healing, crouch, backpack, camera, shoulder, and pause. Touchscreen laptops stay in mouse/keyboard mode unless touch controls are forced in Settings.</p><p>Hold <kbd>FIRE</kbd>, <kbd>AIM</kbd>, or <kbd>USE</kbd> while moving and looking with other fingers. Tap <kbd>C</kbd> to toggle crouch. Landscape orientation gives the clearest view.</p></section><section><h3>Contracts & Extraction</h3><p>Each run rolls a required drop contract and an optional bonus contract from combat, scavenging, exploration, survival, and gear objectives. Locate the beacon, complete the required contract, carry at least five Moonberries, then hold <kbd>E</kbd> or <kbd>USE</kbd> at the beacon for two seconds. Extracted items move into your stash; failed-drop loot is lost.</p></section><section><h3>Multiplayer & Browsers</h3><p>One host and up to three guests join with a six-digit room code. A shared GitHub Pages URL includes the active code, fills the Join Multiplayer form, and starts connecting automatically after required account setup. Guests can still type the host's code and press Join Room when using the manual flow. The host chooses Co-op Extraction or Player vs Player. GitHub Pages supplies HTTPS; PeerJS supplies secure signaling and STUN/TURN-assisted WebRTC connectivity. Internet is required for online rooms. Solo play works offline. The host-controlled Enemy Respawn Rate setting offers Off, Slow, Normal, or Fast replacements in Solo and Co-op; difficulty scales the delay and population cap, while PvP keeps AI disabled.</p></section><section><h3>Fair Play</h3><p>Solo, Co-op, and PvP use the same weapon timing, movement, collision, spawn protection, gear ownership, and interaction-distance rules. In online matches the host simulates player movement and combat, validates loot and extraction inventory, sanitizes inputs, and limits malformed or repeated network actions.</p><p>Firing cancels spawn protection. Repeated invalid actions receive warnings and can be disconnected. Because this is a static peer-hosted browser game, Fair Play reduces casual exploits but cannot equal dedicated-server anti-cheat.</p></section></div></div>
   </dialog>
 
-  <script src="./assets/models/harleys-model-library.js" data-required-boot-file="assets/models/harleys-model-library.js"></script>
-  <script src="./js/game.js?v=0.27.1-hotfix7" data-required-boot-file="js/game.js"></script>
+  <script src="./core/rendering/model-library.js" data-required-boot-file="core/rendering/model-library.js"></script>
+  <script src="./core/loader/game-loader.js?v=0.27.1-hotfix7" data-required-boot-file="js/game.js"></script>
 </body>
 </html>
