@@ -1,0 +1,53 @@
+name: High-End Asset Validation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/manifest/**'
+      - 'assets/models/**'
+      - 'assets/textures/**'
+      - 'assets/animations/**'
+      - 'core/rendering/high-end-asset-registry.js'
+      - 'tools/check-3d-assets.mjs'
+      - '.github/workflows/high-end-asset-validation.yml'
+  push:
+    branches:
+      - 'agent/high-end-3d-asset-overhaul'
+    paths:
+      - 'assets/manifest/**'
+      - 'assets/models/**'
+      - 'assets/textures/**'
+      - 'assets/animations/**'
+      - 'core/rendering/high-end-asset-registry.js'
+      - 'tools/check-3d-assets.mjs'
+      - '.github/workflows/high-end-asset-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check registry syntax
+        run: node --check core/rendering/high-end-asset-registry.js
+
+      - name: Validate high-end asset manifest
+        run: node tools/check-3d-assets.mjs
+
+      - name: Run existing asset check
+        run: npm run check:assets
