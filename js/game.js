@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix3';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix4';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -12,6 +12,42 @@
       name: 'canonical generated room URL',
       find: String.raw`  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.searchParams.set('join',clean);url.hash='';return url.toString();}catch(_){return '';}}`,
       replace: String.raw`  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.search='';url.searchParams.set('join',clean);url.hash='';return url.toString();}catch(_){return '';}}`
+    },
+    {
+      name: 'matching active account import overwrite',
+      find: String.raw`  function installImportedAccount(account) {
+    const a = normalizeImportedAccount(account), previousActiveId = db.activeId;
+    db.accounts.push(a); db.activeId = a.id;
+    if (!saveDB()) {
+      db.accounts = db.accounts.filter(x => x.id !== a.id); db.activeId = previousActiveId;
+      toast('Account restore failed: browser storage may be full'); return false;
+    }
+    refreshAccountUI(); renderAccounts(); toast('Separate account restored'); return true;
+  }`,
+      replace: String.raw`  function installImportedAccount(account) {
+    const source = account && typeof account === 'object' ? account : {}, active = activeAccount();
+    const importedUsername = safeText(source.username, 18).replace(/[^A-Za-z0-9_-]/g, '').toLowerCase();
+    const activeUsername = String(active?.username || '').trim().toLowerCase();
+    const overwriteActive = !!active && ((source.id && source.id === active.id) || (importedUsername && importedUsername === activeUsername));
+    const previousDb = deepCopy(db), activeIndex = overwriteActive ? db.accounts.findIndex(x => x.id === active.id) : -1;
+    if (overwriteActive && activeIndex >= 0) db.accounts.splice(activeIndex, 1);
+    const a = normalizeImportedAccount(source);
+    if (overwriteActive && activeIndex >= 0) {
+      a.id = active.id;
+      db.accounts.splice(activeIndex, 0, a);
+    } else db.accounts.push(a);
+    db.activeId = a.id;
+    if (!saveDB()) {
+      db = previousDb; refreshAccountUI(); renderAccounts();
+      toast('Account restore failed: browser storage may be full'); return false;
+    }
+    refreshAccountUI(); renderAccounts(); toast(overwriteActive ? 'Active account overwritten from import' : 'Separate account restored'); return true;
+  }`
+    },
+    {
+      name: 'import help explains overwrite behavior',
+      find: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. It restores a separate local account with its profile, progress, stash, loadout, currency, settings, and statistics.';`,
+      replace: String.raw`    dom.backupTitle.textContent = 'Import Account'; dom.backupHelp.textContent = 'Paste a Critter Extraction account backup code. A matching active username or account ID overwrites the active account; a different username restores as a separate local account.';`
     },
     {
       name: 'enemy aggro on damage',
