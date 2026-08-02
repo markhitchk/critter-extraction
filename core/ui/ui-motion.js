@@ -159,9 +159,13 @@
         if (!(target instanceof Element)) continue;
 
         if (record.attributeName === 'class') {
-          if (target.matches('.screen.active')) animateScreen(target);
+          const previousClasses = new Set((record.oldValue || '').split(/\s+/).filter(Boolean));
+          const becameActive = target.classList.contains('active') && !previousClasses.has('active');
+          const becameSelected = target.classList.contains('selected') && !previousClasses.has('selected');
+
+          if (target.matches('.screen.active') && becameActive) animateScreen(target);
           if (target.matches(VALUE_SELECTOR)) animateValue(target);
-          if (target.matches('.active, .selected, [aria-selected="true"]')) {
+          if (!target.matches('.screen') && (becameActive || becameSelected)) {
             restartClass(target, 'ui-motion-confirm');
           }
         }
@@ -185,7 +189,8 @@
       childList: true,
       characterData: true,
       attributes: true,
-      attributeFilter: ['class', 'open', 'hidden', 'aria-selected']
+      attributeFilter: ['class', 'open', 'hidden', 'aria-selected'],
+      attributeOldValue: true
     });
   };
 
