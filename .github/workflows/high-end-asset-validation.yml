@@ -11,9 +11,11 @@ on:
       - 'core/rendering/high-end-asset-registry.js'
       - 'core/rendering/high-end-glb-runtime.js'
       - 'core/rendering/high-end-world-patches.js'
+      - 'core/rendering/high-end-rock-patches.js'
       - 'core/rendering/model-library.js'
       - 'tools/check-3d-assets.mjs'
       - 'tools/check-high-end-runtime.mjs'
+      - 'tools/check-high-end-rock-runtime.mjs'
       - '.github/workflows/high-end-asset-validation.yml'
   push:
     branches:
@@ -27,9 +29,11 @@ on:
       - 'core/rendering/high-end-asset-registry.js'
       - 'core/rendering/high-end-glb-runtime.js'
       - 'core/rendering/high-end-world-patches.js'
+      - 'core/rendering/high-end-rock-patches.js'
       - 'core/rendering/model-library.js'
       - 'tools/check-3d-assets.mjs'
       - 'tools/check-high-end-runtime.mjs'
+      - 'tools/check-high-end-rock-runtime.mjs'
       - '.github/workflows/high-end-asset-validation.yml'
 
 permissions:
@@ -58,11 +62,15 @@ jobs:
           node --check core/rendering/high-end-asset-registry.js
           node --check core/rendering/high-end-glb-runtime.js
           node --check core/rendering/high-end-world-patches.js
+          node --check core/rendering/high-end-rock-patches.js
           node --check core/rendering/model-library.js
           node --check tools/check-high-end-runtime.mjs
+          node --check tools/check-high-end-rock-runtime.mjs
 
       - name: Validate authored runtime integration
-        run: node tools/check-high-end-runtime.mjs
+        run: |
+          node tools/check-high-end-runtime.mjs
+          node tools/check-high-end-rock-runtime.mjs
 
       - name: Validate high-end asset manifest
         run: node tools/check-3d-assets.mjs
