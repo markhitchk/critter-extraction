@@ -21,3 +21,15 @@
   function relative(value = '') { return resolve(value); }
   window.CritterPaths = Object.freeze({ projectRoot, resolve, relative });
 })();
+
+(() => {
+  'use strict';
+  if (document.getElementById('critter-system-ui-loader')) return;
+  const script = document.createElement('script');
+  script.id = 'critter-system-ui-loader';
+  script.src = window.CritterPaths.resolve('core/ui/system-ui-refresh.js');
+  script.async = false;
+  script.dataset.optionalUi = 'true';
+  script.addEventListener('error', () => console.warn('Critter Extraction UI refresh could not be loaded.'));
+  document.head.appendChild(script);
+})();
