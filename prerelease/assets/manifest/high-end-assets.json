@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "project": "Critter Extraction",
   "studio": "Harley's Studios",
-  "status": "foundation",
+  "status": "authored-model-coverage-complete",
   "runtime": {
     "preferredModelFormat": "glb",
     "upAxis": "Y",
@@ -14,353 +14,296 @@
       "high"
     ]
   },
-  "references": {
-    "primary": "assets/loading/gameplay-reference.webp",
-    "secondary": "assets/loading/cinematic-gameplay-fullhd.webp"
+  "coverage": {
+    "assetRecords": 32,
+    "readyRecords": 32,
+    "generatedBinaryModels": 26,
+    "note": "Character skinning and animations remain a separate task."
   },
-  "qualityTiers": {
-    "low": {
-      "textureMax": 1024,
-      "characterLod": 2,
-      "environmentLod": 2,
-      "vegetationDensity": 0.45,
-      "shadowQuality": "reduced"
-    },
-    "medium": {
-      "textureMax": 2048,
-      "characterLod": 1,
-      "environmentLod": 1,
-      "vegetationDensity": 0.72,
-      "shadowQuality": "standard"
-    },
-    "high": {
-      "textureMax": 4096,
-      "characterLod": 0,
-      "environmentLod": 0,
-      "vegetationDensity": 1,
-      "shadowQuality": "enhanced"
-    }
-  },
-  "verticalSlice": [
-    "character.tactical_puppy",
-    "enemy.puppy_raider",
-    "weapon.pea_popper",
-    "armor.leaf_vest",
-    "backpack.critter_pack",
-    "loot.small_supply_crate",
-    "loot.death_box",
-    "terrain.pine_valley_ground",
-    "vegetation.pine_family",
-    "vegetation.pine_grass",
-    "rock.pine_cover_set",
-    "rail.pine_track_set",
-    "rail.freight_car",
-    "structure.ranger_outpost",
-    "vfx.pea_muzzle_flash",
-    "vfx.pea_impact",
-    "vfx.loot_glow"
-  ],
   "assets": [
     {
       "id": "character.tactical_puppy",
       "category": "character",
-      "status": "planned",
-      "species": "puppy",
-      "role": "player",
-      "targetTriangles": {
-        "lod0": 52000,
-        "lod1": 26000,
-        "lod2": 10000
-      },
-      "attachmentNodes": [
-        "hand_r_grip",
-        "hand_l_support",
-        "backpack_socket",
-        "weapon_back_socket",
-        "headgear_socket",
-        "nameplate_socket"
-      ],
-      "requiredAnimations": [
-        "idle",
-        "walk",
-        "run",
-        "sprint",
-        "crouch",
-        "jump",
-        "fall",
-        "land",
-        "aim",
-        "fire",
-        "reload",
-        "pickup",
-        "heal",
-        "hit",
-        "death",
-        "extract"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/characters/tactical_puppy/tactical_puppy_lod0.glb",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.puppy_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/puppy_raider/puppy_raider_lod0.glb",
       "species": "puppy",
-      "sharedRig": "character.tactical_puppy",
-      "weapon": "weapon.pea_popper"
+      "weapon": "weapon.pea_popper",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.bunny_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/bunny_raider/bunny_raider_lod0.glb",
       "species": "bunny",
-      "weapon": "weapon.moonbeam"
+      "weapon": "weapon.moonbeam",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.kitty_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/kitty_raider/kitty_raider_lod0.glb",
       "species": "kitty",
-      "weapon": "weapon.honey_carbine"
+      "weapon": "weapon.honey_carbine",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.fox_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/fox_raider/fox_raider_lod0.glb",
       "species": "fox",
-      "weapon": "weapon.acorn_sprayer"
+      "weapon": "weapon.acorn_sprayer",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.panda_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/panda_raider/panda_raider_lod0.glb",
       "species": "panda",
-      "weapon": "weapon.carrot_scatter"
+      "weapon": "weapon.carrot_scatter",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.bear_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/bear_raider/bear_raider_lod0.glb",
       "species": "bear",
-      "weapon": "weapon.carrot_scatter"
+      "weapon": "weapon.carrot_scatter",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.raccoon_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/raccoon_raider/raccoon_raider_lod0.glb",
       "species": "raccoon",
-      "weapon": "weapon.pea_popper"
+      "weapon": "weapon.pea_popper",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "enemy.redpanda_raider",
       "category": "enemy",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/enemies/redpanda_raider/redpanda_raider_lod0.glb",
       "species": "redpanda",
-      "weapon": "weapon.honey_carbine"
+      "weapon": "weapon.honey_carbine",
+      "rigState": "static",
+      "animationState": "pending"
     },
     {
       "id": "weapon.pea_popper",
       "category": "weapon",
-      "status": "planned",
-      "currentFallback": "assets/weapons/pea_popper.svg",
-      "targetTriangles": 14000,
-      "attachmentNodes": [
-        "grip_r",
-        "grip_l",
-        "muzzle",
-        "sight",
-        "magazine"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "lods": {
+        "lod0": "assets/models/weapons/pea_popper/pea_popper_lod0.glb",
+        "lod1": "assets/models/weapons/pea_popper/pea_popper_lod1.glb",
+        "lod2": "assets/models/weapons/pea_popper/pea_popper_lod2.glb"
+      }
     },
     {
       "id": "weapon.acorn_sprayer",
       "category": "weapon",
-      "status": "planned",
-      "currentFallback": "assets/weapons/acorn_sprayer.svg",
-      "targetTriangles": 15000,
-      "attachmentNodes": [
-        "grip_r",
-        "grip_l",
-        "muzzle",
-        "sight",
-        "magazine"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "lods": {
+        "lod0": "assets/models/weapons/acorn_sprayer/acorn_sprayer_lod0.glb",
+        "lod1": "assets/models/weapons/acorn_sprayer/acorn_sprayer_lod1.glb",
+        "lod2": "assets/models/weapons/acorn_sprayer/acorn_sprayer_lod2.glb"
+      }
     },
     {
       "id": "weapon.honey_carbine",
       "category": "weapon",
-      "status": "planned",
-      "currentFallback": "assets/weapons/honey_carbine.svg",
-      "targetTriangles": 18000,
-      "attachmentNodes": [
-        "grip_r",
-        "grip_l",
-        "muzzle",
-        "sight",
-        "magazine"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/weapons/honey_carbine/honey_carbine_lod0.glb"
     },
     {
       "id": "weapon.carrot_scatter",
       "category": "weapon",
-      "status": "planned",
-      "currentFallback": "assets/weapons/carrot_scatter.svg",
-      "targetTriangles": 17000,
-      "attachmentNodes": [
-        "grip_r",
-        "grip_l",
-        "muzzle",
-        "sight",
-        "magazine"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/weapons/carrot_scatter/carrot_scatter_lod0.glb"
     },
     {
       "id": "weapon.moonbeam",
       "category": "weapon",
-      "status": "planned",
-      "currentFallback": "assets/weapons/moonbeam.svg",
-      "targetTriangles": 20000,
-      "attachmentNodes": [
-        "grip_r",
-        "grip_l",
-        "muzzle",
-        "sight",
-        "magazine"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/weapons/moonbeam/moonbeam_lod0.glb"
     },
     {
       "id": "armor.leaf_vest",
       "category": "armor",
-      "status": "planned",
-      "currentFallback": "assets/items/armor_leaf_vest.svg",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/armor/leaf_vest/leaf_vest.glb",
       "slot": "chest"
     },
     {
       "id": "armor.feather_vest",
       "category": "armor",
-      "status": "planned",
-      "currentFallback": "assets/items/armor_feather_vest.svg",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/armor/feather_vest/feather_vest.glb",
       "slot": "chest"
     },
     {
       "id": "armor.bark_guard",
       "category": "armor",
-      "status": "planned",
-      "currentFallback": "assets/items/armor_bark_guard.svg",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/armor/bark_guard/bark_guard.glb",
       "slot": "chest"
     },
     {
       "id": "armor.root_padding",
       "category": "armor",
-      "status": "planned",
-      "currentFallback": "assets/items/armor_root_padding.svg",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/armor/root_padding/root_padding.glb",
       "slot": "chest"
     },
     {
       "id": "armor.star_cloak",
       "category": "armor",
-      "status": "planned",
-      "currentFallback": "assets/items/armor_star_cloak.svg",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/armor/star_cloak/star_cloak.glb",
       "slot": "chest"
     },
     {
       "id": "backpack.critter_pack",
       "category": "backpack",
-      "status": "planned",
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/backpacks/critter_pack/critter_pack.glb",
       "slot": "backpack_socket"
     },
     {
       "id": "loot.small_supply_crate",
       "category": "loot",
-      "status": "planned",
-      "states": [
-        "closed",
-        "open"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/loot/supply_crate/supply_crate.glb"
     },
     {
       "id": "loot.death_box",
       "category": "loot",
-      "status": "planned",
-      "states": [
-        "closed",
-        "open"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/loot/death_box/death_box.glb"
     },
     {
       "id": "terrain.pine_valley_ground",
       "category": "terrain",
-      "status": "planned",
-      "region": "pine-valley",
-      "materialLayers": [
-        "packed_dirt",
-        "forest_soil",
-        "grass_edge",
-        "rail_ballast"
-      ]
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "textures": {
+        "baseColor": "assets/textures/terrain/pine_valley/dirt_basecolor.webp"
+      },
+      "region": "pine-valley"
     },
     {
       "id": "vegetation.pine_family",
       "category": "vegetation",
-      "status": "planned",
-      "region": "pine-valley",
-      "requiresInstancing": true,
-      "requiresCollisionProxy": true,
-      "requiresLods": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "lods": {
+        "lod0": "assets/models/vegetation/pine_tree/pine_tree_lod0.glb",
+        "lod1": "assets/models/vegetation/pine_tree/pine_tree_lod0.glb",
+        "lod2": "assets/models/vegetation/pine_tree/pine_tree_lod2.glb"
+      },
+      "region": "pine-valley"
     },
     {
       "id": "vegetation.pine_grass",
       "category": "vegetation",
-      "status": "planned",
-      "region": "pine-valley",
-      "requiresInstancing": true,
-      "requiresLods": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/vegetation/pine_grass/pine_grass_cluster.glb",
+      "region": "pine-valley"
     },
     {
       "id": "rock.pine_cover_set",
       "category": "rock",
-      "status": "planned",
-      "region": "pine-valley",
-      "requiresCollisionProxy": true,
-      "requiresLods": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb",
+      "region": "pine-valley"
     },
     {
       "id": "rail.pine_track_set",
       "category": "rail",
-      "status": "planned",
-      "region": "pine-valley",
-      "requiresInstancing": true,
-      "requiresCollisionProxy": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/railway/pine_rail_segment/pine_rail_segment.glb",
+      "region": "pine-valley"
     },
     {
       "id": "rail.freight_car",
       "category": "rail",
-      "status": "planned",
-      "requiresCollisionProxy": true,
-      "requiresLods": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/railway/freight_car/freight_car_lod0.glb"
     },
     {
       "id": "structure.ranger_outpost",
       "category": "structure",
-      "status": "planned",
-      "region": "pine-valley",
-      "requiresCollisionProxy": true,
-      "requiresLods": true
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/structures/ranger_outpost/ranger_outpost_lod0.glb",
+      "region": "pine-valley"
     },
     {
       "id": "vfx.pea_muzzle_flash",
       "category": "vfx",
-      "status": "planned",
-      "weapon": "weapon.pea_popper"
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/vfx/pea_muzzle_flash/pea_muzzle_flash.glb"
     },
     {
       "id": "vfx.pea_impact",
       "category": "vfx",
-      "status": "planned",
-      "weapon": "weapon.pea_popper"
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/vfx/pea_impact/pea_impact.glb"
     },
     {
       "id": "vfx.loot_glow",
       "category": "vfx",
-      "status": "planned"
+      "status": "ready",
+      "productionState": "authored-low-poly",
+      "runtimePath": "assets/models/vfx/loot_glow/loot_glow.glb"
     }
   ]
 }
