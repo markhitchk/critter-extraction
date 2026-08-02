@@ -1,0 +1,64 @@
+name: Generate prerelease authored assets
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-assets:
+    if: github.event.pull_request.head.ref == 'agent/fix-missing-prerelease-assets'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out corrective branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/fix-missing-prerelease-assets
+          fetch-depth: 0
+
+      - name: Generate missing GLB files
+        run: node prerelease/tools/generate-authored-assets.mjs
+
+      - name: Validate generated files
+        run: |
+          test "$(find prerelease/assets/models -name '*.glb' -type f | wc -l)" -ge 36
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const manifest = JSON.parse(fs.readFileSync('prerelease/assets/manifest/high-end-assets.json', 'utf8'));
+          if (manifest.assets.length !== 32 || manifest.assets.some(asset => asset.status !== 'ready')) {
+            throw new Error('The authored asset manifest is incomplete.');
+          }
+          for (const file of walk('prerelease/assets/models')) {
+            if (!file.endsWith('.glb')) continue;
+            const data = fs.readFileSync(file);
+            if (data.subarray(0, 4).toString('ascii') !== 'glTF') throw new Error(`Invalid GLB: ${file}`);
+          }
+          function* walk(directory) {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              const value = path.join(directory, entry.name);
+              if (entry.isDirectory()) yield* walk(value);
+              else yield value;
+            }
+          }
+          NODE
+
+      - name: Commit generated asset pack
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prerelease/assets/models prerelease/assets/manifest/high-end-assets.json
+          if git diff --cached --quiet; then
+            echo "Generated assets already match the branch."
+            exit 0
+          fi
+          git commit -m "Generate complete prerelease authored asset pack"
+          git push origin HEAD:agent/fix-missing-prerelease-assets
