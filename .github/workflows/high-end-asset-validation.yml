@@ -8,6 +8,8 @@ on:
       - 'assets/textures/**'
       - 'assets/animations/**'
       - 'core/rendering/high-end-asset-registry.js'
+      - 'core/rendering/high-end-glb-runtime.js'
+      - 'core/rendering/model-library.js'
       - 'tools/check-3d-assets.mjs'
       - '.github/workflows/high-end-asset-validation.yml'
   push:
@@ -19,6 +21,8 @@ on:
       - 'assets/textures/**'
       - 'assets/animations/**'
       - 'core/rendering/high-end-asset-registry.js'
+      - 'core/rendering/high-end-glb-runtime.js'
+      - 'core/rendering/model-library.js'
       - 'tools/check-3d-assets.mjs'
       - '.github/workflows/high-end-asset-validation.yml'
 
@@ -43,8 +47,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check registry syntax
-        run: node --check core/rendering/high-end-asset-registry.js
+      - name: Check authored runtime syntax
+        run: |
+          node --check core/rendering/high-end-asset-registry.js
+          node --check core/rendering/high-end-glb-runtime.js
+          node --check core/rendering/model-library.js
 
       - name: Validate high-end asset manifest
         run: node tools/check-3d-assets.mjs
