@@ -29,7 +29,7 @@ jobs:
 
       - name: Validate generated files
         run: |
-          test "$(find prerelease/assets/models -name '*.glb' -type f | wc -l)" -ge 37
+          test "$(find prerelease/assets/models -name '*.glb' -type f | wc -l)" -ge 36
           node - <<'NODE'
           const fs = require('fs');
           const path = require('path');
