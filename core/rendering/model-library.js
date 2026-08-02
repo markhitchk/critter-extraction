@@ -36,7 +36,8 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
     pineRock: 'assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb',
     pineGrass: 'assets/models/vegetation/pine_grass/pine_grass_cluster.glb',
-    pineRail: 'assets/models/railway/pine_rail_segment/pine_rail_segment.glb'
+    pineRail: 'assets/models/railway/pine_rail_segment/pine_rail_segment.glb',
+    pineDirtBaseColor: 'assets/textures/terrain/pine_valley/dirt_basecolor.webp'
   },
   combatRig: {
     zones: [
@@ -67,3 +68,4 @@ if (!window.HarleyHighEndRuntime) loadAuthoredBridge('./core/rendering/high-end-
 if (!window.HarleyHighEndWorldPatches) loadAuthoredBridge('./core/rendering/high-end-world-patches.js');
 if (!window.HarleyHighEndRockPatches) loadAuthoredBridge('./core/rendering/high-end-rock-patches.js');
 if (!window.HarleyHighEndGroundPatches) loadAuthoredBridge('./core/rendering/high-end-ground-patches.js');
+if (!window.HarleyHighEndTerrainPatches) loadAuthoredBridge('./core/rendering/high-end-terrain-patches.js');
