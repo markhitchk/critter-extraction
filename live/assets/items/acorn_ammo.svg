@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Acorn Rounds">
+<title>Acorn Rounds — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#15162b"/><stop offset="1" stop-color="#252947"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect x="6" y="6" width="244" height="244" rx="48" fill="url(#bg)" stroke="#f0a25e" stroke-width="8"/>
+<g filter="url(#glow)"><path d="M78 122c0-42 22-70 50-70s50 28 50 70-20 78-50 78-50-36-50-78z" fill="#b86f3f" stroke="#ffd49a" stroke-width="7"/><path d="M72 102c17-28 95-28 112 0-8 25-104 25-112 0z" fill="#6d4b32" stroke="#e6bb75" stroke-width="7"/><path d="M128 53c2-20 14-30 27-38" stroke="#7fd77b" stroke-width="9" stroke-linecap="round"/></g>
+<path d="M76 225h104" stroke="#f0a25e" stroke-width="7" stroke-linecap="round" opacity=".65"/>
+<circle cx="128" cy="226" r="5" fill="#f0a25e"/>
+</svg>

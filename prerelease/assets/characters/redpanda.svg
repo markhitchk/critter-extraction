@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Red Panda Moon Tracker">
+<title>Red Panda Moon Tracker — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#392541"/><stop offset="1" stop-color="#131426"/></linearGradient>
+  <linearGradient id="vest" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9b5b89"/><stop offset="1" stop-color="#60385f"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#050817" flood-opacity=".65"/></filter>
+</defs>
+<rect x="5" y="5" width="246" height="246" rx="42" fill="url(#bg)" stroke="#d695ff" stroke-width="6"/>
+<path d="M17 186C58 159 181 159 239 190v56H17z" fill="#2a1d35"/><circle cx="210" cy="42" r="23" fill="#a491ff" opacity=".16"/><circle cx="218" cy="36" r="18" fill="#24172d"/>
+<g filter="url(#shadow)">
+  <path d="M84 159c-31-5-46 14-39 28 7 14 28 7 38-8" fill="none" stroke="#bd5b3e" stroke-width="18" stroke-linecap="round"/><path d="M48 178l13 12m4-26 14 13" stroke="#f6e0c5" stroke-width="8"/>
+  <rect x="86" y="174" width="25" height="39" rx="11" fill="#bd5b3e"/><rect x="145" y="174" width="25" height="39" rx="11" fill="#bd5b3e"/>
+  <path d="M81 207h36v16H76c0-9 2-13 5-16zm58 0h36c4 3 6 7 6 16h-42z" fill="#3a2d3f"/>
+  <ellipse cx="128" cy="155" rx="52" ry="55" fill="#bd5b3e"/>
+  <path d="M82 139q46-31 92 0l-9 50H91z" fill="url(#vest)" stroke="#d9a4db" stroke-width="3"/><path d="M128 132v61" stroke="#4d2e4c" stroke-width="5"/>
+  <rect x="109" y="147" width="38" height="29" rx="7" fill="#4f3052"/><path d="M128 151l4 8 9 1-7 6 2 9-8-4-8 4 2-9-7-6 9-1z" fill="#ffd36f"/>
+  <ellipse cx="79" cy="155" rx="15" ry="34" fill="#bd5b3e" transform="rotate(24 79 155)"/><ellipse cx="177" cy="154" rx="15" ry="34" fill="#bd5b3e" transform="rotate(-24 177 154)"/>
+  <g transform="rotate(-8 170 164)"><rect x="143" y="151" width="75" height="22" rx="7" fill="#a491ff"/><rect x="198" y="157" width="31" height="8" rx="4" fill="#263347"/><rect x="155" y="170" width="14" height="24" rx="4" fill="#3b485a"/><circle cx="180" cy="162" r="7" fill="#ff72d3"/></g>
+  <path d="M75 77l13-54 43 46m50 8-13-54-43 46" fill="#bd5b3e" stroke="#f6e0c5" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M88 59l5-23 17 28m58-5-5-23-17 28" fill="#5a3a35"/>
+  <circle cx="128" cy="95" r="54" fill="#bd5b3e" stroke="#f6e0c5" stroke-width="5"/>
+  <path d="M84 94l27-14 17 38-34 21zm88 0-27-14-17 38 34 21z" fill="#f6e0c5"/>
+  <ellipse cx="128" cy="117" rx="30" ry="22" fill="#f6e0c5"/><circle cx="108" cy="94" r="7" fill="#2c293a"/><circle cx="148" cy="94" r="7" fill="#2c293a"/>
+  <path d="M121 111q7-7 14 0-2 11-7 11t-7-11z" fill="#352b35"/>
+</g>
+<text x="20" y="229" fill="#fff" font-family="Arial,sans-serif" font-size="17" font-weight="800">RED PANDA</text>
+<text x="20" y="243" fill="#d9a4ff" font-family="Arial,sans-serif" font-size="9" font-weight="700" letter-spacing="1.4">MOON TRACKER</text>
+</svg>

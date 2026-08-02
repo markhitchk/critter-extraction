@@ -1,0 +1,59 @@
+/* Multiplayer and rooms */
+.critter-ui-refresh .network-card{width:min(780px,calc(100vw - 24px))}
+.critter-ui-refresh .network-status,.critter-ui-refresh .lobby-panel,.critter-ui-refresh .host-rules-panel,.critter-ui-refresh .fair-play-note,.critter-ui-refresh .join-rules-summary,.critter-ui-refresh .simple-room-code,.critter-ui-refresh .network-code-only,.critter-ui-refresh .join-direct-action,.critter-ui-refresh .host-room-actions{
+  margin-left:22px;
+  margin-right:22px;
+}
+.critter-ui-refresh .network-status{padding:13px;border-radius:14px;border:1px solid var(--ui-line);background:rgba(255,255,255,.035)}
+.critter-ui-refresh .lobby-panel,.critter-ui-refresh .host-rules-panel{padding:15px;border-radius:17px;border:1px solid var(--ui-line);background:rgba(255,255,255,.025)}
+.critter-ui-refresh .lobby-roster{display:grid;gap:8px}
+.critter-ui-refresh .host-mode-grid{gap:9px}
+.critter-ui-refresh .host-mode-card,.critter-ui-refresh .host-friendly-fire{border-radius:14px;border-color:var(--ui-line);background:rgba(255,255,255,.028)}
+.critter-ui-refresh .host-mode-card:has(input:checked){border-color:rgba(126,247,212,.5);background:rgba(126,247,212,.08);box-shadow:0 0 0 3px rgba(126,247,212,.05)}
+.critter-ui-refresh .fair-play-note{border-radius:14px;border:1px solid rgba(126,247,212,.18);background:rgba(126,247,212,.055)}
+.critter-ui-refresh .simple-room-code{text-align:center;padding:18px;border-radius:18px;border:1px solid rgba(99,223,245,.24);background:radial-gradient(circle at 50% 0,rgba(99,223,245,.1),rgba(255,255,255,.02))}
+.critter-ui-refresh .room-pin{font-size:clamp(34px,7vw,54px);letter-spacing:.16em;color:var(--ui-mint);text-shadow:0 0 24px rgba(126,247,212,.25)}
+.critter-ui-refresh .simple-pin-entry{display:grid;gap:8px;margin:18px 22px 0;color:var(--ui-muted);font-size:10px;font-weight:900;letter-spacing:.14em}
+.critter-ui-refresh .simple-pin-entry input{height:62px;text-align:center;font-family:ui-monospace,monospace;font-size:30px;font-weight:900;letter-spacing:.28em}
+.critter-ui-refresh .join-direct-action{display:grid;gap:7px;margin-top:10px}
+.critter-ui-refresh .join-direct-action small{text-align:center;color:var(--ui-muted)}
+
+/* Accounts, lists, trading, inventory and customization */
+.critter-ui-refresh .account-list,.critter-ui-refresh .merchant-grid,.critter-ui-refresh .character-roster,.critter-ui-refresh .loadout-grid{gap:10px}
+.critter-ui-refresh .account-row,.critter-ui-refresh .merchant-card,.critter-ui-refresh .character-card,.critter-ui-refresh .loadout-card,.critter-ui-refresh .inventory-card{
+  border-color:var(--ui-line);
+  background:rgba(255,255,255,.03);
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.critter-ui-refresh .account-row:hover,.critter-ui-refresh .merchant-card:hover,.critter-ui-refresh .character-card:hover,.critter-ui-refresh .loadout-card:hover{
+  transform:translateY(-1px);
+  border-color:rgba(126,247,212,.3);
+  background:rgba(126,247,212,.045);
+}
+.critter-ui-refresh .account-row.active,.critter-ui-refresh .character-card.active,.critter-ui-refresh .loadout-card.selected{border-color:rgba(126,247,212,.55);background:rgba(126,247,212,.075)}
+.critter-ui-refresh .profile-editor,.critter-ui-refresh .customize-grid{padding:22px}
+.critter-ui-refresh .critter-preview{border:1px solid var(--ui-line);background:radial-gradient(circle at 50% 30%,rgba(99,223,245,.18),rgba(13,18,35,.9) 66%)}
+.critter-ui-refresh .inventory-layout{gap:14px}
+.critter-ui-refresh .inventory-side,.critter-ui-refresh .inventory-main,.critter-ui-refresh .side-storage{border-color:var(--ui-line);background:rgba(255,255,255,.025)}
+.critter-ui-refresh .square-item-grid>*{border-color:rgba(255,255,255,.11);background:rgba(5,9,19,.58)}
+.critter-ui-refresh .square-item-grid>*:hover{border-color:rgba(126,247,212,.42);background:rgba(126,247,212,.07)}
+
+/* Results, help, pause and notifications */
+.critter-ui-refresh .help-grid{gap:10px;padding:18px 22px 0}
+.critter-ui-refresh .help-grid section{border-color:var(--ui-line);border-radius:16px;background:rgba(255,255,255,.027)}
+.critter-ui-refresh kbd{border-color:rgba(194,222,255,.25);background:#080d1d;box-shadow:0 2px 0 rgba(255,255,255,.08)}
+.critter-ui-refresh .pause-status,.critter-ui-refresh .pause-map-info,.critter-ui-refresh .pause-footnote{margin-left:22px;margin-right:22px}
+.critter-ui-refresh .pause-map-info{border-color:var(--ui-line);background:rgba(255,255,255,.03)}
+.critter-ui-refresh .result-orb{box-shadow:0 0 60px rgba(126,247,212,.28)}
+.critter-ui-refresh .result-stats{padding:0 22px}
+.critter-ui-refresh .result-stats>div{border:1px solid var(--ui-line);background:rgba(255,255,255,.03)}
+.critter-ui-refresh .toast{border-color:rgba(126,247,212,.28);background:rgba(8,13,27,.94);box-shadow:var(--ui-shadow-soft);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+
+/* HUD refinements without changing gameplay positioning */
+.critter-ui-refresh .renderer-badge,.critter-ui-refresh .safe-zone-badge,.critter-ui-refresh .hud-button,.critter-ui-refresh .squad-self,.critter-ui-refresh .mission-list,.critter-ui-refresh .extraction-card,.critter-ui-refresh .vitals-hud,.critter-ui-refresh .ammo-hud,.critter-ui-refresh .interaction{
+  -webkit-backdrop-filter:blur(11px) saturate(125%);
+  backdrop-filter:blur(11px) saturate(125%);
+}
+.critter-ui-refresh .hud-button{border-color:rgba(255,255,255,.16);background:rgba(5,8,18,.68)}
+.critter-ui-refresh .hud-button:hover{background:rgba(126,247,212,.12);border-color:rgba(126,247,212,.38)}
+.critter-ui-refresh .crosshair{filter:drop-shadow(0 2px 4px rgba(0,0,0,.8))}

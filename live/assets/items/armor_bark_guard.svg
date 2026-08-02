@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="armor_bark_guard">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b57a4e"/><stop offset="1" stop-color="#6b462d"/></linearGradient></defs>
+  <path d="M42 16 64 27 86 16l20 18-12 22v48c-18 10-42 10-60 0V56L22 34z" fill="url(#g)" stroke="#17212b" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M42 16c4 16 15 24 22 24s18-8 22-24" fill="none" stroke="#f7f3df" stroke-width="7" stroke-linecap="round" opacity=".92"/>
+  <path d="M34 56h60M64 40v65" stroke="#17212b" stroke-width="6" opacity=".72"/>
+  <path d="M48 53h32l7 14-7 20H48l-7-20zm9 7v20m14-20v20" fill="#f7f3df" stroke="#17212b" stroke-width="3" stroke-linejoin="round"/>
+</svg>
