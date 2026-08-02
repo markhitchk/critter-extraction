@@ -196,14 +196,15 @@
 
     const quality = document.getElementById('quality');
     const high = quality?.querySelector('option[value="high"]');
-    if (high) high.textContent = 'High — enhanced lighting & detail';
+    const highLabel = 'High — enhanced lighting & detail';
+    if (high && high.textContent !== highLabel) high.textContent = highLabel;
   }
 
   function initializeVisualLayer() {
+    // The settings controls are already present in the canonical page. Run
+    // once instead of observing the entire document, which previously let a
+    // label update trigger its own MutationObserver forever during startup.
     enhanceSettingsControls();
-    const observer = new MutationObserver(() => enhanceSettingsControls());
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-    window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
   }
 
   window.CritterGraphicsEnhancements = Object.freeze({
