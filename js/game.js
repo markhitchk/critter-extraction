@@ -261,6 +261,7 @@
   function makeAccount(name = 'New Critter', username = 'new_critter') {
     return {
       id: uid(), username, displayName: name, bio: 'Ready for the meadow.', avatar: '',
+      recruitCode: uid().slice(0, 8).toUpperCase(), recruitedBy: null,
       appearance: { species: 'puppy', bodyColor: '#d9a06f', accentColor: '#7b4d35', accessory: 'cap', eyeStyle: 'dot' },
       settings: deepCopy(DEFAULT_SETTINGS), xp: 0, petals: 0, economyTransactions: [], pendingDrop: null,
       stats: { extracts: 0, berries: 0, kills: 0, matches: 0 },
@@ -279,6 +280,8 @@
     });
     parsed.accounts.forEach(a => {
       a.id = a.id || uid();
+      if (!a.recruitCode) a.recruitCode = uid().slice(0, 8).toUpperCase();
+      if (a.recruitedBy === undefined) a.recruitedBy = null;
       const oldSettings = a.settings || {};
       a.settings = { ...DEFAULT_SETTINGS, ...oldSettings };
       if (oldSchema < 14 && (!oldSettings.difficulty || oldSettings.difficulty === 'normal')) a.settings.difficulty = 'cozy';
@@ -465,7 +468,29 @@
     });
   }
 
-  let editingAccountId = null, pendingAvatar = '';
+  let editingAccountId = null, pendingAvatar = '', pendingRecruitCode = null;
+  function consumeInviteParams() {
+    const params = new URLSearchParams(location.search), rawInvite = params.get('invite');
+    if (!rawInvite) return false;
+    const invite = safeText(rawInvite, 12).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase(), from = safeText(params.get('from') || '', 24);
+    const presetUsername = safeText(params.get('username') || '', 18).replace(/[^A-Za-z0-9_-]/g, ''), presetDisplayName = safeText(params.get('displayName') || '', 24), presetBio = safeText(params.get('bio') || '', 120);
+    history.replaceState({}, '', `${location.pathname}${location.hash || ''}`);
+    if (!invite) return false;
+    if (presetUsername && presetDisplayName && !db.accounts.some(a => a.username.toLowerCase() === presetUsername.toLowerCase())) {
+      const previousDb = deepCopy(db), a = makeAccount(presetDisplayName, presetUsername); a.bio = presetBio || a.bio; a.recruitedBy = invite; a.petals = safePetals(a.petals + 100);
+      if (firstAccountSetupRequired) db.accounts = [a]; else db.accounts.push(a); db.activeId = a.id;
+      if (saveDB()) { firstAccountSetupRequired = false; pendingRecruitCode = null; refreshAccountUI(); renderAccounts(); toast(from ? `Welcome, ${presetDisplayName}! Invited by ${from} — +100 Petals` : `Welcome, ${presetDisplayName}! +100 Petals`, 3600); return true; }
+      db = previousDb;
+    }
+    pendingRecruitCode = invite;
+    openProfileEditor(firstAccountSetupRequired ? db.activeId : null, firstAccountSetupRequired);
+    if (presetUsername) dom.usernameInput.value = presetUsername;
+    if (presetDisplayName) dom.displayNameInput.value = presetDisplayName;
+    if (presetBio) dom.bioInput.value = presetBio;
+    setAvatar(dom.editAvatarPreview, { displayName: dom.displayNameInput.value, username: dom.usernameInput.value, avatar: pendingAvatar });
+    if (from) toast(`Invited by ${from} — create your critter to join`, 3600);
+    return true;
+  }
   function openProfileEditor(id = null, requiredSetup = false) {
     const source = id ? db.accounts.find(a => a.id === id) : makeAccount('New Critter', `critter_${Math.floor(Math.random() * 9000 + 1000)}`);
     editingAccountId = id; pendingAvatar = source.avatar || '';
@@ -485,13 +510,16 @@
     const displayName = safeText(dom.displayNameInput.value, 24);
     if (!username || !displayName) return toast('Enter a valid username and display name');
     if (db.accounts.some(a => a.username.toLowerCase() === username.toLowerCase() && a.id !== editingAccountId)) return toast('That username already exists on this device');
-    const previousDb = deepCopy(db);
+    const previousDb = deepCopy(db), recruitBonus = pendingRecruitCode && (firstAccountSetupRequired || !editingAccountId) ? pendingRecruitCode : null;
     if (editingAccountId) {
       const a = db.accounts.find(x => x.id === editingAccountId); Object.assign(a, { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar });
+      if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     } else {
       const a = makeAccount(displayName, username); a.bio = safeText(dom.bioInput.value, 120); a.avatar = pendingAvatar; db.accounts.push(a); db.activeId = a.id;
+      if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     }
     if (!saveDB()) { db = previousDb; refreshAccountUI(); renderAccounts(); return toast('Account could not be saved: browser storage may be full'); }
+    if (recruitBonus) pendingRecruitCode = null;
     firstAccountSetupRequired = false; dom.profileModal.classList.remove('required-account-setup'); $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=false);
     dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved'); setTimeout(openJoinFromUrl,0);
   });
@@ -557,6 +585,8 @@
   }
   function normalizeImportedAccount(source) {
     const a = deepCopy(source || {}); a.id = uid();
+    a.recruitCode = safeText(a.recruitCode, 12).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() || uid().slice(0, 8).toUpperCase();
+    a.recruitedBy = a.recruitedBy == null ? null : safeText(a.recruitedBy, 12).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() || null;
     a.username = safeText(a.username, 18).replace(/[^A-Za-z0-9_-]/g, '') || `imported_${Date.now().toString().slice(-4)}`;
     const importedBase = a.username.slice(0, 13); let importedSuffix = 2; while (db.accounts.some(x => x.username.toLowerCase() === a.username.toLowerCase())) a.username = `${importedBase}_${importedSuffix++}`.slice(0,18);
     a.displayName = safeText(a.displayName, 24) || 'Imported Critter'; a.bio = safeText(a.bio, 120);
@@ -789,6 +819,7 @@
   $('#accountBtn').onclick = $('#accountsBtn').onclick = () => { renderAccounts(); dom.accountsModal.showModal(); };
   $('#editProfileBtn').onclick = () => openProfileEditor(activeAccount().id);
   $('#newAccountBtn').onclick = () => openProfileEditor(null);
+  $('#copyInviteBtn').onclick = () => { const a = activeAccount(), link = `${location.origin}${location.pathname.replace(/index\.html$/, '')}invite.html?invite=${a.recruitCode}&from=${encodeURIComponent(a.displayName)}`; copyText(link, 'Invite link'); };
   $('#importAccountBtn').onclick = () => $('#profileXmlFileInput').click();
   $('#legacyImportBtn').onclick = openBackupImport;
   $('#profileXmlFileInput').addEventListener('change', async e => {
@@ -2979,7 +3010,7 @@
 
   // -------------------- Installation and startup --------------------
   let initialEntryShown=false;
-  function showInitialEntry(){if(initialEntryShown)return;initialEntryShown=true;if(firstAccountSetupRequired)openProfileEditor(db.activeId,true);else openJoinFromUrl();}
+  function showInitialEntry(){if(initialEntryShown)return;initialEntryShown=true;if(consumeInviteParams())return;if(firstAccountSetupRequired)openProfileEditor(db.activeId,true);else openJoinFromUrl();}
   function runStudioBoot() {
     if (!dom.studioBoot) {
       window.__critterBootReport?.('ready', 'Startup overlay was not present; the game initialized normally.');
