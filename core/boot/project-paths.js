@@ -7,7 +7,7 @@
   }
   function projectRoot() {
     if (location.protocol === 'file:') {
-      const pathname = location.pathname.replace(/\/g, '/');
+      const pathname = location.pathname.replace(/\\/g, '/');
       const markers = ['/core/', '/reset/', '/invite/', '/portable/'];
       for (const marker of markers) {
         const index = pathname.lastIndexOf(marker);

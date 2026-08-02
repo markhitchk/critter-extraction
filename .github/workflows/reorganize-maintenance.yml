@@ -183,7 +183,7 @@ jobs:
           add_feedback_scripts('core/error-system/index.html', '../shared/github-issues.js', '../ui/github-feedback.js')
 
           allowed = {'.html', '.js', '.mjs', '.css', '.md', '.json', '.yml', '.yaml', '.txt'}
-          old = 'Cartoon-Realistic Art Upgrade'
+          old = 'Cartoon-Realistic Extraction Shooter'
           new = 'Cartoon-Realistic Extraction Shooter'
           for item in Path('.').rglob('*'):
               if not item.is_file() or item.suffix.lower() not in allowed:

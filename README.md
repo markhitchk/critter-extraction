@@ -39,3 +39,8 @@ Critter Extraction is still being developed. Features, gameplay, and artwork may
 ## Credits
 
 Created by **Harley’s Studios**.
+
+## Feedback and Issues
+
+- [Report a new issue](https://github.com/markhitchk/critter-extraction/issues/new)
+- [View existing issues](https://github.com/markhitchk/critter-extraction/issues)
