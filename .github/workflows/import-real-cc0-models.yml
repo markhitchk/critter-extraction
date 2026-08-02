@@ -62,15 +62,15 @@ jobs:
           mkdir -p /tmp/cc0-assets/sushi-restaurant
           mkdir -p /tmp/cc0-assets/animated-animals
 
-          gdown --folder --remaining-ok \
+          gdown --folder \
             'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C' \
             -O /tmp/cc0-assets/toon-shooter
 
-          gdown --folder --remaining-ok \
+          gdown --folder \
             'https://drive.google.com/drive/folders/1srOaThdSqYBtmrqq9couZShM5r0cw_bH' \
             -O /tmp/cc0-assets/sushi-restaurant
 
-          gdown --folder --remaining-ok \
+          gdown --folder \
             'https://drive.google.com/drive/folders/1uJ3N5HfB7jKTseJUNQr3N4YaN0UuEtHk' \
             -O /tmp/cc0-assets/animated-animals
 
