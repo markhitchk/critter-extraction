@@ -3,28 +3,28 @@ name: Portable build parity
 on:
   pull_request:
     paths:
-      - START_HERE.html
-      - portable/**
-      - core/**
-      - assets/**
-      - styles.css
-      - tools/build-portable.mjs
-      - tools/verify-portable-parity.mjs
-      - package.json
-      - package-lock.json
+      - live/START_HERE.html
+      - live/portable/**
+      - live/core/**
+      - live/assets/**
+      - live/styles.css
+      - live/tools/build-portable.mjs
+      - live/tools/verify-portable-parity.mjs
+      - live/package.json
+      - live/package-lock.json
   push:
     branches:
       - main
     paths:
-      - START_HERE.html
-      - portable/**
-      - core/**
-      - assets/**
-      - styles.css
-      - tools/build-portable.mjs
-      - tools/verify-portable-parity.mjs
-      - package.json
-      - package-lock.json
+      - live/START_HERE.html
+      - live/portable/**
+      - live/core/**
+      - live/assets/**
+      - live/styles.css
+      - live/tools/build-portable.mjs
+      - live/tools/verify-portable-parity.mjs
+      - live/package.json
+      - live/package-lock.json
   workflow_dispatch:
 
 permissions:
@@ -33,6 +33,9 @@ permissions:
 jobs:
   parity:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: live
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -42,6 +45,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: live/package-lock.json
 
       - name: Install dependencies
         run: npm ci

@@ -1,1 +1,23 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page Not Found — Critter Extraction</title></head><body><p id="fallback">Opening the Critter Extraction error center…</p><script>(function(){var path=location.pathname,query=location.search,hash=location.hash,base='/critter-extraction/';try{sessionStorage.setItem('ce:last-missing-request',JSON.stringify({pathname:path,search:query,hash:hash,occurredAt:new Date().toISOString()}));}catch(_){}function querySummary(value){if(!value)return'';try{var keys=[];new URLSearchParams(value).forEach(function(_,key){key=String(key||'').replace(/[^a-z0-9_.-]/gi,'').slice(0,80);if(key&&keys.indexOf(key)<0)keys.push(key);});return keys.length?'?'+keys.join('&'):'?present';}catch(_){return'?present';}}function hashSummary(value){if(!value)return'';var key=String(value).slice(1).split(/[=&]/)[0].replace(/[^a-z0-9_.-]/gi,'').slice(0,80);return'#'+(key||'present');}var i=path.indexOf(base);var root=location.origin+(i<0?'/':path.slice(0,i+base.length));if(path.indexOf('/core/error-system/')>=0){document.getElementById('fallback').textContent='The requested page was not found.';return;}var q=new URLSearchParams();q.set('code','CE-WEB-404');q.set('missingPath',path.slice(0,500));if(query)q.set('missingQuery',querySummary(query));if(hash)q.set('missingHash',hashSummary(hash));location.replace(root+'core/error-system/index.html?'+q.toString());})();</script><noscript><a href="./core/error-system/fallback.html">Open error help</a></noscript></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Critter Extraction</title>
+  <script>
+    (() => {
+      const parts = location.pathname.split('/').filter(Boolean);
+      const base = location.hostname.endsWith('github.io') && parts.length
+        ? `/${parts[0]}/`
+        : '/';
+      const target = new URL(`${base}live/`, location.origin);
+      target.search = location.search;
+      target.hash = location.hash;
+      location.replace(target.href);
+    })();
+  </script>
+</head>
+<body>
+  <p><a href="./live/">Open Critter Extraction Live</a></p>
+</body>
+</html>
