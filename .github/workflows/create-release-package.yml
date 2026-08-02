@@ -12,6 +12,9 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: live
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -21,6 +24,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: live/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -40,6 +44,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: critter-extraction-v0.22.0
-          path: critter-extraction-v0.22.0.zip
+          path: live/critter-extraction-v0.22.0.zip
           if-no-files-found: error
           retention-days: 30
