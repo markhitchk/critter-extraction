@@ -1,4 +1,7 @@
+const path = require('node:path');
 const { defineConfig, devices } = require('@playwright/test');
+
+const repositoryRoot = path.resolve(__dirname, '../..');
 
 module.exports = defineConfig({
   testDir: '.',
@@ -9,6 +12,7 @@ module.exports = defineConfig({
   },
   webServer: {
     command: 'node tools/static-server.mjs',
+    cwd: repositoryRoot,
     port: 4173,
     reuseExistingServer: true
   },
