@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#101426">
   <meta name="description" content="Reset Critter Extraction inventory or Petals while keeping level, XP, and the complete career extraction record.">
   <title>Reset Progress — Critter Extraction</title>
-  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/branding/icon.svg" type="image/svg+xml">
   <style>
     :root{color-scheme:dark;--bg:#090c17;--panel:#12182c;--panel2:#171f38;--text:#f5f7ff;--muted:#aeb8d2;--cyan:#64e8ea;--green:#86f4c5;--yellow:#ffd36f;--red:#ff7c8e;--line:rgba(255,255,255,.13)}
     *{box-sizing:border-box}
@@ -48,11 +48,11 @@
     [hidden]{display:none!important}
     @media(max-width:650px){body{padding:14px}.account{grid-template-columns:1fr}.account-stats{grid-template-columns:repeat(2,1fr)}.stat{text-align:left}.choices{grid-template-columns:1fr}.actions>*{width:100%}}
   </style>
-</head>
+<link rel="stylesheet" href="../core/pages/reset/reset-page.css"></head>
 <body>
   <main>
     <div class="brand">
-      <img src="../assets/HTG.png" alt="Harley's Studios logo">
+      <img src="../assets/branding/HTG.png" alt="Harley's Studios logo">
       <div><span class="eyebrow">Harley's Studios Account Tool</span><h1>Reset Critter Progress</h1></div>
     </div>
 
@@ -201,7 +201,7 @@
 
       function accountToXml(value) {
         const payload = base64UrlUtf8(JSON.stringify({ type: 'critter-account-xml-v5', account: value }));
-        return `<?xml version="1.0" encoding="UTF-8"?>\n<CritterExtractionProfile version="5" studio="Harley's Studios" gameVersion="v0.27.1" exportedAt="${new Date().toISOString()}"><DisplayName>${xmlEscape(value.displayName)}</DisplayName><Username>${xmlEscape(value.username)}</Username><Bio>${xmlEscape(value.bio)}</Bio><AvatarURL>${xmlEscape(value.avatar)}</AvatarURL><ProfileData encoding="base64url-json">${payload}</ProfileData></CritterExtractionProfile>`;
+        return `<?xml version="1.0" encoding="UTF-8"?>\n<CritterExtractionProfile version="5" studio="Harley's Studios" gameVersion="v0.22.0" exportedAt="${new Date().toISOString()}"><DisplayName>${xmlEscape(value.displayName)}</DisplayName><Username>${xmlEscape(value.username)}</Username><Bio>${xmlEscape(value.bio)}</Bio><AvatarURL>${xmlEscape(value.avatar)}</AvatarURL><ProfileData encoding="base64url-json">${payload}</ProfileData></CritterExtractionProfile>`;
       }
 
       function downloadBackup() {
@@ -314,5 +314,7 @@
       }
     })();
   </script>
+<script src="../core/pages/reset/reset-page.js"></script>  <script src="../core/shared/github-issues.js"></script>
+  <script src="../core/ui/github-feedback.js"></script>
 </body>
 </html>

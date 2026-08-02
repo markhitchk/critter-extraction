@@ -5,325 +5,40 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15162b">
   <meta name="description" content="Harley’s Studios presents Critter Extraction — a cute first-person and third-person browser extraction shooter with custom critters, weapons, loadouts, inventory, and direct co-op.">
-  <title>Critter Extraction v0.27.1 — Cartoon-Realistic Art Upgrade — Harley’s Studios</title>
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any">
-  <link rel="shortcut icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./assets/HTG.png">
+  <title>Critter Extraction v0.22.0 — Cartoon-Realistic Extraction Shooter — Harley’s Studios</title>
+  <link rel="icon" href="./assets/branding/icon.svg" type="image/svg+xml" sizes="any">
+  <link rel="shortcut icon" href="./assets/branding/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/branding/HTG.png">
   <link rel="stylesheet" href="./styles.css" data-required-boot-file="styles.css">
   <script>
-    /* Critter Extraction v0.27.1 startup diagnostics.
-       Gives exact file/runtime details, lets the player copy a support report,
-       and treats slow loading as recoverable instead of immediately failing. */
-    (function () {
-      'use strict';
-
-      var state = window.__CRITTER_BOOT__ = {
-        version: '27.1',
-        startedAt: Date.now(),
-        gameStarted: false,
-        initialized: false,
-        ready: false,
-        failed: false,
-        stage: 'document-loading',
-        detail: '',
-        history: [],
-        errors: []
-      };
-      var panelMode = '';
-      var slowTimer = 0;
-      var failureTimer = 0;
-
-      function clean(value) {
-        return String(value == null ? '' : value).replace(/[<>]/g, '');
-      }
-
-      function shortFile(value) {
-        var raw = clean(value || 'unknown file');
-        try {
-          var url = new URL(raw, location.href);
-          return url.pathname.split('/').filter(Boolean).slice(-3).join('/') || raw;
-        } catch (_) {
-          return raw;
-        }
-      }
-
-      function errorCode(kind) {
-        var map = { 'file load':'FILE', 'JavaScript':'JS', promise:'PROMISE', timeout:'TIMEOUT', startup:'START' };
-        return 'CE-' + (map[kind] || 'BOOT') + '-' + String(state.errors.length + 1).padStart(2, '0');
-      }
-
-      function addHistory(stage, detail) {
-        state.history.push({
-          stage: clean(stage || 'unknown'),
-          detail: clean(detail || ''),
-          elapsedMs: Date.now() - state.startedAt
-        });
-        if (state.history.length > 30) state.history.shift();
-      }
-
-      function addError(kind, message, source, line, column) {
-        var entry = {
-          code: errorCode(kind),
-          kind: clean(kind || 'startup'),
-          message: clean(message || 'Unknown startup error'),
-          source: shortFile(source || ''),
-          line: Number(line || 0),
-          column: Number(column || 0),
-          elapsedMs: Date.now() - state.startedAt,
-          at: new Date().toISOString()
-        };
-        state.errors.push(entry);
-        return entry;
-      }
-
-      function supportReport() {
-        return JSON.stringify({
-          game: 'Critter Extraction',
-          version: state.version,
-          url: location.href,
-          protocol: location.protocol,
-          online: navigator.onLine,
-          userAgent: navigator.userAgent,
-          viewport: { width: innerWidth, height: innerHeight, pixelRatio: devicePixelRatio || 1 },
-          stage: state.stage,
-          detail: state.detail,
-          elapsedMs: Date.now() - state.startedAt,
-          flags: { gameStarted: state.gameStarted, initialized: state.initialized, ready: state.ready, failed: state.failed },
-          history: state.history,
-          errors: state.errors
-        }, null, 2);
-      }
-
-      function copyText(value) {
-        if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(value);
-        return new Promise(function (resolve, reject) {
-          try {
-            var area = document.createElement('textarea');
-            area.value = value;
-            area.style.position = 'fixed';
-            area.style.opacity = '0';
-            document.body.appendChild(area);
-            area.select();
-            document.execCommand('copy') ? resolve() : reject(new Error('Copy failed'));
-            area.remove();
-          } catch (err) { reject(err); }
-        });
-      }
-
-      function hideBootForRecovery() {
-        var boot = document.getElementById('studioBoot');
-        if (boot) boot.hidden = true;
-        panelMode = '';
-      }
-
-      function renderPanel(mode, summary, entry) {
-        if (state.ready) return;
-        var boot = document.getElementById('studioBoot');
-        if (!boot) {
-          document.addEventListener('DOMContentLoaded', function () { renderPanel(mode, summary, entry); }, { once: true });
-          return;
-        }
-
-        panelMode = mode;
-        if (mode === 'failure') {
-          state.failed = true;
-          state.stage = 'failed';
-          state.detail = clean(summary);
-          clearTimeout(slowTimer);
-          clearTimeout(failureTimer);
-        }
-
-        boot.hidden = false;
-        boot.classList.remove('is-hiding');
-        boot.innerHTML = '';
-        boot.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:16px;overflow:auto;background:#090b15;color:#fff;font-family:Arial,system-ui,sans-serif;';
-
-        var card = document.createElement('section');
-        card.className = 'studio-loading-card boot-problem-card';
-        card.style.cssText = 'width:min(720px,100%);padding:24px;border:1px solid rgba(100,232,234,.55);border-radius:22px;background:#11152a;box-shadow:0 24px 80px rgba(0,0,0,.6);text-align:left;';
-
-        var eyebrow = document.createElement('span');
-        eyebrow.className = 'eyebrow';
-        eyebrow.textContent = mode === 'slow' ? 'STILL LOADING — RECOVERY OPTIONS' : 'STARTUP ERROR';
-        var heading = document.createElement('h1');
-        heading.textContent = mode === 'slow' ? 'Critter Extraction is taking longer than expected' : 'Critter Extraction could not finish loading';
-        heading.style.margin = '8px 0 10px';
-        var message = document.createElement('p');
-        message.textContent = clean(summary);
-        message.style.cssText = 'margin:0 0 14px;color:#d5daea;line-height:1.5;';
-
-        var checklist = document.createElement('div');
-        checklist.className = 'boot-checklist';
-        checklist.style.cssText = 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 14px;';
-        [
-          ['PAGE', true],
-          ['GAME SCRIPT', state.gameStarted],
-          ['SYSTEMS', state.initialized],
-          ['READY', state.ready]
-        ].forEach(function (row) {
-          var item = document.createElement('div');
-          item.style.cssText = 'padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,.11);background:' + (row[1] ? 'rgba(126,247,212,.10)' : 'rgba(255,211,111,.07)') + ';font-size:10px;font-weight:800;text-align:center;color:' + (row[1] ? '#9ff8df' : '#ffd99a') + ';';
-          item.textContent = (row[1] ? '✓ ' : '… ') + row[0];
-          checklist.appendChild(item);
-        });
-
-        var details = document.createElement('pre');
-        details.className = 'boot-error-details';
-        var detailText = entry
-          ? entry.code + '\n' + entry.kind.toUpperCase() + ': ' + entry.message
-          : 'STATUS: ' + clean(state.stage) + (state.detail ? '\nDETAIL: ' + clean(state.detail) : '');
-        if (entry && entry.source) detailText += '\nFILE: ' + entry.source;
-        if (entry && entry.line) detailText += '\nLOCATION: line ' + entry.line + (entry.column ? ', column ' + entry.column : '');
-        detailText += '\nELAPSED: ' + Math.round((Date.now() - state.startedAt) / 1000) + ' seconds';
-        details.textContent = detailText;
-        details.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;padding:12px;border-radius:10px;background:#080b18;border:1px solid rgba(255,255,255,.12);color:#ffd99a;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;';
-
-        var help = document.createElement('p');
-        help.textContent = location.protocol === 'file:'
-          ? 'Keep the extracted folder together. START_HERE.html is the portable build. The support report below records the exact stage, browser, viewport, and failed file without including account or stash data.'
-          : 'Reload once. On GitHub Pages, index.html must be at the published repository root—not inside another Critter-Extraction folder. Also verify that styles.css, assets/models/harleys-model-library.js, and js/game.js kept their original case-sensitive paths.';
-        help.style.cssText = 'margin:0 0 16px;color:#aeb5cb;font-size:12px;line-height:1.5;';
-
-        var status = document.createElement('div');
-        status.setAttribute('aria-live', 'polite');
-        status.style.cssText = 'min-height:18px;margin:0 0 8px;color:#9ff8df;font-size:11px;font-weight:800;';
-
-        var actions = document.createElement('div');
-        actions.className = 'boot-error-actions';
-        actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:9px;';
-
-        function action(label, primary, handler) {
-          var button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = label;
-          button.style.cssText = 'border:' + (primary ? '0' : '1px solid rgba(255,255,255,.18)') + ';border-radius:10px;padding:10px 14px;background:' + (primary ? '#64e8ea' : 'rgba(255,255,255,.06)') + ';color:' + (primary ? '#0b1020' : '#fff') + ';font-weight:800;cursor:pointer;';
-          button.addEventListener('click', handler);
-          actions.appendChild(button);
-          return button;
-        }
-
-        action('Retry Loading', true, function () { location.reload(); });
-        action('Copy Support Report', false, function () {
-          copyText(supportReport()).then(function () { status.textContent = 'Support report copied.'; }, function () { status.textContent = 'Copy failed. Open the browser console and type __CRITTER_BOOT__.errors'; });
-        });
-        action('Download Support Report', false, function () {
-          try {
-            var blob = new Blob([supportReport()], { type: 'application/json' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'critter-extraction-v0.27.1-support-report.json';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(function () { URL.revokeObjectURL(link.href); }, 500);
-            status.textContent = 'Support report downloaded.';
-          } catch (_) { status.textContent = 'Download failed. Use Copy Support Report instead.'; }
-        });
-
-        if (mode === 'slow') {
-          action('Keep Waiting', false, function () {
-            status.textContent = 'Waiting 30 more seconds…';
-            hideBootForRecovery();
-            failureTimer = setTimeout(function () {
-              if (state.ready || state.failed) return;
-              var timeout = addError('timeout', 'The game still did not report ready after the extended wait.', state.gameStarted ? 'js/game.js' : 'index.html', 0, 0);
-              renderPanel('failure', timeout.message, timeout);
-            }, 30000);
-          });
-          if (state.initialized) action('Continue to Menu', false, hideBootForRecovery);
-        }
-
-        if (!/START_HERE\.html$/i.test(location.pathname)) {
-          var portable = document.createElement('a');
-          portable.href = './START_HERE.html';
-          portable.textContent = 'Open Portable Build';
-          portable.style.cssText = 'display:inline-flex;align-items:center;border:1px solid rgba(142,130,255,.55);border-radius:10px;padding:9px 13px;background:rgba(142,130,255,.14);color:#fff;text-decoration:none;font-weight:800;';
-          actions.appendChild(portable);
-        }
-
-        card.appendChild(eyebrow);
-        card.appendChild(heading);
-        card.appendChild(message);
-        card.appendChild(checklist);
-        card.appendChild(details);
-        card.appendChild(help);
-        card.appendChild(status);
-        card.appendChild(actions);
-        boot.appendChild(card);
-      }
-
-      window.__critterBootReport = function (stage, detail) {
-        stage = clean(stage || 'unknown');
-        state.stage = stage;
-        state.detail = clean(detail || '');
-        addHistory(stage, detail);
-        if (stage === 'game-script-started') state.gameStarted = true;
-        if (stage === 'game-initialized') state.initialized = true;
-        if (stage === 'ready') {
-          state.ready = true;
-          state.failed = false;
-          clearTimeout(slowTimer);
-          clearTimeout(failureTimer);
-        }
-        if (stage === 'failure') {
-          var entry = addError('startup', detail || 'The game reported a startup failure.');
-          renderPanel('failure', entry.message, entry);
-        }
-      };
-
-      window.addEventListener('error', function (event) {
-        if (state.ready) {
-          console.error('Critter Extraction runtime issue', event.error || event.message || event);
-          return;
-        }
-        var target = event && event.target;
-        if (target && target !== window) {
-          var tag = String(target.tagName || '').toUpperCase();
-          if (tag === 'SCRIPT' && target.dataset && target.dataset.optionalNetworkScript === 'true') return;
-          if (tag === 'SCRIPT' || (tag === 'LINK' && String(target.rel || '').toLowerCase() === 'stylesheet')) {
-            var source = target.getAttribute('src') || target.getAttribute('href') || 'unknown required file';
-            var entry = addError('file load', 'A required ' + tag.toLowerCase() + ' file failed to load.', source, 0, 0);
-            renderPanel('failure', 'A required game file failed to load: ' + entry.source, entry);
-          }
-          return;
-        }
-        var runtime = addError('JavaScript', event && event.message ? event.message : 'Unknown JavaScript error', event && event.filename ? event.filename : '', event && event.lineno ? event.lineno : 0, event && event.colno ? event.colno : 0);
-        renderPanel('failure', 'The game stopped during startup because of a JavaScript error.', runtime);
-      }, true);
-
-      window.addEventListener('unhandledrejection', function (event) {
-        if (state.ready) { console.error('Critter Extraction promise issue', event.reason); return; }
-        var reason = event && event.reason;
-        var message = reason && reason.message ? reason.message : clean(reason || 'Unhandled promise rejection');
-        var rejection = addError('promise', message, reason && reason.fileName ? reason.fileName : '', reason && reason.lineNumber ? reason.lineNumber : 0, 0);
-        renderPanel('failure', 'An initialization task failed.', rejection);
-      });
-
-      window.addEventListener('DOMContentLoaded', function () {
-        addHistory('dom-ready', 'The HTML document finished loading.');
-        slowTimer = setTimeout(function () {
-          if (state.ready || state.failed) return;
-          renderPanel('slow', state.gameStarted
-            ? 'The game script is running, but one initialization stage has not reported ready yet.'
-            : 'The browser has not started the main game script yet.', null);
-        }, 20000);
-        failureTimer = setTimeout(function () {
-          if (state.ready || state.failed) return;
-          var message = state.gameStarted
-            ? 'The game script did not finish initialization within 60 seconds.'
-            : 'The main game script did not begin within 60 seconds.';
-          var timeoutError = addError('timeout', message, state.gameStarted ? 'js/game.js' : 'index.html', 0, 0);
-          renderPanel('failure', message, timeoutError);
-        }, 60000);
-      }, { once: true });
-    })();
-  </script>
+(function(){
+  window.__CRITTER_EMERGENCY__=function(message){
+    if(document.getElementById('critter-emergency'))return;
+    var box=document.createElement('div');box.id='critter-emergency';
+    box.style.cssText='position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:20px;background:#090b15;color:#fff;font:16px/1.5 system-ui,sans-serif';
+    box.innerHTML='<section style="max-width:680px;padding:24px;border:1px solid #64e8ea;border-radius:18px;background:#11152a"><h1>Critter Extraction could not start</h1><p></p><button type="button" onclick="location.reload()">Reload</button></section>';
+    box.querySelector('p').textContent=message||'A required startup file could not be loaded.';document.body.appendChild(box);
+  };
+  addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(!window.__CRITTER_BOOT__)window.__CRITTER_EMERGENCY__('The boot monitor did not load.');},4000);});
+})();
+</script>
+<script src="./core/boot/project-paths.js" data-required-boot-file="core/boot/project-paths.js"></script>
+<script src="./core/config/version.js" data-required-boot-file="core/config/version.js"></script>
+<script src="./core/config/build-info.js"></script>
+<script src="./core/config/constants.js"></script>
+<script src="./core/boot/boot-state.js" data-required-boot-file="core/boot/boot-state.js"></script>
+<script src="./core/error-system/error-codes.js"></script>
+<script src="./core/error-system/error-sanitizer.js"></script>
+<script src="./core/error-system/error-reporter.js"></script>
+<script src="./core/error-system/error-ui.js"></script>
+<script src="./core/boot/required-files.js"></script>
+<script src="./core/boot/boot-monitor.js" data-required-boot-file="core/boot/boot-monitor.js"></script>
 </head>
 <body>
   <div id="studioBoot" class="studio-loading" aria-live="polite">
     <div class="studio-loading-bg"></div>
     <div class="studio-loading-card">
-      <img class="studio-logo" src="./assets/HTG.png" alt="Harley’s Studios puppy logo">
+      <img class="studio-logo" src="./assets/branding/HTG.png" alt="Harley’s Studios puppy logo">
       <span class="eyebrow">HARLEY’S STUDIOS PRESENTS</span>
       <h1>Critter Extraction</h1>
       <p>Cinematic critters. Tactical cover. Bigger extraction runs.</p>
@@ -334,7 +49,7 @@
   <div id="dropLoading" class="studio-loading drop-loading" hidden aria-live="polite">
     <div class="drop-loading-bg"></div>
     <div class="studio-loading-card compact-load">
-      <img class="studio-logo small-logo" src="./assets/HTG.png" alt="">
+      <img class="studio-logo small-logo" src="./assets/branding/HTG.png" alt="">
       <span class="eyebrow">PREPARING DROP</span>
       <h2 id="dropLoadingTitle">Packing the Meadow Kit</h2>
       <div class="loading-track"><b id="dropLoadingBar"></b></div>
@@ -344,8 +59,8 @@
   <div id="app">
     <header class="topbar">
       <button class="brand" id="brandBtn" aria-label="Return to menu">
-        <img src="./assets/icon.svg" alt="Harley’s Studios puppy icon" width="46" height="46">
-        <span><strong>Critter Extraction</strong><small>v0.27.1 • Harley’s Studios • Cartoon-Realistic Art Upgrade</small></span>
+        <img src="./assets/branding/icon.svg" alt="Harley’s Studios puppy icon" width="46" height="46">
+        <span><strong>Critter Extraction</strong><small>v0.22.0 • Harley’s Studios • Cartoon-Realistic Extraction Shooter</small></span>
       </button>
       <div class="top-actions">
         <button class="ghost" data-open="helpModal">Controls</button>
@@ -369,7 +84,7 @@
             </div>
             <div class="notice"><strong>Controls:</strong> click the game to capture the mouse, use <kbd>W A S D</kbd> to move, <kbd>Space</kbd> to jump, left-click or <kbd>F</kbd> to fire, <kbd>Esc</kbd> for pause, <kbd>V</kbd> to switch views, and <kbd>B</kbd> to switch shoulders.</div>
           </div>
-          <div class="hero-scene studio-hero" aria-hidden="true"><img src="./assets/loading/cinematic-gameplay-fullhd.webp" alt=""><div class="studio-stamp"><img src="./assets/icon.svg" alt=""><span>ORIGINAL GAME ASSETS<br>BY HARLEY’S STUDIOS</span></div></div>
+          <div class="hero-scene studio-hero" aria-hidden="true"><img src="./assets/loading/cinematic-gameplay-fullhd.webp" alt=""><div class="studio-stamp"><img src="./assets/branding/icon.svg" alt=""><span>ORIGINAL GAME ASSETS<br>BY HARLEY’S STUDIOS</span></div></div>
         </div>
 
         <div class="dashboard">
@@ -399,7 +114,7 @@
             <div class="button-pair triple"><button class="secondary" id="inventoryBtn">Stash</button><button class="secondary" id="merchantBtn" type="button">Trading Post</button><button class="secondary" data-open="customizeModal">Character</button></div>
           </article>
         </div>
-        <footer class="studio-footer"><img src="./assets/HTG.png" alt="Harley the Gamer puppy logo"><div><strong>Made by Harley’s Studios</strong><small>Original character, weapon, item, regional map, interface, and loading assets created for Critter Extraction.</small></div></footer>
+        <footer class="studio-footer"><img src="./assets/branding/HTG.png" alt="Harley the Gamer puppy logo"><div><strong>Made by Harley’s Studios</strong><small>Original character, weapon, item, regional map, interface, and loading assets created for Critter Extraction.</small></div></footer>
       </section>
 
       <section id="gameScreen" class="screen game-screen">
@@ -711,7 +426,9 @@
     <div class="modal-card wide"><header><div><span class="eyebrow">HOW TO PLAY</span><h2>Controls, Maps & Contracts</h2></div><button class="icon-close" data-close="helpModal">×</button></header><div class="help-grid"><section><h3>Movement</h3><p><kbd>W A S D</kbd> Move</p><p><kbd>Space</kbd> Jump</p><p><kbd>Shift</kbd> Sprint</p><p><kbd>C / Ctrl</kbd> Crouch behind train cars, containers, crates, and boulders</p><p><kbd>Click inside game</kbd> Capture mouse without covering the screen</p><p><kbd>Mouse</kbd> Look and aim with continuous 360° rotation</p><p><kbd>Esc</kbd> Open or close the pause menu</p><p><kbd>V</kbd> Switch first/third person</p><p><kbd>B</kbd> Switch third-person shoulder</p><p>Every drop selects a named region, terrain palette, extraction point, landmark orientation, cover layout, prop placement, enemy patrol, and loot arrangement from the run seed.</p></section><section><h3>Combat</h3><p><kbd>Left click / F</kbd> Fire</p><p>First-person shows species-colored paws and the equipped weapon. Third-person uses a collision-safe over-the-shoulder camera so the critter stays visible without covering the crosshair.</p><p><kbd>Right click</kbd> Aim down sights</p><p><kbd>R</kbd> Reload</p><p><kbd>Q</kbd> Use healing patch</p><p><kbd>I / Tab</kbd> Open backpack</p><p><kbd>1–4</kbd> Quick-use slots</p></section><section><h3>Touch Screens</h3><p>Phones and tablets automatically get a movement joystick, a right-side drag area for continuous 360° looking, and large controls for jump, fire, aim, reload, interact, healing, crouch, backpack, camera, shoulder, and pause. Touchscreen laptops stay in mouse/keyboard mode unless touch controls are forced in Settings.</p><p>Hold <kbd>FIRE</kbd>, <kbd>AIM</kbd>, or <kbd>USE</kbd> while moving and looking with other fingers. Tap <kbd>C</kbd> to toggle crouch. Landscape orientation gives the clearest view.</p></section><section><h3>Contracts & Extraction</h3><p>Each run rolls a required drop contract and an optional bonus contract from combat, scavenging, exploration, survival, and gear objectives. Locate the beacon, complete the required contract, carry at least five Moonberries, then hold <kbd>E</kbd> or <kbd>USE</kbd> at the beacon for two seconds. Extracted items move into your stash; failed-drop loot is lost.</p></section><section><h3>Multiplayer & Browsers</h3><p>One host and up to three guests join with a six-digit room code. A shared GitHub Pages URL includes the active code, fills the Join Multiplayer form, and starts connecting automatically after required account setup. Guests can still type the host's code and press Join Room when using the manual flow. The host chooses Co-op Extraction or Player vs Player. GitHub Pages supplies HTTPS; PeerJS supplies secure signaling and STUN/TURN-assisted WebRTC connectivity. Internet is required for online rooms. Solo play works offline. The host-controlled Enemy Respawn Rate setting offers Off, Slow, Normal, or Fast replacements in Solo and Co-op; difficulty scales the delay and population cap, while PvP keeps AI disabled.</p></section><section><h3>Fair Play</h3><p>Solo, Co-op, and PvP use the same weapon timing, movement, collision, spawn protection, gear ownership, and interaction-distance rules. In online matches the host simulates player movement and combat, validates loot and extraction inventory, sanitizes inputs, and limits malformed or repeated network actions.</p><p>Firing cancels spawn protection. Repeated invalid actions receive warnings and can be disconnected. Because this is a static peer-hosted browser game, Fair Play reduces casual exploits but cannot equal dedicated-server anti-cheat.</p></section></div></div>
   </dialog>
 
-  <script src="./assets/models/harleys-model-library.js" data-required-boot-file="assets/models/harleys-model-library.js"></script>
-  <script src="./js/game.js?v=0.27.1-hotfix7" data-required-boot-file="js/game.js"></script>
+  <script src="./core/rendering/model-library.js" data-required-boot-file="core/rendering/model-library.js"></script>
+  <script src="./core/loader/game-loader.js?v=0.22.0" data-required-boot-file="core/loader/game-loader.js"></script>
+  <script src="./core/shared/github-issues.js"></script>
+  <script src="./core/ui/github-feedback.js"></script>
 </body>
 </html>
