@@ -36,6 +36,37 @@ A new **Unreal Engine 6 edition of Critter Extraction is coming soon**.
 
 Critter Extraction is still being developed. Features, gameplay, and artwork may change as the game is improved.
 
+## Current Version
+
+**v0.22.0**
+
+## Repository Layout
+
+- `index.html` — canonical GitHub Pages homepage
+- `core/` — boot, game, loader, rendering, page, style, storage, multiplayer, account, inventory, AI, and UI systems
+- `core/error-system/` — canonical privacy-safe error center
+- `assets/` — branding, characters, items, loading media, vendor libraries, and weapons
+- `docs/` — architecture, guides, credits, error documentation, design notes, and release notes
+- `portable/START_HERE.html` — canonical portable build
+- `tests/` — browser, smoke, unit, integration, multiplayer, fixture, and error coverage
+- `tools/` — build and validation utilities
+
+Root `404.html`, `error.html`, `invite.html`, `START_HERE.html`, `styles.css`, and legacy JavaScript/asset URLs are compatibility adapters or generated files.
+
+## Development
+
+```bash
+npm ci
+npm test
+```
+
+Generate compatibility files with:
+
+```bash
+npm run build:styles
+npm run build:portable
+```
+
 ## Credits
 
 Created by **Harley’s Studios**.
