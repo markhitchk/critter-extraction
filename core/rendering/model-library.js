@@ -33,7 +33,8 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
   authoredRuntimeAssets: {
     peaPopper: 'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
     supplyCrate: 'assets/models/loot/supply_crate/supply_crate.glb',
-    pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb'
+    pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
+    pineRock: 'assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb'
   },
   combatRig: {
     zones: [
@@ -62,3 +63,4 @@ function loadAuthoredBridge(path) {
 
 if (!window.HarleyHighEndRuntime) loadAuthoredBridge('./core/rendering/high-end-glb-runtime.js');
 if (!window.HarleyHighEndWorldPatches) loadAuthoredBridge('./core/rendering/high-end-world-patches.js');
+if (!window.HarleyHighEndRockPatches) loadAuthoredBridge('./core/rendering/high-end-rock-patches.js');
