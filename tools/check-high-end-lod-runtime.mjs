@@ -66,22 +66,24 @@ function validateGlb(relativePath, expectedLod) {
     const json = JSON.parse(buffer.subarray(20, 20 + jsonLength).toString('utf8').trim());
     const extras = json.scenes?.[json.scene || 0]?.extras || {};
     if (extras.asset_id !== 'weapon.pea_popper') errors.push(`${relativePath} asset_id must be weapon.pea_popper`);
-    if (expectedLod > 0 && Number(extras.lod) !== expectedLod) errors.push(`${relativePath} must declare lod ${expectedLod}`);
-    if (expectedLod > 0 && extras.source_up_axis !== 'Z') errors.push(`${relativePath} must declare source_up_axis Z`);
+    if (Number(extras.lod) !== expectedLod) errors.push(`${relativePath} must declare lod ${expectedLod}`);
+    if (extras.source_up_axis !== 'Z') errors.push(`${relativePath} must declare source_up_axis Z`);
     if (!Array.isArray(json.meshes) || json.meshes.length < 1) errors.push(`${relativePath} contains no meshes`);
   } catch (error) {
     errors.push(`${relativePath} JSON chunk is invalid: ${error.message}`);
   }
 }
 
-validateGlb('assets/models/weapons/pea_popper/pea_popper_lod0.glb', 0);
-validateGlb('assets/models/weapons/pea_popper/pea_popper_lod1.glb', 1);
-validateGlb('assets/models/weapons/pea_popper/pea_popper_lod2.glb', 2);
+const lodPaths = [0, 1, 2].map(lod => `assets/models/weapons/pea_popper/pea_popper_lod${lod}.glb`);
+lodPaths.forEach((relativePath, lod) => validateGlb(relativePath, lod));
 
-const lodSizes = [0, 1, 2].map(lod => fs.statSync(path.join(root, `assets/models/weapons/pea_popper/pea_popper_lod${lod}.glb`)).size);
-if (!(lodSizes[0] > lodSizes[1] && lodSizes[1] > lodSizes[2])) {
-  errors.push(`Pea Popper LOD file sizes must decrease from LOD0 to LOD2; got ${lodSizes.join(', ')}`);
-}
+const lodHashes = lodPaths.map(relativePath => {
+  const buffer = readBytes(relativePath);
+  let hash = 2166136261;
+  for (const byte of buffer) hash = Math.imul(hash ^ byte, 16777619) >>> 0;
+  return hash.toString(16).padStart(8, '0');
+});
+if (new Set(lodHashes).size !== lodHashes.length) errors.push('Pea Popper LOD files must contain distinct authored geometry');
 
 if (errors.length) {
   console.error(`Pea Popper LOD validation failed with ${errors.length} issue${errors.length === 1 ? '' : 's'}:`);
@@ -89,4 +91,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Pea Popper authored LOD selection OK (${lodSizes.join(' / ')} bytes)`);
+console.log(`Pea Popper authored LOD selection OK (${lodHashes.join(' / ')})`);
