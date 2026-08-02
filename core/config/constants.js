@@ -6,7 +6,7 @@
     PROJECT_NAME: 'Critter Extraction'
   });
 
-  const uiAssetVersion = '0.22.0-4';
+  const uiAssetVersion = '0.22.0-5';
 
   const loadStyle = (id, href) => {
     if (document.getElementById(id)) return;
@@ -30,6 +30,8 @@
   loadScript('settingsAccountsRevampScript', './core/ui/settings-accounts-revamp.js');
   loadStyle('critterUiMotionStyles', './core/ui/ui-motion.css');
   loadScript('critterUiMotionScript', './core/ui/ui-motion.js');
+  loadStyle('critterBanScreenStyles', './core/ui/ban-screen.css');
+  loadScript('critterBanScreenScript', './core/ui/ban-screen.js');
 
   // Keep the safe screen-space graphics polish, but do not patch the game
   // core at runtime. The previous graphics observer could repeatedly mutate
