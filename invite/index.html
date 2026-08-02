@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>You're Invited — Critter Extraction — Harley's Studios</title>
+<meta name="theme-color" content="#15162b">
+<link rel="icon" href="assets/branding/icon.svg">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .invite-wrap{min-height:100vh;display:grid;place-items:center;padding:32px 18px}
+  .invite-card{width:min(520px,100%);padding:38px 34px;text-align:center}
+  .invite-card .eyebrow{text-align:center}
+  .invite-card h1{font:700 clamp(26px,4vw,36px)/1.15 Arial,sans-serif;letter-spacing:-.02em;margin:0 0 10px}
+  .invite-card h1 span{background:linear-gradient(135deg,var(--mint),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .invite-card>p{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 26px}
+  .invite-form{text-align:left;margin-top:6px}
+  .invite-footnote{color:var(--muted);font-size:11px;line-height:1.55;margin:18px 0 0}
+  .invite-missing{display:none}
+  .invite-brand-row{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:22px}
+  .invite-brand-row img{width:40px;height:40px;filter:drop-shadow(0 8px 12px rgba(0,0,0,.25))}
+  .invite-brand-row small{display:block;color:var(--muted);font-size:11px;letter-spacing:.06em}
+  .invite-brand-row strong{font:700 17px Arial,sans-serif}
+</style>
+<link rel="stylesheet" href="../core/pages/invite/invite-page.css"></head>
+<body>
+  <div class="invite-wrap">
+    <div class="panel invite-card">
+      <div class="invite-brand-row">
+        <img src="assets/branding/HTG.png" alt="Harley's Studios">
+        <span style="text-align:left"><strong>Critter Extraction</strong><small>HARLEY'S STUDIOS</small></span>
+      </div>
+
+      <div id="inviteReady">
+        <span class="eyebrow">YOU'VE BEEN INVITED</span>
+        <h1>Join <span id="inviterName">a friend</span> in the Meadow</h1>
+        <p>Create your critter to drop into Critter Extraction together. It's free, and your progress saves right here in this browser.</p>
+        <form id="inviteForm" class="form-grid invite-form">
+          <label class="span-2">Username
+            <input id="inviteUsername" required maxlength="18" pattern="[A-Za-z0-9_-]+" placeholder="critter_1234" autocomplete="off">
+          </label>
+          <label class="span-2">Display Name
+            <input id="inviteDisplayName" required maxlength="24" placeholder="Your critter name" autocomplete="off">
+          </label>
+          <label class="span-2">Bio <span style="color:var(--muted);font-weight:400">(optional)</span>
+            <textarea id="inviteBio" maxlength="120" placeholder="Ready for the meadow."></textarea>
+          </label>
+          <button class="primary full span-2" type="submit">Create Account &amp; Join</button>
+        </form>
+        <p class="invite-footnote">No email or password. This creates a free local profile in your browser — Petals, stash, and progress stay on this device, same as the main site.</p>
+      </div>
+
+      <div id="inviteMissing" class="invite-missing">
+        <span class="eyebrow">INVITE LINK INCOMPLETE</span>
+        <h1>This invite link is missing its code</h1>
+        <p>Ask whoever sent it to copy a fresh Invite Link from their Account screen, or jump straight into Critter Extraction below.</p>
+        <a class="primary full" href="index.html" style="display:block;text-align:center;text-decoration:none;padding:12px">Go to Critter Extraction</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  var code = params.get('invite') || '';
+  var from = params.get('from') || '';
+  var readyEl = document.getElementById('inviteReady');
+  var missingEl = document.getElementById('inviteMissing');
+  if (!code) { readyEl.style.display = 'none'; missingEl.style.display = 'block'; return; }
+  if (from) document.getElementById('inviterName').textContent = from;
+  document.getElementById('inviteForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var u = document.getElementById('inviteUsername').value.trim();
+    var d = document.getElementById('inviteDisplayName').value.trim();
+    var b = document.getElementById('inviteBio').value.trim();
+    if (!u || !d) return;
+    var qs = new URLSearchParams({ invite: code, from: from, username: u, displayName: d, bio: b });
+    location.href = 'index.html?' + qs.toString();
+  });
+})();
+</script>
+<script src="../core/pages/invite/invite-page.js"></script></body>
+</html>
