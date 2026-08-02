@@ -164,7 +164,6 @@
           const becameSelected = target.classList.contains('selected') && !previousClasses.has('selected');
 
           if (target.matches('.screen.active') && becameActive) animateScreen(target);
-          if (target.matches(VALUE_SELECTOR)) animateValue(target);
           if (!target.matches('.screen') && (becameActive || becameSelected)) {
             restartClass(target, 'ui-motion-confirm');
           }
@@ -174,8 +173,13 @@
           animateDialog(target);
         }
 
-        if (record.attributeName === 'hidden' && !target.hidden) {
-          restartClass(target, 'ui-motion-reveal');
+        if (record.attributeName === 'hidden') {
+          if (target.id === 'studioBoot' && target.hidden) {
+            restartClass(document.querySelector('.topbar'), 'ui-motion-reveal');
+            document.querySelectorAll('.screen.active').forEach(animateScreen);
+          } else if (!target.hidden) {
+            restartClass(target, 'ui-motion-reveal');
+          }
         }
 
         if (record.attributeName === 'aria-selected' && target.getAttribute('aria-selected') === 'true') {
