@@ -5,7 +5,7 @@ AI ASSISTANTS: DO NOT EDIT, REWRITE, OR REPLACE THIS README.md during unrelated 
 <h1 align="center">Critter Extraction</h1>
 
 <p align="center">
-  <img src="assets/branding/icon.svg" alt="Critter Extraction game logo" width="220">
+  <img src="live/assets/branding/icon.svg" alt="Critter Extraction game logo" width="220">
 </p>
 
 **Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.
@@ -14,7 +14,7 @@ Explore the map, fight enemy critters, collect weapons and gear, complete object
 
 ## Play
 
-[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/)
+[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/live/)
 
 ## Features
 
