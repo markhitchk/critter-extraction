@@ -1,48 +1,39 @@
-# Critter Extraction v0.27.1 — GitHub Pages Edition
+# Critter Extraction
 
-This folder is the **repository root**. Upload its contents directly to a GitHub repository so `index.html`, `styles.css`, `.nojekyll`, `assets`, `js`, and `.github` are all at the top level.
+**Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.
 
-## Deploy
+Explore the map, fight enemy critters, collect weapons and gear, complete objectives, and reach the extraction zone with your loot.
 
-1. Create a new GitHub repository with `main` as its default branch.
-2. Extract this ZIP.
-3. Upload **the contents of the extracted folder**, not the enclosing folder itself.
-4. Confirm that opening the repository shows `index.html` immediately at the top level.
-5. Open **Settings → Pages**.
-6. Under **Build and deployment → Source**, select **GitHub Actions**.
-7. Open the **Actions** tab and wait for **Deploy Critter Extraction to GitHub Pages** to finish.
-8. Open the address shown by the successful deployment.
+## Play
 
-The workflow validates required files and case-sensitive asset paths before every deployment. A failed validation prevents a broken site from replacing the working deployment.
+[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/)
 
-## Static-hosting behavior
+## Features
 
-- Solo play, graphics, adaptive phone/tablet controls, mouse/keyboard controls, profiles, inventory, and settings run entirely in the browser.
-- A first-time visitor must create a named device account before playing or joining a shared room. Browsers carrying the old automatic Rookie profile receive a one-time required setup screen that moves all progress and account data into a fresh named account, then removes the legacy Rookie record and its fallback copies.
-- Every device account has separate progress, stash, loadout, Petals, appearance, statistics, and settings in browser-local storage.
-- Each account can hold up to **1,000,000 Petals**. Imports, rewards, and saved balances are clamped to that cap, and merchant sales that would exceed it are safely cancelled without removing items.
-- Every account can copy a branded recruitment link. The invitee receives a one-time 100-Petal bonus on that newly created local account; static hosting cannot credit the inviter.
-- Use **Download Account** beside a profile to save its complete XML account file, then **Upload Account File** to restore it in another browser. These are portable local profiles, not secure cloud logins.
-- Multiplayer uses the included PeerJS client, secure PeerJS signaling, and STUN/TURN-assisted WebRTC connections. GitHub Pages supplies the required HTTPS origin; exceptionally restrictive networks can still block WebRTC.
-- Hosts can copy or share one invite message containing an automatic Join Multiplayer URL such as `?join=940255` plus the same six-digit room code as a manual fallback. Opening the link fills the code and starts connecting automatically after required account setup.
-- Fair Play v1.0 makes the host authoritative for movement, weapon timing, damage, loot, gear, consumables, and extraction inventory. It also validates interaction distance, input shape, message size, and action rate; repeated invalid actions can be disconnected.
-- Enemy AI can respawn in Solo and Co-op at Off, Slow, Normal, or Fast rates. Difficulty scales the delay and population cap; the host owns Co-op respawns, while PvP keeps AI disabled.
-- Fair Play is best-effort protection for a static peer-hosted browser game. It cannot provide dedicated-server anti-cheat or prevent a modified host from changing its own browser code.
-- No service worker is installed, so updating the repository cannot leave an old cached game worker behind.
+- Solo, co-op, and PvP modes
+- First-person and third-person cameras
+- Weapons, armor, backpacks, loot, and death boxes
+- Inventory, account stash, and custom loadouts
+- Quests, objectives, merchants, and Petals
+- Enemy AI with adjustable difficulty and respawn settings
+- Direct browser multiplayer using room links and six-digit codes
+- Local player profiles with downloadable account backups
+- Keyboard, mouse, and touchscreen controls
 
-## Custom errors
+## Run Locally
 
-- GitHub Pages automatically serves the branded `404.html` when a path does not exist.
-- `error.html?code=500` is the general error center and supports 400, 403, 404, 408, 429, 500, 503, and offline states.
-- Error pages include retry, back, return-to-game, and copyable diagnostic actions without exposing account or stash data.
-- Startup and runtime boot failures continue to use the in-game diagnostic screen with a downloadable support report.
-
-## Local check
-
-If Node.js is installed, run:
+Download or clone the repository, then start a local web server from the project folder:
 
 ```bash
-node tools/validate-pages.mjs
+python -m http.server 8000
 ```
 
-Do not use `START_HERE.html` as the Pages homepage. GitHub Pages automatically opens `index.html`; `START_HERE.html` is retained as a portable fallback.
+Open `http://localhost:8000` in a modern browser.
+
+## Project Status
+
+Critter Extraction is still being developed. Features, gameplay, and artwork may change as the game is improved.
+
+## Credits
+
+Created by **Harley’s Studios**.
