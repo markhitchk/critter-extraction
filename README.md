@@ -20,6 +20,7 @@ The workflow validates required files and case-sensitive asset paths before ever
 - Solo play, graphics, adaptive phone/tablet controls, mouse/keyboard controls, profiles, inventory, and settings run entirely in the browser.
 - A first-time visitor must create a named device account before playing or joining a shared room; the old automatic Rookie profile is no longer used.
 - Every device account has separate progress, stash, loadout, Petals, appearance, statistics, and settings in browser-local storage.
+- Every account can copy a branded recruitment link. The invitee receives a one-time 100-Petal bonus on that newly created local account; static hosting cannot credit the inviter.
 - Use **Download Account** beside a profile to save its complete XML account file, then **Upload Account File** to restore it in another browser. These are portable local profiles, not secure cloud logins.
 - Multiplayer uses the included PeerJS client, secure PeerJS signaling, and STUN/TURN-assisted WebRTC connections. GitHub Pages supplies the required HTTPS origin; exceptionally restrictive networks can still block WebRTC.
 - Hosts can copy or share a project-safe join URL containing `?join=123456`. Opening it fills the room code and begins joining after account setup.

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const required = [
   'index.html',
+  'invite.html',
   '404.html',
   'error.html',
   'styles.css',
@@ -32,7 +33,7 @@ function walk(folder) {
 }
 walk(root);
 
-for (const source of ['index.html', 'styles.css']) {
+for (const source of ['index.html', 'invite.html', 'styles.css']) {
   const contents = readFileSync(join(root, source), 'utf8');
   const references = [...contents.matchAll(/(?:src|href)=["']([^"'#?]+)|url\(["']?([^)'"?#]+)/g)]
     .map(match => match[1] || match[2])
@@ -66,11 +67,18 @@ for (const requiredInviteFeature of ['joinUrlForPin', "searchParams.set('join'",
 for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'Create Your First Account', 'Create your account to continue']) {
   if (!game.includes(requiredOnboardingFeature)) throw new Error(`First-visit account onboarding is missing: ${requiredOnboardingFeature}`);
 }
+for (const requiredRecruitFeature of ['recruitCode', 'recruitedBy', 'pendingRecruitCode', 'consumeInviteParams', "copyText(link, 'Invite link')"]) {
+  if (!game.includes(requiredRecruitFeature)) throw new Error(`Account recruitment feature is missing: ${requiredRecruitFeature}`);
+}
 
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 if (!index.includes('rel="icon" href="./icon.svg"') || !index.includes('rel="apple-touch-icon"')) throw new Error('Primary favicon and touch icon links are missing.');
 if (!index.includes('id="touchJump"') || !index.includes('Space</kbd> Jump')) throw new Error('Jump controls are missing from the interface.');
 if (!index.includes('id="copyInviteLinkBtn"') || !index.includes('FAIR PLAY ACTIVE')) throw new Error('Invite-link or Fair Play interface is missing.');
+if (!index.includes('id="copyInviteBtn"')) throw new Error('Account recruitment button is missing.');
+
+const recruit = readFileSync(join(root, 'invite.html'), 'utf8');
+if (!recruit.includes("params.get('invite')") || !recruit.includes('Create Account &amp; Join') || !recruit.includes('inviteMissing')) throw new Error('Branded account recruitment landing page is incomplete.');
 
 const notFound = readFileSync(join(root, '404.html'), 'utf8');
 const errorPage = readFileSync(join(root, 'error.html'), 'utf8');
