@@ -19,6 +19,7 @@ const readText = relativePath => {
 
 const core = readText('core/game/game-core.js');
 const runtime = readText('core/rendering/high-end-glb-runtime.js');
+const worldPatches = readText('core/rendering/high-end-world-patches.js');
 const modelLibrary = readText('core/rendering/model-library.js');
 
 const patchAnchors = [
@@ -32,7 +33,7 @@ const patchAnchors = [
   },
   {
     name: 'renderer startup completion',
-    text: "document.documentElement.dataset.renderer = rendererMode;"
+    text: 'document.documentElement.dataset.renderer = rendererMode;'
   },
   {
     name: 'third-person Pea Popper branch',
@@ -41,6 +42,14 @@ const patchAnchors = [
   {
     name: 'first-person Pea Popper branch',
     text: "else if(p.weaponId==='pea_popper'||!WEAPONS[p.weaponId]){part(-.50,0,.01"
+  },
+  {
+    name: 'procedural world static loop',
+    text: "for(const o of world.statics){if(o.type==='tree'){renderer.draw('cone'"
+  },
+  {
+    name: 'procedural supply crate draw',
+    text: "renderer.draw('cube',ch.x,.38,ch.z,1.25,.7,.9"
   }
 ];
 
@@ -51,15 +60,24 @@ for (const anchor of patchAnchors) {
 for (const marker of [
   'function parseGlb(buffer)',
   'installAuthoredGroup(name,parts)',
-  "drawAuthored(name,x,y,z",
+  'drawAuthored(name,x,y,z',
   "'weapon.pea_popper'",
   'patchGameSource(source)'
 ]) {
   if (!runtime.includes(marker)) errors.push(`Authored runtime is missing marker: ${marker}`);
 }
 
-if (!modelLibrary.includes('high-end-glb-runtime.js')) {
-  errors.push('model-library.js does not load the authored GLB runtime');
+for (const marker of [
+  'patchWorldSource(source)',
+  "'vegetation.pine_tree'",
+  "'loot.supply_crate'",
+  "map.id==='pine-valley'"
+]) {
+  if (!worldPatches.includes(marker)) errors.push(`Authored world patch is missing marker: ${marker}`);
+}
+
+for (const requiredScript of ['high-end-glb-runtime.js', 'high-end-world-patches.js']) {
+  if (!modelLibrary.includes(requiredScript)) errors.push(`model-library.js does not load ${requiredScript}`);
 }
 
 function validateGlb(relativePath) {
@@ -96,7 +114,8 @@ function validateGlb(relativePath) {
 for (const glb of [
   'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
   'assets/models/loot/supply_crate/supply_crate.glb',
-  'assets/models/vegetation/pine_tree/pine_tree_lod0.glb'
+  'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
+  'assets/models/vegetation/pine_tree/pine_tree_lod2.glb'
 ]) validateGlb(glb);
 
 if (errors.length) {
@@ -105,4 +124,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('High-end GLB runtime, patch anchors, and binary assets OK');
+console.log('High-end GLB runtime, world patches, patch anchors, and binary assets OK');
