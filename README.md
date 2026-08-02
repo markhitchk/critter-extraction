@@ -24,15 +24,9 @@ Explore the map, fight enemy critters, collect weapons and gear, complete object
 - Local player profiles with downloadable account backups
 - Keyboard, mouse, and touchscreen controls
 
-## Run Locally
+## Unreal Engine 6 Release
 
-Download or clone the repository, then start a local web server from the project folder:
-
-```bash
-python -m http.server 8000
-```
-
-Open `http://localhost:8000` in a modern browser.
+A new **Unreal Engine 6 edition of Critter Extraction is coming soon**.
 
 ## Project Status
 
