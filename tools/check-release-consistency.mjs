@@ -43,8 +43,16 @@ if (!index.includes(`game-loader.js?v=${expected}`)) failures.push('index.html: 
 if (!index.includes('data-required-boot-file="core/loader/game-loader.js"')) failures.push('index.html: loader required-file metadata is not canonical');
 
 const issueApi = fs.readFileSync('core/shared/github-issues.js', 'utf8');
-if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues/new')) failures.push('GitHub new-issue URL is missing');
-if (!issueApi.includes('https://github.com/markhitchk/critter-extraction/issues')) failures.push('GitHub issue-viewer URL is missing');
+if (!issueApi.includes("const OWNER = 'markhitchk';")) failures.push('GitHub issue API owner is missing or changed');
+if (!issueApi.includes("const REPO = 'critter-extraction';")) failures.push('GitHub issue API repository is missing or changed');
+if (!issueApi.includes('const createUrl = `${repositoryUrl}/issues/new`;')) failures.push('GitHub new-issue route is missing');
+if (!issueApi.includes('const viewerUrl = `${repositoryUrl}/issues`;')) failures.push('GitHub issue-viewer route is missing');
+if (!issueApi.includes('https://api.github.com/repos/')) failures.push('GitHub public issue API base is missing');
+if (!issueApi.includes('listIssues') || !issueApi.includes('getComments') || !issueApi.includes('submit')) failures.push('In-game issue API capabilities are incomplete');
+
+const feedbackUi = fs.readFileSync('core/ui/github-feedback.js', 'utf8');
+if (!feedbackUi.includes('Feedback Center') || !feedbackUi.includes('Issues & Updates')) failures.push('In-game Feedback Center UI is missing');
+if (feedbackUi.includes('critter-feedback-menu')) failures.push('Legacy external-link feedback menu must stay removed');
 
 if (fs.existsSync('icon.svg')) failures.push('icon.svg: duplicate root icon must stay removed; use assets/branding/icon.svg');
 if (!fs.existsSync('assets/branding/icon.svg')) failures.push('assets/branding/icon.svg: canonical branding icon is missing');
