@@ -1,5 +1,35 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-02T13:30:00Z",
-  "bans": []
+  "updatedAt": "2026-08-02T14:01:00Z",
+  "bans": [
+    {
+      "id": "ban-2026-001",
+      "enabled": true,
+      "scope": "multiplayer",
+      "reason": "Owner-requested permanent account ban.",
+      "createdAt": "2026-08-02T14:01:00Z",
+      "expiresAt": null,
+      "appealUrl": "",
+      "identifiers": {
+        "securityIds": [
+          "csp_67a1ab06473d9d89297a5cc892ac684f8a50"
+        ],
+        "installHashes": [
+          "06b3b504-6f1381cf"
+        ],
+        "accountIdHashes": [
+          "564423c6-2214e986"
+        ],
+        "usernames": [
+          "harleytg"
+        ],
+        "recruitCodes": [
+          "MSBQEMQJ"
+        ],
+        "profileFingerprints": [
+          "65f56be7543a2c55"
+        ]
+      }
+    }
+  ]
 }
