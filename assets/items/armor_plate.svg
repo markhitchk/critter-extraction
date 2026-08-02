@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Bark Armor Plate">
+<title>Bark Armor Plate — Harley's Studios</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#15162b"/><stop offset="1" stop-color="#252947"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect x="6" y="6" width="244" height="244" rx="48" fill="url(#bg)" stroke="#c98b58" stroke-width="8"/>
+<g filter="url(#glow)"><path d="M74 52h108l22 51-33 104H85L52 103z" fill="#8c5b3c" stroke="#dfb07f" stroke-width="8"/><path d="M80 82l96 91M176 82l-96 91M128 57v144" stroke="#c98b58" stroke-width="9"/><path d="M98 118h60" stroke="#f4d4a6" stroke-width="9"/></g>
+<path d="M76 225h104" stroke="#c98b58" stroke-width="7" stroke-linecap="round" opacity=".65"/>
+<circle cx="128" cy="226" r="5" fill="#c98b58"/>
+</svg>
