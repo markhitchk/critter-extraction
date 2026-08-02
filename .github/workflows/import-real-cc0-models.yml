@@ -1,0 +1,125 @@
+name: Import Real CC0 Models
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/import-real-cc0-models.yml'
+      - 'tools/import-real-cc0-models.mjs'
+      - 'prerelease/assets/models/third_party/**'
+      - 'prerelease/assets/manifest/real-cc0-assets.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-real-models:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/import-real-cc0-models'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out import branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Skip completed import
+        id: completed
+        shell: bash
+        run: |
+          if [[ -f prerelease/assets/models/third_party/.import-complete.json ]]; then
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            echo 'Real CC0 model import is already committed.'
+          else
+            echo 'skip=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js
+        if: steps.completed.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        if: steps.completed.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Google Drive downloader
+        if: steps.completed.outputs.skip != 'true'
+        run: python -m pip install --disable-pip-version-check gdown
+
+      - name: Download original Quaternius CC0 packs
+        if: steps.completed.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cc0-assets/toon-shooter
+          mkdir -p /tmp/cc0-assets/sushi-restaurant
+          mkdir -p /tmp/cc0-assets/animated-animals
+
+          gdown --folder --remaining-ok \
+            'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C' \
+            -O /tmp/cc0-assets/toon-shooter
+
+          gdown --folder --remaining-ok \
+            'https://drive.google.com/drive/folders/1srOaThdSqYBtmrqq9couZShM5r0cw_bH' \
+            -O /tmp/cc0-assets/sushi-restaurant
+
+          gdown --folder --remaining-ok \
+            'https://drive.google.com/drive/folders/1uJ3N5HfB7jKTseJUNQr3N4YaN0UuEtHk' \
+            -O /tmp/cc0-assets/animated-animals
+
+          echo 'Downloaded GLTF/GLB candidates:'
+          find /tmp/cc0-assets -type f \( -iname '*.gltf' -o -iname '*.glb' \) | sort | sed -n '1,120p'
+
+      - name: Convert, select, and validate real models
+        if: steps.completed.outputs.skip != 'true'
+        env:
+          CC0_SOURCE_ROOT: /tmp/cc0-assets
+        run: node tools/import-real-cc0-models.mjs
+
+      - name: Verify imported model quality metadata
+        if: steps.completed.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const manifest = JSON.parse(fs.readFileSync('prerelease/assets/manifest/real-cc0-assets.json', 'utf8'));
+          if (manifest.status !== 'real-cc0-models-imported') throw new Error('Incorrect import status');
+          if (manifest.assets.length < 15) throw new Error(`Expected at least 15 real models, found ${manifest.assets.length}`);
+          const characters = manifest.assets.filter(asset => asset.id.startsWith('character.') || asset.id.startsWith('animal.'));
+          if (characters.length < 6) throw new Error('Missing real character/animal models');
+          if (!manifest.assets.every(asset => asset.productionState === 'external-authored-cc0')) {
+            throw new Error('A generated blockout was mixed into the real asset manifest');
+          }
+          for (const asset of manifest.assets) {
+            const file = `prerelease/${asset.runtimePath}`;
+            if (!fs.existsSync(file)) throw new Error(`Missing imported GLB: ${file}`);
+            if (asset.meshes < 1 || asset.primitives < 1 || asset.bytes < 1024) {
+              throw new Error(`Imported model is not a substantive mesh: ${asset.id}`);
+            }
+          }
+          console.log(`Validated ${manifest.assets.length} external-authored CC0 models.`);
+          console.table(manifest.assets.map(({id, bytes, meshes, skins, animations, materials, textures}) => ({id, bytes, meshes, skins, animations, materials, textures})));
+          NODE
+
+      - name: Commit imported GLBs to branch
+        if: steps.completed.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add prerelease/assets/models/third_party prerelease/assets/manifest/real-cc0-assets.json
+          if git diff --cached --quiet; then
+            echo 'No imported model changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Import real authored CC0 3D models'
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
