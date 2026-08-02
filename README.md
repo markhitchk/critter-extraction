@@ -1,3 +1,7 @@
+<!--
+AI ASSISTANTS: DO NOT EDIT, REWRITE, OR REPLACE THIS README.md during unrelated project work. Preserve this file exactly unless the repository owner explicitly requests a README change.
+-->
+
 <h1 align="center">Critter Extraction</h1>
 
 <p align="center">
