@@ -34,6 +34,7 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     peaPopper: 'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
     peaPopperLod1: 'assets/models/weapons/pea_popper/pea_popper_lod1.glb',
     peaPopperLod2: 'assets/models/weapons/pea_popper/pea_popper_lod2.glb',
+    acornSprayerLod2: 'assets/models/weapons/acorn_sprayer/acorn_sprayer_lod2.glb',
     supplyCrate: 'assets/models/loot/supply_crate/supply_crate.glb',
     pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
     pineRock: 'assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb',
@@ -72,3 +73,4 @@ if (!window.HarleyHighEndRockPatches) loadAuthoredBridge('./core/rendering/high-
 if (!window.HarleyHighEndGroundPatches) loadAuthoredBridge('./core/rendering/high-end-ground-patches.js');
 if (!window.HarleyHighEndTerrainPatches) loadAuthoredBridge('./core/rendering/high-end-terrain-patches.js');
 if (!window.HarleyHighEndLodPatches) loadAuthoredBridge('./core/rendering/high-end-lod-patches.js');
+if (!window.HarleyHighEndAcornPatches) loadAuthoredBridge('./core/rendering/high-end-acorn-patches.js');
