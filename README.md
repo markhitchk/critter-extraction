@@ -26,6 +26,7 @@ Explore the map, fight enemy critters, collect weapons and gear, complete object
 - Enemy AI with adjustable difficulty and respawn settings
 - Direct browser multiplayer using room links and six-digit codes
 - Local player profiles with downloadable account backups
+- In-game Feedback Center for drafting reports and reading repository issues
 - Keyboard, mouse, and touchscreen controls
 
 ## Unreal Engine 6 Release
@@ -45,6 +46,8 @@ Critter Extraction is still being developed. Features, gameplay, and artwork may
 - `index.html` — canonical GitHub Pages homepage
 - `core/` — boot, game, loader, rendering, page, style, storage, multiplayer, account, inventory, AI, and UI systems
 - `core/error-system/` — canonical privacy-safe error center
+- `core/shared/github-issues.js` — read-only issue API, report builder, draft storage, and secure publication handoff
+- `core/ui/github-feedback.js` — in-game Feedback Center interface
 - `assets/` — branding, characters, items, loading media, vendor libraries, and weapons
 - `docs/` — architecture, guides, credits, error documentation, design notes, and release notes
 - `portable/START_HERE.html` — canonical portable build
@@ -91,5 +94,12 @@ Created by **Harley’s Studios**.
 
 ## Feedback and Issues
 
-- [Report a new issue](https://github.com/markhitchk/critter-extraction/issues/new)
-- [View existing issues](https://github.com/markhitchk/critter-extraction/issues)
+Use the **Feedback** button inside Critter Extraction to:
+
+- write and save a feedback draft
+- review privacy-safe diagnostics before publication
+- copy or download a report
+- browse open and closed repository issues
+- read issue descriptions and comments inside the game
+
+Because the production game is hosted as a static GitHub Pages site, the final publication confirmation is completed through GitHub unless a secure owner-managed feedback endpoint is configured.
