@@ -9,6 +9,27 @@
     state.history.push({ stage, detail: state.detail, elapsedMs: elapsed() });
     if (state.history.length > 30) state.history.shift();
   };
+  const syncBanUrl = () => {
+    if (!(window.__CRITTER_ACCOUNT_BLOCKED__ || window.__CRITTER_MULTIPLAYER_BLOCKED__)) return false;
+    const gate = window.CritterBanGate || {};
+    const username = String(gate.account?.username || gate.match?.identifiers?.usernames?.[0] || '').trim().toLowerCase();
+    if (!username) return false;
+    try {
+      const url = new URL(location.href);
+      const keys = [...url.searchParams.keys()];
+      if (url.searchParams.get('ban') === username && keys.length === 1) return true;
+      url.search = '';
+      url.searchParams.set('ban', username);
+      const previousState = history.state && typeof history.state === 'object' ? history.state : {};
+      history.replaceState({ ...previousState, critterBan: username }, '', `${url.pathname}${url.search}${url.hash}`);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+  const banUrlTimer = setInterval(() => {
+    if (syncBanUrl()) clearInterval(banUrlTimer);
+  }, 150);
   const reportFatal = (input) => {
     if (state.ready || fatalShown) return;
     fatalShown = true; state.failed = true; clearTimeout(slowTimer); clearTimeout(fatalTimer);
