@@ -186,10 +186,10 @@
   const PROFILE_XML_CACHE_KEY = 'critterExtractionProfileXml';
   const LEGACY_STORAGE_PREFIX = ['critterExtraction','3','DInventory'].join('');
   const LEGACY_PROFILE_XML_KEY = ['critterExtraction','3','DProfileXml'].join('');
-  const BUILD_VERSION = `harleys-studios-${GAME_VERSION}-fair-play-v1-share-links-first-account`;
+  const BUILD_VERSION = `harleys-studios-${GAME_VERSION}-legacy-account-gate-manual-room-code-ai-respawn`;
   const DEFAULT_SETTINGS = {
     cameraMode: 'third', shoulderSide: 'right', fov: 75, sensitivity: 1, invertY: false,
-    difficulty: 'cozy', aimAssist: true, autoReload: true, showHints: true, showHitboxes: false,
+    difficulty: 'cozy', enemyRespawnRate: 'normal', aimAssist: true, autoReload: true, showHints: true, showHitboxes: false,
     quality: 'medium', renderScale: IS_CHROMEOS ? .85 : 1, fogEnabled: true, compatibilityMode: false, reducedMotion: false,
     hudScale: 100, volume: 70, touchAlways: false
   };
@@ -261,7 +261,7 @@
   function makeAccount(name = 'New Critter', username = 'new_critter') {
     return {
       id: uid(), username, displayName: name, bio: 'Ready for the meadow.', avatar: '',
-      recruitCode: uid().slice(0, 8).toUpperCase(), recruitedBy: null,
+      recruitCode: uid().slice(0, 8).toUpperCase(), recruitedBy: null, accountSetupComplete: false,
       appearance: { species: 'puppy', bodyColor: '#d9a06f', accentColor: '#7b4d35', accessory: 'cap', eyeStyle: 'dot' },
       settings: deepCopy(DEFAULT_SETTINGS), xp: 0, petals: 0, economyTransactions: [], pendingDrop: null,
       stats: { extracts: 0, berries: 0, kills: 0, matches: 0 },
@@ -269,6 +269,10 @@
       loadoutId: defaultLoadoutId, equippedWeaponId: 'pea_popper', equippedArmorId: 'leaf_vest',
       loadout: { weapon: 'Pea Popper', armor: 'Leaf Vest', backpack: 'Critter Pack' }
     };
+  }
+  function automaticAccountNeedsSetup(account) {
+    const displayName = String(account?.displayName || '').trim().toLowerCase(), username = String(account?.username || '').trim().toLowerCase();
+    return (displayName === 'rookie' && username === 'rookie') || (displayName === 'new critter' && /^critter_\d{4}$/.test(username));
   }
   function normalizeDatabase(parsed) {
     if (!parsed || !Array.isArray(parsed.accounts) || !parsed.accounts.length) return null;
@@ -282,6 +286,7 @@
       a.id = a.id || uid();
       if (!a.recruitCode) a.recruitCode = uid().slice(0, 8).toUpperCase();
       if (a.recruitedBy === undefined) a.recruitedBy = null;
+      if (a.accountSetupComplete === undefined) a.accountSetupComplete = !automaticAccountNeedsSetup(a); else a.accountSetupComplete = a.accountSetupComplete === true;
       const oldSettings = a.settings || {};
       a.settings = { ...DEFAULT_SETTINGS, ...oldSettings };
       if (oldSchema < 14 && (!oldSettings.difficulty || oldSettings.difficulty === 'normal')) a.settings.difficulty = 'cozy';
@@ -302,7 +307,12 @@
     parsed.schemaVersion = SAVE_SCHEMA_VERSION;
     return parsed;
   }
-  let firstAccountSetupRequired = false;
+  let firstAccountSetupRequired = false, legacyAccountSetupRequired = false;
+  function loadedDatabase(database) {
+    const active = database.accounts.find(a => a.id === database.activeId) || database.accounts[0];
+    if (active?.accountSetupComplete !== true) { firstAccountSetupRequired = true; legacyAccountSetupRequired = true; }
+    return database;
+  }
   function loadDB() {
     const candidates = [];
     try {
@@ -324,16 +334,16 @@
           if (score > bestScore) { best = parsed; bestScore = score; }
         } catch (_) { }
       }
-      if (best) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(best)); } catch (_) { } return best; }
+      if (best) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(best)); } catch (_) { } return loadedDatabase(best); }
       const xmlBackup = localStorage.getItem(PROFILE_XML_CACHE_KEY) || localStorage.getItem(LEGACY_PROFILE_XML_KEY);
       if (xmlBackup) {
         try {
           const restored = normalizeDatabase({schemaVersion:15,accounts:[accountFromXml(xmlBackup)],activeId:'',updatedAt:Date.now()});
-          if (restored) { restored.activeId=restored.accounts[0].id; localStorage.setItem(STORAGE_KEY,JSON.stringify(restored)); return restored; }
+          if (restored) { restored.activeId=restored.accounts[0].id; localStorage.setItem(STORAGE_KEY,JSON.stringify(restored)); return loadedDatabase(restored); }
         } catch (_) { }
       }
     } catch (_) { }
-    firstAccountSetupRequired = true;
+    firstAccountSetupRequired = true; legacyAccountSetupRequired = false;
     const first = makeAccount('New Critter', `critter_${Math.floor(Math.random()*9000+1000)}`);
     return { schemaVersion: SAVE_SCHEMA_VERSION, accounts: [first], activeId: first.id, updatedAt: Date.now() };
   }
@@ -477,9 +487,9 @@
     history.replaceState({}, '', `${location.pathname}${location.hash || ''}`);
     if (!invite) return false;
     if (presetUsername && presetDisplayName && !db.accounts.some(a => a.username.toLowerCase() === presetUsername.toLowerCase())) {
-      const previousDb = deepCopy(db), a = makeAccount(presetDisplayName, presetUsername); a.bio = presetBio || a.bio; a.recruitedBy = invite; a.petals = safePetals(a.petals + 100);
+      const previousDb = deepCopy(db), a = makeAccount(presetDisplayName, presetUsername); a.bio = presetBio || a.bio; a.recruitedBy = invite; a.petals = safePetals(a.petals + 100); a.accountSetupComplete = true;
       if (firstAccountSetupRequired) db.accounts = [a]; else db.accounts.push(a); db.activeId = a.id;
-      if (saveDB()) { firstAccountSetupRequired = false; pendingRecruitCode = null; refreshAccountUI(); renderAccounts(); toast(from ? `Welcome, ${presetDisplayName}! Invited by ${from} — +100 Petals` : `Welcome, ${presetDisplayName}! +100 Petals`, 3600); return true; }
+      if (saveDB()) { firstAccountSetupRequired = false; legacyAccountSetupRequired = false; pendingRecruitCode = null; refreshAccountUI(); renderAccounts(); toast(from ? `Welcome, ${presetDisplayName}! Invited by ${from} — +100 Petals` : `Welcome, ${presetDisplayName}! +100 Petals`, 3600); return true; }
       db = previousDb;
     }
     pendingRecruitCode = invite;
@@ -495,9 +505,9 @@
     const source = id ? db.accounts.find(a => a.id === id) : makeAccount('New Critter', `critter_${Math.floor(Math.random() * 9000 + 1000)}`);
     editingAccountId = id; pendingAvatar = source.avatar || '';
     const required = !!requiredSetup || firstAccountSetupRequired;
-    dom.profileModalTitle.textContent = required ? 'Create Your First Account' : id ? 'Edit Account' : 'Create Account';
-    dom.profileModalEyebrow.textContent = required ? 'WELCOME TO CRITTER EXTRACTION' : id ? 'DEVICE PROFILE' : 'NEW DEVICE PROFILE';
-    const accountHelp=$('#profileAccountHelp');if(accountHelp)accountHelp.textContent=required?'Create a username and display name before playing or opening a shared-room invite. This replaces the old automatic Rookie account.':'This device account keeps its own display name, username, appearance, progress, stash, loadout, and settings.';
+    dom.profileModalTitle.textContent = required ? (legacyAccountSetupRequired ? 'Finish Your Account Setup' : 'Create Your First Account') : id ? 'Edit Account' : 'Create Account';
+    dom.profileModalEyebrow.textContent = required ? (legacyAccountSetupRequired ? 'ONE-TIME ACCOUNT UPGRADE' : 'WELCOME TO CRITTER EXTRACTION') : id ? 'DEVICE PROFILE' : 'NEW DEVICE PROFILE';
+    const accountHelp=$('#profileAccountHelp');if(accountHelp)accountHelp.textContent=required?(legacyAccountSetupRequired?'Replace the old automatic Rookie name with your username and display name. Your progress, Petals, stash, appearance, loadout, statistics, and settings will be preserved.':'Create a username and display name before playing or opening a shared-room invite. This replaces the old automatic Rookie account.'):'This device account keeps its own display name, username, appearance, progress, stash, loadout, and settings.';
     dom.profileModal.classList.toggle('required-account-setup', required);
     $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=required);
     dom.usernameInput.value = source.username; dom.displayNameInput.value = source.displayName; dom.bioInput.value = source.bio || ''; if(dom.avatarUrlInput) dom.avatarUrlInput.value = source.avatar && /^https?:/i.test(source.avatar) ? source.avatar : '';
@@ -512,16 +522,16 @@
     if (db.accounts.some(a => a.username.toLowerCase() === username.toLowerCase() && a.id !== editingAccountId)) return toast('That username already exists on this device');
     const previousDb = deepCopy(db), recruitBonus = pendingRecruitCode && (firstAccountSetupRequired || !editingAccountId) ? pendingRecruitCode : null;
     if (editingAccountId) {
-      const a = db.accounts.find(x => x.id === editingAccountId); Object.assign(a, { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar });
+      const a = db.accounts.find(x => x.id === editingAccountId); Object.assign(a, { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar, accountSetupComplete: true });
       if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     } else {
-      const a = makeAccount(displayName, username); a.bio = safeText(dom.bioInput.value, 120); a.avatar = pendingAvatar; db.accounts.push(a); db.activeId = a.id;
+      const a = makeAccount(displayName, username); a.bio = safeText(dom.bioInput.value, 120); a.avatar = pendingAvatar; a.accountSetupComplete = true; db.accounts.push(a); db.activeId = a.id;
       if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     }
     if (!saveDB()) { db = previousDb; refreshAccountUI(); renderAccounts(); return toast('Account could not be saved: browser storage may be full'); }
     if (recruitBonus) pendingRecruitCode = null;
-    firstAccountSetupRequired = false; dom.profileModal.classList.remove('required-account-setup'); $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=false);
-    dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved'); setTimeout(openJoinFromUrl,0);
+    firstAccountSetupRequired = false; legacyAccountSetupRequired = false; dom.profileModal.classList.remove('required-account-setup'); $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=false);
+    dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved'); setTimeout(()=>{if(!consumeInviteParams())openJoinFromUrl();},0);
   });
   dom.profileModal.addEventListener('cancel',e=>{if(firstAccountSetupRequired){e.preventDefault();toast('Create your account to continue');}});
   [dom.displayNameInput, dom.usernameInput].forEach(field => field.addEventListener('input', () => setAvatar(dom.editAvatarPreview, { displayName: dom.displayNameInput.value, username: dom.usernameInput.value, avatar: pendingAvatar })));
@@ -585,6 +595,7 @@
   }
   function normalizeImportedAccount(source) {
     const a = deepCopy(source || {}); a.id = uid();
+    a.accountSetupComplete = true;
     a.recruitCode = safeText(a.recruitCode, 12).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() || uid().slice(0, 8).toUpperCase();
     a.recruitedBy = a.recruitedBy == null ? null : safeText(a.recruitedBy, 12).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase() || null;
     a.username = safeText(a.username, 18).replace(/[^A-Za-z0-9_-]/g, '') || `imported_${Date.now().toString().slice(-4)}`;
@@ -1581,7 +1592,7 @@
     ]);
     for(let i=0;i<enemyCount;i++){
       const q=randomEntityPoint(11,.72,4.2,world.enemies),look=roster[Math.floor(r()*roster.length)],tough=r()>.72;
-      world.enemies.push({id:seededId('enemy',i,normalizedSeed),type:'raider',species:look.species,body:look.body,accent:look.accent,weaponId:look.weaponId,x:q.x,y:.9,z:q.z,homeX:q.x,homeZ:q.z,patrolTarget:null,patrolWait:randRange(r,.2,1.6),patrolSeed:r()*20,yaw:r()*Math.PI*2,hp:tough?82:58,maxHp:tough?82:58,speed:tough?1.38:1.58,attack:0,bob:r()*6,walkTime:r()*6,alive:true});
+      world.enemies.push({id:seededId('enemy',i,normalizedSeed),type:'raider',species:look.species,body:look.body,accent:look.accent,weaponId:look.weaponId,x:q.x,y:.9,z:q.z,homeX:q.x,homeZ:q.z,patrolTarget:null,patrolWait:randRange(r,.2,1.6),patrolSeed:r()*20,yaw:r()*Math.PI*2,hp:tough?82:58,maxHp:tough?82:58,speed:tough?1.38:1.58,attack:0,bob:r()*6,walkTime:r()*6,alive:true,respawnAt:0,respawnCount:0});
     }
     const training=routePointAt(.16);
     world.enemies.unshift({id:seededId('training',0,normalizedSeed),type:'raider',species:'raccoon',body:'#8f98a3',accent:'#353846',weaponId:'pea_popper',x:training.x,y:.9,z:training.z,yaw:heading+Math.PI,hp:70,maxHp:70,speed:0,attack:999,bob:0,walkTime:0,alive:true,training:true});
@@ -1737,7 +1748,7 @@
       bonus:{id:'pvp-eliminations',title:'Rival Eliminations',type:'kills',target:2,description:'Eliminate two rival critters.',done:false}
     }:chooseContracts(seed>>>0,role!=='solo');
     resetFairPlayForMatch(Object.keys(players));
-    match = { role, mode:pvp?'pvp':'coop', friendlyFire:pvp||roomRules.friendlyFire, fairPlay:{version:FAIR_PLAY_VERSION,authority:role==='solo'?'local':'host'}, timer:300, elapsed:0, ended:false, start:performance.now(), seed:seed>>>0, extracted:false, shots:0, hintUntil:performance.now()+9000, metrics:{chestsOpened:0,headshotKills:0,landmarksVisited:[]}, objectives:{foundExtract:pvp,berriesReady:false,extracted:false,primary:contracts.primary,bonus:contracts.bonus} };
+    match = { role, mode:pvp?'pvp':'coop', friendlyFire:pvp||roomRules.friendlyFire, fairPlay:{version:FAIR_PLAY_VERSION,authority:role==='solo'?'local':'host'}, timer:300, elapsed:0, ended:false, start:performance.now(), seed:seed>>>0, extracted:false, shots:0, hintUntil:performance.now()+9000, metrics:{chestsOpened:0,headshotKills:0,enemyRespawns:0,landmarksVisited:[]}, objectives:{foundExtract:pvp,berriesReady:false,extracted:false,primary:contracts.primary,bonus:contracts.bonus} };
     if (!commitCustomDrop(account)) { account.prepared = normalizeSlots(customValidation.items,SLOT_COUNT); account.pendingDrop = null; saveDB(); match=null; return toast('CE-LOADOUT-RESTORE: Could not commit the drop. Your items were restored.',4000); }
     account.stats.matches++; saveDB();
     window.scrollTo(0,0); document.documentElement.scrollTop=0; document.body.scrollTop=0;
@@ -2118,6 +2129,26 @@
       animation.onfinish=()=>{dom.hitmarker.style.opacity='0';};
     }else{void dom.hitmarker.offsetWidth;dom.hitmarker.classList.add('show');}
   }
+  const ENEMY_RESPAWN_SECONDS=Object.freeze({slow:42,normal:28,fast:16});
+  function enemyRespawnConfig(){
+    const settings=activeAccount().settings,rate=ENEMY_RESPAWN_SECONDS[settings.enemyRespawnRate]?settings.enemyRespawnRate:'normal',enabled=settings.enemyRespawnRate!=='off'&&!isPvpMatch(),difficulty=settings.difficulty,multiplier=difficulty==='cozy'?1.2:difficulty==='spicy'?.8:1,base=ENEMY_RESPAWN_SECONDS[rate]*multiplier;
+    return {enabled,rate,min:Math.round(base*.88),max:Math.round(base*1.12),maxAlive:difficulty==='cozy'?6:difficulty==='spicy'?11:8,minPlayerDistance:difficulty==='spicy'?11:14};
+  }
+  function scheduleEnemyRespawn(enemy){
+    if(!enemy||enemy.training||isPvpMatch())return;
+    const config=enemyRespawnConfig();enemy.respawnAt=config.enabled?(match?.elapsed||0)+config.min+Math.random()*Math.max(1,config.max-config.min):Infinity;
+  }
+  function enemyRespawnPoint(enemy,config){
+    const alivePlayers=Object.values(players).filter(player=>player.alive),baseX=Number.isFinite(enemy.homeX)?enemy.homeX:enemy.x,baseZ=Number.isFinite(enemy.homeZ)?enemy.homeZ:enemy.z;
+    for(let attempt=0;attempt<30;attempt++){const radius=attempt?3+Math.random()*14:0,angle=Math.random()*Math.PI*2,x=clamp(baseX+Math.cos(angle)*radius,-34,34),z=clamp(baseZ+Math.sin(angle)*radius,-34,34);if(!pointClearForProp(x,z,.72,true)||activeSafeZoneAt(x,z))continue;if(alivePlayers.some(player=>Math.hypot(player.x-x,player.z-z)<config.minPlayerDistance))continue;if(world.enemies.some(other=>other!==enemy&&other.alive&&Math.hypot(other.x-x,other.z-z)<3.2))continue;return{x,z};}
+    return null;
+  }
+  function updateEnemyRespawns(){
+    if(!match||match.ended||match.role==='guest')return;
+    const config=enemyRespawnConfig();if(!config.enabled)return;
+    let alive=world.enemies.filter(enemy=>enemy.alive&&!enemy.training).length;if(alive>=config.maxAlive)return;
+    for(const enemy of world.enemies){if(alive>=config.maxAlive)break;if(enemy.alive||enemy.training)continue;if(!Number.isFinite(enemy.respawnAt))scheduleEnemyRespawn(enemy);if(!Number.isFinite(enemy.respawnAt)||(match.elapsed||0)<enemy.respawnAt)continue;const point=enemyRespawnPoint(enemy,config);if(!point){enemy.respawnAt=(match.elapsed||0)+3;continue;}Object.assign(enemy,{x:point.x,y:.9,z:point.z,homeX:point.x,homeZ:point.z,hp:enemy.maxHp,alive:true,attack:1.2,patrolTarget:null,patrolWait:.6,yaw:Math.random()*Math.PI*2,moveBlend:0,weaponKick:0,muzzleFlash:0,respawnAt:0,respawnCount:(enemy.respawnCount||0)+1});alive++;if(match.metrics)match.metrics.enemyRespawns=(match.metrics.enemyRespawns||0)+1;world.effects.push({type:'impact',life:.5,x:point.x,y:.55,z:point.z,color:'#67f0ef'});}
+  }
   function spawnEnemyDeathBox(e,p){
     const loot=emptySlots(15),enemyAmmo=WEAPONS[e.weaponId]?.ammoItem||weaponFor(p).ammoItem;
     addItem(loot,'scrap',2+Math.floor(Math.random()*4));
@@ -2129,8 +2160,10 @@
     if(Math.random()<.34)addItem(loot,Math.random()<.7?'armor_plate':'zoomberry',1);
     if(Math.random()<.15)addItem(loot,'crystal',1);
     const ownerName=`${SPECIES[e.species]?.name||'Meadow'} Raider`;
-    world.chests.push({id:uid(),kind:'deathbox',ownerName,x:e.x,z:e.z,opened:false,loot});
+    world.chests.push({id:uid(),kind:'deathbox',ownerName,x:e.x,z:e.z,opened:false,loot,createdAt:match?.elapsed||0});
+    const deathBoxes=world.chests.filter(chest=>chest.kind==='deathbox').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));while(deathBoxes.length>36){const stale=deathBoxes.shift();world.chests=world.chests.filter(chest=>chest!==stale);}
     world.effects.push({type:'impact',life:.42,x:e.x,y:.5,z:e.z,color:'#ffb04e'});
+    scheduleEnemyRespawn(e);
   }
   function activeSafeZoneAt(x, z) {
     if(isPvpMatch())return null;
@@ -2203,6 +2236,7 @@
   function updateEnemies(dt){
     const difficulty=activeAccount().settings.difficulty;
     const tune=difficulty==='cozy'?{detect:12,shoot:9.5,damage:.20,coolMin:1.7,coolMax:2.35,move:.72,patrol:.62}:difficulty==='spicy'?{detect:23,shoot:19,damage:.52,coolMin:.68,coolMax:1.05,move:1.08,patrol:.92}:{detect:17,shoot:14,damage:.34,coolMin:1.05,coolMax:1.55,move:.92,patrol:.76};
+    updateEnemyRespawns();
     for(const e of world.enemies){
       if(!e.alive)continue;e.bob+=dt*3;e.attack=(e.attack||0)-dt;e.weaponKick=Math.max(0,(e.weaponKick||0)-dt*8);e.muzzleFlash=Math.max(0,(e.muzzleFlash||0)-dt);
       if(e.training){e.moveBlend=0;continue;}
@@ -2947,10 +2981,11 @@
   function peerOptions(){return {host:'0.peerjs.com',port:443,path:'/',secure:true,key:'peerjs',debug:1,config:{iceCandidatePoolSize:4,iceTransportPolicy:'all',iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}]}};}
   function coOpReadinessError(){if(globalThis.navigator?.onLine===false)return 'You are offline. Reconnect before using online co-op.';if(!globalThis.RTCPeerConnection)return 'This browser does not provide the WebRTC data channels required for co-op.';if(location.protocol==='http:')return 'Online co-op requires HTTPS. Open the GitHub Pages address instead of an insecure copy.';return '';}
   function cleanJoinPin(){return String(dom.joinRoomPin?.value||'').replace(/\D/g,'').slice(0,6);}
-  function joinPinFromUrl(){try{return String(new URL(location.href).searchParams.get('join')||'').replace(/\D/g,'').slice(0,6);}catch(_){return '';}}
-  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.searchParams.set('join',clean);url.hash='';return url.toString();}catch(_){return '';}}
+  function joinRequestFromUrl(){try{return new URL(location.href).searchParams.has('join');}catch(_){return false;}}
+  function joinUrlForPin(pin=roomPin){const clean=String(pin||'').replace(/\D/g,'').slice(0,6);if(!/^\d{6}$/.test(clean))return '';try{const url=new URL(location.href);url.searchParams.set('join','room');url.hash='';return url.toString();}catch(_){return '';}}
+  function roomInviteText(){const url=joinUrlForPin();return url?`Join my Critter Extraction room.\nJoin page: ${url}\nRoom code: ${roomPin}\nType the six-digit code manually, then press Join Room.`:'';}
   function copyText(text,label){if(!text)return toast(`No ${label.toLowerCase()} is ready`);const fallback=()=>{const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();document.execCommand('copy');area.remove();toast(`${label} copied`);};if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast(`${label} copied`)).catch(fallback);else fallback();}
-  async function shareInviteLink(){const url=joinUrlForPin();if(!url)return toast('Create a room before sharing its link');if(navigator.share)try{await navigator.share({title:'Critter Extraction room',text:`Join my Critter Extraction room ${roomPin}`,url});return;}catch(error){if(error?.name==='AbortError')return;}copyText(url,'Join URL');}
+  async function shareInviteLink(){const url=joinUrlForPin(),text=roomInviteText();if(!url||!text)return toast('Create a room before sharing its invite');if(navigator.share)try{await navigator.share({title:'Critter Extraction room invite',text:`Room code: ${roomPin}\nType this code manually on the Join Multiplayer screen.`,url});return;}catch(error){if(error?.name==='AbortError')return;}copyText(text,'Room invite');}
   function makeAdapter(conn){return {conn,get readyState(){return conn.open?'open':(conn._closed?'closed':'connecting');},send(data){conn.send(data);},close(){conn.close();}};}
   function networkConnected(){if(networkRole==='host')return [...hostChannels.values()].some(c=>c.readyState==='open');return guestChannel?.readyState==='open';}
   function connectedCount(){return 1+(networkRole==='host'?[...hostChannels.values()].filter(c=>c.readyState==='open').length:Object.keys(currentRoster()).filter(id=>id!=='host').length);}
@@ -2975,10 +3010,10 @@
   async function runJoinAction(){const pin=cleanJoinPin();if(!/^\d{6}$/.test(pin)){setNetworkStatus('join','Enter the complete room code','','The room code must contain exactly six digits.');toast('Enter all 6 digits');dom.joinRoomPin?.focus();refreshJoinAction();return;}const readiness=coOpReadinessError();if(readiness){setNetworkStatus('join','Co-op unavailable','',readiness);return toast(readiness,3600);}closePeer();networkRole='guest';roomPin=pin;lobbyProfiles={};renderLobbyRoster();joinBusy=true;const session=networkSession;refreshJoinAction();setNetworkStatus('join','Connecting to room service','working',`Looking for room ${pin}…`);try{const PeerCtor=await ensurePeerJs();if(session!==networkSession)return;const currentPeer=peer=new PeerCtor(undefined,peerOptions());let connectTimer=0,serviceTimer=setTimeout(()=>{if(session!==networkSession||currentPeer.open)return;joinBusy=false;setNetworkStatus('join','Room service timed out','','Check the connection and try the room code again.');refreshJoinAction();try{currentPeer.destroy();}catch(_){}},15000);currentPeer.on('open',()=>{clearTimeout(serviceTimer);if(session!==networkSession)return;setNetworkStatus('join','Room found — connecting','working','Opening the direct game connection…');const conn=currentPeer.connect(roomPeerId(pin),{reliable:true,metadata:{game:'critter-extraction',pin}});attachGuestConnection(conn);connectTimer=setTimeout(()=>{if(session===networkSession&&!networkConnected()){joinBusy=false;setNetworkStatus('join','Connection timed out','','Make sure the host is still waiting in the room, then try again.');refreshJoinAction();}},15000);conn.on('open',()=>clearTimeout(connectTimer));conn.on('close',()=>clearTimeout(connectTimer));});currentPeer.on('error',err=>{clearTimeout(serviceTimer);console.error('Guest peer error',err);if(session!==networkSession)return;clearTimeout(connectTimer);joinBusy=false;const [title,help]=peerErrorText(err);setNetworkStatus('join',title,'',help);refreshJoinAction();});}catch(err){console.error(err);joinBusy=false;setNetworkStatus('join','Online room service did not load','','Internet access is required for code-only joining.');toast('Could not load online co-op service');refreshJoinAction();}}
   function openJoinModal(pin=''){closePeer();networkRole='guest';lobbyProfiles={};renderLobbyRoster();if(dom.joinRoomPin)dom.joinRoomPin.value=String(pin||'').replace(/\D/g,'').slice(0,6);setNetworkStatus('join',pin?'Shared room link ready':'Enter the room code','',pin?'Connecting with the room code from the shared URL…':'Ask the host for their six-digit code.');refreshJoinAction();if(!dom.joinModal.open)dom.joinModal.showModal();setTimeout(()=>dom.joinRoomPin?.focus(),40);}
   let initialJoinUrlHandled=false;
-  function openJoinFromUrl(){const pin=joinPinFromUrl();if(initialJoinUrlHandled||firstAccountSetupRequired||!/^\d{6}$/.test(pin))return false;initialJoinUrlHandled=true;openJoinModal(pin);setTimeout(runJoinAction,120);return true;}
+  function openJoinFromUrl(){if(initialJoinUrlHandled||firstAccountSetupRequired||!joinRequestFromUrl())return false;initialJoinUrlHandled=true;openJoinModal('');return true;}
   $('#hostBtn').onclick=createHost;
   $('#joinBtn').onclick=()=>openJoinModal('');
-  dom.joinRoomPin?.addEventListener('input',refreshJoinAction);dom.joinRoomPin?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runJoinAction();}});dom.joinRoomBtn.onclick=runJoinAction;$('#refreshHostCodeBtn').onclick=createHost;dom.startCoopBtn.onclick=()=>startMatch('host',Math.floor(Math.random()*0xffffffff),{roster:lobbyProfiles,rules:syncHostRulesFromUI()});$('#copyRoomPinBtn').onclick=()=>copyText(roomPin,'Room code');$('#copyInviteLinkBtn').onclick=()=>copyText(joinUrlForPin(),'Join URL');$('#shareInviteLinkBtn').onclick=shareInviteLink;
+  dom.joinRoomPin?.addEventListener('input',refreshJoinAction);dom.joinRoomPin?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runJoinAction();}});dom.joinRoomBtn.onclick=runJoinAction;$('#refreshHostCodeBtn').onclick=createHost;dom.startCoopBtn.onclick=()=>startMatch('host',Math.floor(Math.random()*0xffffffff),{roster:lobbyProfiles,rules:syncHostRulesFromUI()});$('#copyInviteLinkBtn').onclick=()=>copyText(roomInviteText(),'Room invite');$('#shareInviteLinkBtn').onclick=shareInviteLink;
   [dom.hostModeCoop,dom.hostModePvp,dom.hostFriendlyFire].forEach(control=>control?.addEventListener('change',()=>{syncHostRulesFromUI();broadcastRoomRules();}));renderRoomRules();
   function sendSnapshot(){if(!match||match.role!=='host')return;const ps={};for(const [id,p] of Object.entries(players))ps[id]={id:p.id,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,velocityY:p.velocityY,grounded:p.grounded,hp:p.hp,maxShield:p.maxShield,shield:p.shield,speed:p.speed,speedBoost:p.speedBoost,weaponId:p.weaponId,armorId:p.armorId,alive:p.alive,mag:p.mag,reload:p.reload,kills:p.kills,profile:p.profile,walkTime:p.walkTime,moveBlend:p.moveBlend,weaponKick:p.weaponKick,muzzleFlash:p.muzzleFlash};sendNet({type:'snapshot',timer:match.timer,elapsed:match.elapsed,mode:match.mode,friendlyFire:match.friendlyFire,objectives:match.objectives,metrics:match.metrics,players:ps,enemies:world.enemies.map(e=>({id:e.id,type:e.type,species:e.species,body:e.body,accent:e.accent,weaponId:e.weaponId,training:!!e.training,x:e.x,y:e.y,z:e.z,yaw:e.yaw,hp:e.hp,maxHp:e.maxHp,bob:e.bob,walkTime:e.walkTime,moveBlend:e.moveBlend,alive:e.alive})),pickups:world.pickups,chests:world.chests.map(c=>({id:c.id,kind:c.kind||'supply',ownerName:c.ownerName||'',x:c.x,z:c.z,opened:c.opened})),extract:world.extract});}
   function applySnapshot(msg){if(!match||match.role!=='guest')return;match.timer=msg.timer;if(msg.mode==='pvp'||msg.mode==='coop')match.mode=msg.mode;if(typeof msg.friendlyFire==='boolean')match.friendlyFire=msg.friendlyFire;if(Number.isFinite(Number(msg.elapsed)))match.elapsed=Number(msg.elapsed);if(msg.objectives)match.objectives=deepCopy(msg.objectives);if(msg.metrics)match.metrics=deepCopy(msg.metrics);for(const [id,data] of Object.entries(msg.players||{})){if(!players[id])players[id]=createPlayer(id,data.x,data.z,data.profile||{displayName:id,appearance:{}},id!==localPlayerId);const p=players[id],keepLook=id===localPlayerId?{yaw:p.yaw,pitch:p.pitch}:null;Object.assign(p,data);if(keepLook){p.yaw=keepLook.yaw;p.pitch=keepLook.pitch;}}world.enemies=(msg.enemies||[]).map(e=>{const maxHp=Math.max(1,Number(e.maxHp)||70);return {...e,maxHp,hp:clamp(Number.isFinite(Number(e.hp))?Number(e.hp):maxHp,0,maxHp),speed:e.type==='slime'?1.65:2.1,attack:0};});world.pickups=msg.pickups||[];const chestMap=new Map(world.chests.map(c=>[c.id,c]));world.chests=(msg.chests||[]).map(c=>({...chestMap.get(c.id),...c,loot:chestMap.get(c.id)?.loot||emptySlots(15)}));world.extract=msg.extract||world.extract;}
@@ -3010,7 +3045,7 @@
 
   // -------------------- Installation and startup --------------------
   let initialEntryShown=false;
-  function showInitialEntry(){if(initialEntryShown)return;initialEntryShown=true;if(consumeInviteParams())return;if(firstAccountSetupRequired)openProfileEditor(db.activeId,true);else openJoinFromUrl();}
+  function showInitialEntry(){if(initialEntryShown)return;initialEntryShown=true;if(firstAccountSetupRequired&&legacyAccountSetupRequired){openProfileEditor(db.activeId,true);return;}if(consumeInviteParams())return;if(firstAccountSetupRequired)openProfileEditor(db.activeId,true);else openJoinFromUrl();}
   function runStudioBoot() {
     if (!dom.studioBoot) {
       window.__critterBootReport?.('ready', 'Startup overlay was not present; the game initialized normally.');

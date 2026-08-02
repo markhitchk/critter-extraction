@@ -61,10 +61,14 @@ for (const requiredCoopFeature of ['0.peerjs.com', 'turn:eu-0.turn.peerjs.com:34
 for (const requiredFairPlayFeature of ['FAIR_PLAY_VERSION', 'sanitizeGuestInput', 'applyGuestLootSync', 'fairPlayRateAllowed', 'authoritativeInventory', 'p.spawnProtection=0']) {
   if (!game.includes(requiredFairPlayFeature)) throw new Error(`System-wide Fair Play feature is missing: ${requiredFairPlayFeature}`);
 }
-for (const requiredInviteFeature of ['joinUrlForPin', "searchParams.set('join'", 'copyInviteLinkBtn', 'openJoinFromUrl']) {
+for (const requiredRespawnFeature of ['enemyRespawnRate', 'ENEMY_RESPAWN_SECONDS', 'scheduleEnemyRespawn', 'updateEnemyRespawns', 'maxAlive']) {
+  if (!game.includes(requiredRespawnFeature)) throw new Error(`Enemy respawn feature is missing: ${requiredRespawnFeature}`);
+}
+for (const requiredInviteFeature of ['joinUrlForPin', "searchParams.set('join','room')", 'joinRequestFromUrl', 'roomInviteText', 'copyInviteLinkBtn', 'openJoinFromUrl']) {
   if (!game.includes(requiredInviteFeature)) throw new Error(`Shared room URL support is missing: ${requiredInviteFeature}`);
 }
-for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'Create Your First Account', 'Create your account to continue']) {
+if (/setTimeout\(runJoinAction|openJoinModal\(pin\)/.test(game)) throw new Error('Shared room URLs must not prefill or automatically submit the room code.');
+for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'legacyAccountSetupRequired', 'automaticAccountNeedsSetup', 'accountSetupComplete', 'Create Your First Account', 'Finish Your Account Setup', 'Create your account to continue']) {
   if (!game.includes(requiredOnboardingFeature)) throw new Error(`First-visit account onboarding is missing: ${requiredOnboardingFeature}`);
 }
 for (const requiredRecruitFeature of ['recruitCode', 'recruitedBy', 'pendingRecruitCode', 'consumeInviteParams', "copyText(link, 'Invite link')"]) {
@@ -75,6 +79,7 @@ const index = readFileSync(join(root, 'index.html'), 'utf8');
 if (!index.includes('rel="icon" href="./icon.svg"') || !index.includes('rel="apple-touch-icon"')) throw new Error('Primary favicon and touch icon links are missing.');
 if (!index.includes('id="touchJump"') || !index.includes('Space</kbd> Jump')) throw new Error('Jump controls are missing from the interface.');
 if (!index.includes('id="copyInviteLinkBtn"') || !index.includes('FAIR PLAY ACTIVE')) throw new Error('Invite-link or Fair Play interface is missing.');
+if (!index.includes('id="enemyRespawnRate"') || !index.includes('value="off">Off</option>') || !index.includes('value="fast">Fast</option>')) throw new Error('Enemy respawn rate settings are missing from the interface.');
 if (!index.includes('id="copyInviteBtn"')) throw new Error('Account recruitment button is missing.');
 
 const recruit = readFileSync(join(root, 'invite.html'), 'utf8');
