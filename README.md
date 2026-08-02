@@ -1,4 +1,8 @@
-# Critter Extraction
+<p align="center">
+  <img src="assets/HTG.png" alt="Critter Extraction logo" width="180">
+</p>
+
+<h1 align="center">Critter Extraction</h1>
 
 **Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.
 
