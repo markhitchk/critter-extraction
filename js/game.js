@@ -19,7 +19,9 @@
   const isTypingTarget = target => !!target && (target.matches?.('input, textarea, select') || target.isContentEditable);
   const localAsset = path => window.__CRITTER_EMBEDDED_ASSETS__?.[`assets/${path}`] || `./assets/${path}`;
   const GAME_VERSION = 'v0.27.1';
-  const SAVE_SCHEMA_VERSION = 17;
+  const SAVE_SCHEMA_VERSION = 18;
+  const PETAL_CAP = 1_000_000;
+  const safePetals = value => Math.min(PETAL_CAP, Math.max(0, Math.floor(Number(value) || 0)));
 
   // Current Chrome, Edge, Firefox, and Safari all have native <dialog>.
   // This tiny fallback also keeps menus usable in embedded or compatibility
@@ -186,7 +188,7 @@
   const PROFILE_XML_CACHE_KEY = 'critterExtractionProfileXml';
   const LEGACY_STORAGE_PREFIX = ['critterExtraction','3','DInventory'].join('');
   const LEGACY_PROFILE_XML_KEY = ['critterExtraction','3','DProfileXml'].join('');
-  const BUILD_VERSION = `harleys-studios-${GAME_VERSION}-legacy-account-gate-manual-room-code-ai-respawn`;
+  const BUILD_VERSION = `harleys-studios-${GAME_VERSION}-rookie-account-replacement-petal-cap-manual-room-code-ai-respawn`;
   const DEFAULT_SETTINGS = {
     cameraMode: 'third', shoulderSide: 'right', fov: 75, sensitivity: 1, invertY: false,
     difficulty: 'cozy', enemyRespawnRate: 'normal', aimAssist: true, autoReload: true, showHints: true, showHitboxes: false,
@@ -270,9 +272,51 @@
       loadout: { weapon: 'Pea Popper', armor: 'Leaf Vest', backpack: 'Critter Pack' }
     };
   }
+  function legacyRookieAccount(account) {
+    const displayName = String(account?.displayName || '').trim().toLowerCase(), username = String(account?.username || '').trim().toLowerCase();
+    return displayName === 'rookie' && username === 'rookie' && account?.accountSetupComplete !== true;
+  }
   function automaticAccountNeedsSetup(account) {
     const displayName = String(account?.displayName || '').trim().toLowerCase(), username = String(account?.username || '').trim().toLowerCase();
-    return (displayName === 'rookie' && username === 'rookie') || (displayName === 'new critter' && /^critter_\d{4}$/.test(username));
+    return legacyRookieAccount(account) || (displayName === 'new critter' && /^critter_\d{4}$/.test(username));
+  }
+  function replaceLegacyRookieAccount(account, identity) {
+    const replacement = deepCopy(account);
+    replacement.id = uid();
+    replacement.recruitCode = uid().slice(0, 8).toUpperCase();
+    Object.assign(replacement, identity, { accountSetupComplete: true });
+    replacement.petals = safePetals(replacement.petals);
+    return replacement;
+  }
+  function removeLegacyRookieStorageCopies(legacyId) {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === LEGACY_STORAGE_PREFIX || key?.startsWith(`${LEGACY_STORAGE_PREFIX}_`)) keys.push(key);
+      }
+      for (const key of keys) {
+        const raw = localStorage.getItem(key); if (!raw) continue;
+        try {
+          const stored = JSON.parse(raw); if (!Array.isArray(stored.accounts)) continue;
+          const accounts = stored.accounts.filter(a => a?.id !== legacyId && !legacyRookieAccount(a));
+          if (accounts.length === stored.accounts.length) continue;
+          if (!accounts.length) localStorage.removeItem(key);
+          else {
+            stored.accounts = accounts;
+            if (!accounts.some(a => a.id === stored.activeId)) stored.activeId = accounts[0].id;
+            localStorage.setItem(key, JSON.stringify(stored));
+          }
+        } catch (_) { }
+      }
+      const legacyXml = localStorage.getItem(LEGACY_PROFILE_XML_KEY);
+      if (legacyXml) {
+        try {
+          const account = accountFromXml(legacyXml);
+          if (account?.id === legacyId || legacyRookieAccount(account)) localStorage.removeItem(LEGACY_PROFILE_XML_KEY);
+        } catch (_) { }
+      }
+    } catch (error) { console.warn('Legacy Rookie cleanup unavailable', error); }
   }
   function normalizeDatabase(parsed) {
     if (!parsed || !Array.isArray(parsed.accounts) || !parsed.accounts.length) return null;
@@ -293,7 +337,7 @@
       a.stats = { extracts: 0, berries: 0, kills: 0, matches: 0, ...(a.stats || {}) };
       a.appearance = { species: 'puppy', bodyColor: '#d9a06f', accentColor: '#7b4d35', accessory: 'cap', eyeStyle: 'dot', ...(a.appearance || {}) };
       a.stash = normalizeSlots(a.stash, STASH_COUNT); a.prepared = normalizeSlots(a.prepared, SLOT_COUNT);
-      a.petals = Math.max(0, Math.floor(Number(a.petals) || 0));
+      a.petals = safePetals(a.petals);
       a.economyTransactions = Array.isArray(a.economyTransactions) ? a.economyTransactions.slice(-40) : [];
       if (a.pendingDrop && a.pendingDrop.state === 'reserved' && Array.isArray(a.pendingDrop.items)) {
         const hasPrepared = a.prepared.some(Boolean);
@@ -310,7 +354,7 @@
   let firstAccountSetupRequired = false, legacyAccountSetupRequired = false;
   function loadedDatabase(database) {
     const active = database.accounts.find(a => a.id === database.activeId) || database.accounts[0];
-    if (active?.accountSetupComplete !== true) { firstAccountSetupRequired = true; legacyAccountSetupRequired = true; }
+    if (active?.accountSetupComplete !== true) { firstAccountSetupRequired = true; legacyAccountSetupRequired = legacyRookieAccount(active); }
     return database;
   }
   function loadDB() {
@@ -351,6 +395,7 @@
   const activeAccount = () => db.accounts.find(a => a.id === db.activeId) || db.accounts[0];
   function saveDB() {
     try {
+      db.accounts.forEach(account => { account.petals = safePetals(account.petals); });
       db.schemaVersion = SAVE_SCHEMA_VERSION; db.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     } catch (e) { console.warn('Local save unavailable', e); return false; }
@@ -387,7 +432,6 @@
     clearTimeout(toastTimer); dom.toast.textContent = message; dom.toast.classList.add('show');
     toastTimer = setTimeout(() => dom.toast.classList.remove('show'), ms);
   }
-  const safePetals = value => Math.max(0, Math.floor(Number(value) || 0));
   const formatPetals = value => `${safePetals(value).toLocaleString()} ${safePetals(value) === 1 ? 'Petal' : 'Petals'}`;
   const petalLabel = value => `🌸 ${formatPetals(value)}`;
   function avatarInitials(a) { return (a.displayName || a.username || '?').split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
@@ -487,9 +531,12 @@
     history.replaceState({}, '', `${location.pathname}${location.hash || ''}`);
     if (!invite) return false;
     if (presetUsername && presetDisplayName && !db.accounts.some(a => a.username.toLowerCase() === presetUsername.toLowerCase())) {
-      const previousDb = deepCopy(db), a = makeAccount(presetDisplayName, presetUsername); a.bio = presetBio || a.bio; a.recruitedBy = invite; a.petals = safePetals(a.petals + 100); a.accountSetupComplete = true;
-      if (firstAccountSetupRequired) db.accounts = [a]; else db.accounts.push(a); db.activeId = a.id;
-      if (saveDB()) { firstAccountSetupRequired = false; legacyAccountSetupRequired = false; pendingRecruitCode = null; refreshAccountUI(); renderAccounts(); toast(from ? `Welcome, ${presetDisplayName}! Invited by ${from} — +100 Petals` : `Welcome, ${presetDisplayName}! +100 Petals`, 3600); return true; }
+      const previousDb = deepCopy(db), setupAccount = firstAccountSetupRequired ? activeAccount() : null, replacingLegacyId = legacyRookieAccount(setupAccount) ? setupAccount.id : null;
+      const identity = { username: presetUsername, displayName: presetDisplayName, bio: presetBio || setupAccount?.bio || 'Ready for the meadow.', avatar: setupAccount?.avatar || '' };
+      const a = replacingLegacyId ? replaceLegacyRookieAccount(setupAccount, identity) : Object.assign(makeAccount(presetDisplayName, presetUsername), identity, { accountSetupComplete: true });
+      a.recruitedBy = invite; const petalsBeforeInvite = safePetals(a.petals); a.petals = safePetals(petalsBeforeInvite + 100); const invitePetals = a.petals - petalsBeforeInvite;
+      if (firstAccountSetupRequired && setupAccount) { const setupIndex=db.accounts.findIndex(account=>account.id===setupAccount.id); if(setupIndex>=0)db.accounts.splice(setupIndex,1,a);else db.accounts.push(a); } else db.accounts.push(a); db.activeId = a.id;
+      if (saveDB()) { if(replacingLegacyId)removeLegacyRookieStorageCopies(replacingLegacyId); firstAccountSetupRequired = false; legacyAccountSetupRequired = false; pendingRecruitCode = null; refreshAccountUI(); renderAccounts(); const bonusText=invitePetals?`+${invitePetals} Petals`:`Petal balance at ${PETAL_CAP.toLocaleString()} cap`; toast(from ? `Welcome, ${presetDisplayName}! Invited by ${from} — ${bonusText}` : `Welcome, ${presetDisplayName}! ${bonusText}`, 3600); return true; }
       db = previousDb;
     }
     pendingRecruitCode = invite;
@@ -507,7 +554,7 @@
     const required = !!requiredSetup || firstAccountSetupRequired;
     dom.profileModalTitle.textContent = required ? (legacyAccountSetupRequired ? 'Finish Your Account Setup' : 'Create Your First Account') : id ? 'Edit Account' : 'Create Account';
     dom.profileModalEyebrow.textContent = required ? (legacyAccountSetupRequired ? 'ONE-TIME ACCOUNT UPGRADE' : 'WELCOME TO CRITTER EXTRACTION') : id ? 'DEVICE PROFILE' : 'NEW DEVICE PROFILE';
-    const accountHelp=$('#profileAccountHelp');if(accountHelp)accountHelp.textContent=required?(legacyAccountSetupRequired?'Replace the old automatic Rookie name with your username and display name. Your progress, Petals, stash, appearance, loadout, statistics, and settings will be preserved.':'Create a username and display name before playing or opening a shared-room invite. This replaces the old automatic Rookie account.'):'This device account keeps its own display name, username, appearance, progress, stash, loadout, and settings.';
+    const accountHelp=$('#profileAccountHelp');if(accountHelp)accountHelp.textContent=required?(legacyAccountSetupRequired?'Create your named account to remove the old automatic Rookie record. Your progress, Petals, stash, appearance, loadout, statistics, and settings will move to the new account.':'Create a username and display name before playing or opening a shared-room invite. No automatic Rookie account will be kept.'):'This device account keeps its own display name, username, appearance, progress, stash, loadout, and settings.';
     dom.profileModal.classList.toggle('required-account-setup', required);
     $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=required);
     dom.usernameInput.value = source.username; dom.displayNameInput.value = source.displayName; dom.bioInput.value = source.bio || ''; if(dom.avatarUrlInput) dom.avatarUrlInput.value = source.avatar && /^https?:/i.test(source.avatar) ? source.avatar : '';
@@ -521,17 +568,23 @@
     if (!username || !displayName) return toast('Enter a valid username and display name');
     if (db.accounts.some(a => a.username.toLowerCase() === username.toLowerCase() && a.id !== editingAccountId)) return toast('That username already exists on this device');
     const previousDb = deepCopy(db), recruitBonus = pendingRecruitCode && (firstAccountSetupRequired || !editingAccountId) ? pendingRecruitCode : null;
+    let replacedLegacyAccountId = null;
     if (editingAccountId) {
-      const a = db.accounts.find(x => x.id === editingAccountId); Object.assign(a, { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar, accountSetupComplete: true });
+      const accountIndex = db.accounts.findIndex(x => x.id === editingAccountId);
+      if (accountIndex < 0) return toast('That account is no longer available');
+      const existing = db.accounts[accountIndex], identity = { username, displayName, bio: safeText(dom.bioInput.value, 120), avatar: pendingAvatar };
+      const a = legacyRookieAccount(existing) ? replaceLegacyRookieAccount(existing, identity) : Object.assign(existing, identity, { accountSetupComplete: true });
+      if (a !== existing) { replacedLegacyAccountId = existing.id; db.accounts.splice(accountIndex, 1, a); db.activeId = a.id; }
       if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     } else {
       const a = makeAccount(displayName, username); a.bio = safeText(dom.bioInput.value, 120); a.avatar = pendingAvatar; a.accountSetupComplete = true; db.accounts.push(a); db.activeId = a.id;
       if (recruitBonus) { a.recruitedBy = recruitBonus; a.petals = safePetals(a.petals + 100); }
     }
     if (!saveDB()) { db = previousDb; refreshAccountUI(); renderAccounts(); return toast('Account could not be saved: browser storage may be full'); }
+    if (replacedLegacyAccountId) removeLegacyRookieStorageCopies(replacedLegacyAccountId);
     if (recruitBonus) pendingRecruitCode = null;
     firstAccountSetupRequired = false; legacyAccountSetupRequired = false; dom.profileModal.classList.remove('required-account-setup'); $$('[data-close="profileModal"]',dom.profileModal).forEach(button=>button.hidden=false);
-    dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast('Account saved'); setTimeout(()=>{if(!consumeInviteParams())openJoinFromUrl();},0);
+    dom.profileModal.close(); refreshAccountUI(); renderAccounts(); toast(replacedLegacyAccountId ? 'Legacy Rookie removed; progress moved to your new account' : 'Account saved', replacedLegacyAccountId ? 3600 : 1900); setTimeout(()=>{if(!consumeInviteParams())openJoinFromUrl();},0);
   });
   dom.profileModal.addEventListener('cancel',e=>{if(firstAccountSetupRequired){e.preventDefault();toast('Create your account to continue');}});
   [dom.displayNameInput, dom.usernameInput].forEach(field => field.addEventListener('input', () => setAvatar(dom.editAvatarPreview, { displayName: dom.displayNameInput.value, username: dom.usernameInput.value, avatar: pendingAvatar })));
@@ -2752,9 +2805,9 @@
     dom.merchantDetails.querySelector('[data-merchant-action="one"]').onclick=()=>prepareSale(merchantSelection,1);
     dom.merchantDetails.querySelector('[data-merchant-action="stack"]').onclick=()=>prepareSale(merchantSelection,item.qty);
   }
-  function prepareSale(index,qty){const a=activeAccount(),item=a.stash[index],d=item&&ITEMS[item.id];qty=Math.max(1,Math.floor(Number(qty)||0));if(!item||!d||!d.canSell||item.locked||qty>item.qty)return toast('CE-SELL-INVALID: This sale is no longer valid');pendingSale={accountId:a.id,index,itemId:item.id,qty,total:d.sellPrice*qty};dom.sellConfirmTitle.textContent=`Sell ${d.name}?`;dom.sellConfirmBody.innerHTML=`<div class="sell-confirm-item"><img src="${d.asset}" alt=""><div><strong>${d.name} ×${qty}</strong><small>${d.rarity.toUpperCase()}</small></div></div><div class="merchant-price-table"><span><small>PRICE EACH</small><strong>🌸 ${d.sellPrice}</strong></span><span><small>SALE TOTAL</small><strong>🌸 ${pendingSale.total}</strong></span><span><small>AFTER SALE</small><strong>${petalLabel(a.petals+pendingSale.total)}</strong></span></div>`;dom.sellConfirmModal.showModal();}
-  function processSale(){if(economyBusy||!pendingSale)return;economyBusy=true;dom.confirmSellBtn.disabled=true;const sale={...pendingSale},a=activeAccount(),snapshot=deepCopy({stash:a.stash,petals:a.petals,economyTransactions:a.economyTransactions});try{const item=a.id===sale.accountId?a.stash[sale.index]:null,d=item&&ITEMS[item.id];if(!item||item.id!==sale.itemId||item.locked||!d?.canSell||sale.qty<1||sale.qty>item.qty)throw new Error('CE-SELL-INVALID');const total=Math.floor(d.sellPrice*sale.qty);if(total!==sale.total||total<0)throw new Error('CE-SELL-INVALID');item.qty-=sale.qty;if(item.qty<=0)a.stash[sale.index]=null;a.petals=safePetals(a.petals+total);recordEconomy(a,{type:'sell',itemId:sale.itemId,qty:sale.qty,amount:total});if(!saveDB())throw new Error('CE-SELL-SAVE');dom.sellConfirmModal.close();pendingSale=null;merchantSelection=null;toast(`Sold ${d.name} for ${formatPetals(total)}`);renderMerchant();}catch(error){a.stash=snapshot.stash;a.petals=snapshot.petals;a.economyTransactions=snapshot.economyTransactions;saveDB();toast(`${error.message||'CE-SELL-SAVE'}: Sale cancelled; no items or Petals changed.`,3500);}finally{economyBusy=false;dom.confirmSellBtn.disabled=false;}}
-  function sellJunk(){if(economyBusy)return;const a=activeAccount(),snapshot=deepCopy({stash:a.stash,petals:a.petals,economyTransactions:a.economyTransactions});let total=0,count=0;for(let i=0;i<a.stash.length;i++){const item=a.stash[i],d=item&&ITEMS[item.id];if(!item||item.locked||item.favorite||!SAFE_JUNK_IDS.has(item.id)||!d?.canSell)continue;total+=d.sellPrice*item.qty;count+=item.qty;a.stash[i]=null;}if(!count)return toast('No safe junk is available to sell');a.petals=safePetals(a.petals+total);recordEconomy(a,{type:'sell-junk',qty:count,amount:total});if(!saveDB()){a.stash=snapshot.stash;a.petals=snapshot.petals;a.economyTransactions=snapshot.economyTransactions;saveDB();return toast('CE-SELL-SAVE: Sale cancelled; save failed.',3500);}toast(`Sold ${count} junk item${count===1?'':'s'} for ${formatPetals(total)}`);merchantSelection=null;renderMerchant();}
+  function prepareSale(index,qty){const a=activeAccount(),item=a.stash[index],d=item&&ITEMS[item.id];qty=Math.max(1,Math.floor(Number(qty)||0));if(!item||!d||!d.canSell||item.locked||qty>item.qty)return toast('CE-SELL-INVALID: This sale is no longer valid');const total=d.sellPrice*qty;if(safePetals(a.petals)+total>PETAL_CAP)return toast(`CE-SELL-CAP: This sale would exceed the ${PETAL_CAP.toLocaleString()} Petal cap`,3500);pendingSale={accountId:a.id,index,itemId:item.id,qty,total};dom.sellConfirmTitle.textContent=`Sell ${d.name}?`;dom.sellConfirmBody.innerHTML=`<div class="sell-confirm-item"><img src="${d.asset}" alt=""><div><strong>${d.name} ×${qty}</strong><small>${d.rarity.toUpperCase()}</small></div></div><div class="merchant-price-table"><span><small>PRICE EACH</small><strong>🌸 ${d.sellPrice}</strong></span><span><small>SALE TOTAL</small><strong>🌸 ${pendingSale.total}</strong></span><span><small>AFTER SALE</small><strong>${petalLabel(a.petals+pendingSale.total)}</strong></span></div>`;dom.sellConfirmModal.showModal();}
+  function processSale(){if(economyBusy||!pendingSale)return;economyBusy=true;dom.confirmSellBtn.disabled=true;const sale={...pendingSale},a=activeAccount(),snapshot=deepCopy({stash:a.stash,petals:a.petals,economyTransactions:a.economyTransactions});try{const item=a.id===sale.accountId?a.stash[sale.index]:null,d=item&&ITEMS[item.id];if(!item||item.id!==sale.itemId||item.locked||!d?.canSell||sale.qty<1||sale.qty>item.qty)throw new Error('CE-SELL-INVALID');const total=Math.floor(d.sellPrice*sale.qty);if(total!==sale.total||total<0)throw new Error('CE-SELL-INVALID');if(safePetals(a.petals)+total>PETAL_CAP)throw new Error('CE-SELL-CAP');item.qty-=sale.qty;if(item.qty<=0)a.stash[sale.index]=null;a.petals=safePetals(a.petals+total);recordEconomy(a,{type:'sell',itemId:sale.itemId,qty:sale.qty,amount:total});if(!saveDB())throw new Error('CE-SELL-SAVE');dom.sellConfirmModal.close();pendingSale=null;merchantSelection=null;toast(`Sold ${d.name} for ${formatPetals(total)}`);renderMerchant();}catch(error){a.stash=snapshot.stash;a.petals=snapshot.petals;a.economyTransactions=snapshot.economyTransactions;saveDB();toast(`${error.message||'CE-SELL-SAVE'}: Sale cancelled; no items or Petals changed.`,3500);}finally{economyBusy=false;dom.confirmSellBtn.disabled=false;}}
+  function sellJunk(){if(economyBusy)return;const a=activeAccount(),snapshot=deepCopy({stash:a.stash,petals:a.petals,economyTransactions:a.economyTransactions}),sellable=[];let total=0,count=0;for(let i=0;i<a.stash.length;i++){const item=a.stash[i],d=item&&ITEMS[item.id];if(!item||item.locked||item.favorite||!SAFE_JUNK_IDS.has(item.id)||!d?.canSell)continue;total+=d.sellPrice*item.qty;count+=item.qty;sellable.push(i);}if(!count)return toast('No safe junk is available to sell');if(safePetals(a.petals)+total>PETAL_CAP)return toast(`CE-SELL-CAP: Selling all junk would exceed the ${PETAL_CAP.toLocaleString()} Petal cap`,3500);for(const index of sellable)a.stash[index]=null;a.petals=safePetals(a.petals+total);recordEconomy(a,{type:'sell-junk',qty:count,amount:total});if(!saveDB()){a.stash=snapshot.stash;a.petals=snapshot.petals;a.economyTransactions=snapshot.economyTransactions;saveDB();return toast('CE-SELL-SAVE: Sale cancelled; save failed.',3500);}toast(`Sold ${count} junk item${count===1?'':'s'} for ${formatPetals(total)}`);merchantSelection=null;renderMerchant();}
   function renderMerchantBuy(){if(!dom.merchantBuyGrid)return;const a=activeAccount();dom.merchantBuyGrid.innerHTML='';MERCHANT_BUY_IDS.forEach(id=>{const d=ITEMS[id],card=document.createElement('article');card.className='merchant-buy-card';card.innerHTML=`<img src="${d.asset}" alt=""><div><span class="eyebrow">${d.merchantCategory.toUpperCase()}</span><h3>${d.name}</h3><strong>🌸 ${d.buyPrice}</strong></div><p>${d.description}</p><footer><button class="primary full" type="button">Buy One</button></footer>`;card.querySelector('button').onclick=()=>buyItem(id,1);dom.merchantBuyGrid.append(card);});}
   function buyItem(id,qty=1){if(economyBusy)return;const a=activeAccount(),d=ITEMS[id];qty=Math.max(1,Math.floor(qty));const cost=d.buyPrice*qty;if(a.petals<cost)return toast('CE-BUY-NO-FUNDS: Not enough Petals');if(!canAdd(a.stash,id,qty))return toast('CE-BUY-NO-SPACE: Account Stash has no room');economyBusy=true;const snapshot=deepCopy({stash:a.stash,petals:a.petals,economyTransactions:a.economyTransactions});try{const moved=addItem(a.stash,id,qty);if(moved!==qty)throw new Error('CE-BUY-NO-SPACE');a.petals=safePetals(a.petals-cost);recordEconomy(a,{type:'buy',itemId:id,qty,amount:-cost});if(!saveDB())throw new Error('CE-SAVE-WRITE');toast(`Bought ${d.name} for ${formatPetals(cost)}`);renderMerchant();}catch(error){a.stash=snapshot.stash;a.petals=snapshot.petals;a.economyTransactions=snapshot.economyTransactions;saveDB();toast(`${error.message}: Purchase cancelled; no Petals changed.`,3500);}finally{economyBusy=false;}}
   if(dom.topPetalsBtn)dom.topPetalsBtn.onclick=()=>openMerchant('sell');if(dom.profileMerchantBtn)dom.profileMerchantBtn.onclick=()=>openMerchant('sell');if(dom.merchantBtn)dom.merchantBtn.onclick=()=>openMerchant('sell');if(dom.openMerchantFromInventoryBtn)dom.openMerchantFromInventoryBtn.onclick=()=>openMerchant('sell');if(dom.merchantSellTab)dom.merchantSellTab.onclick=()=>setMerchantMode('sell');if(dom.merchantBuyTab)dom.merchantBuyTab.onclick=()=>setMerchantMode('buy');if(dom.sellJunkBtn)dom.sellJunkBtn.onclick=sellJunk;if(dom.confirmSellBtn)dom.confirmSellBtn.onclick=processSale;
@@ -2834,7 +2887,7 @@
     syncAccountLoadout(a);
     a.stats.extracts++; a.stats.berries += berries; a.stats.kills += extractedPlayer?.kills || 0;
     const xp = 60 + berries * 18 + (getLocalPlayer()?.kills || 0) * 12 + Math.floor(inventoryValue(backpack) / 50); a.xp += xp;
-    const petalsEarned = 15 + (match?.objectives?.bonus?.done ? 10 : 0); a.petals = safePetals(a.petals + petalsEarned); a.economyTransactions.push({id:uid(),type:'reward',amount:petalsEarned,reason:'extraction',at:Date.now()}); a.economyTransactions=a.economyTransactions.slice(-40); finishCustomDrop(a); saveDB(); return { berries, xp, petalsEarned, overflow, banked };
+    const petalBalanceBefore = safePetals(a.petals), petalReward = 15 + (match?.objectives?.bonus?.done ? 10 : 0); a.petals = safePetals(petalBalanceBefore + petalReward); const petalsEarned = a.petals - petalBalanceBefore; if(petalsEarned)a.economyTransactions.push({id:uid(),type:'reward',amount:petalsEarned,reason:'extraction',at:Date.now()}); a.economyTransactions=a.economyTransactions.slice(-40); finishCustomDrop(a); saveDB(); return { berries, xp, petalsEarned, overflow, banked };
   }
   function endMatch(success, reason, immediateMenu = false, remotePayload = null, suppressNetwork = false) {
     if (!match || match.ended) return;

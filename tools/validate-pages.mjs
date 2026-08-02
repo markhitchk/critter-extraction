@@ -71,6 +71,12 @@ if (/setTimeout\(runJoinAction|openJoinModal\(pin\)/.test(game)) throw new Error
 for (const requiredOnboardingFeature of ['firstAccountSetupRequired', 'legacyAccountSetupRequired', 'automaticAccountNeedsSetup', 'accountSetupComplete', 'Create Your First Account', 'Finish Your Account Setup', 'Create your account to continue']) {
   if (!game.includes(requiredOnboardingFeature)) throw new Error(`First-visit account onboarding is missing: ${requiredOnboardingFeature}`);
 }
+for (const requiredLegacyReplacementFeature of ['legacyRookieAccount', 'replaceLegacyRookieAccount', 'removeLegacyRookieStorageCopies', 'Legacy Rookie removed']) {
+  if (!game.includes(requiredLegacyReplacementFeature)) throw new Error(`Legacy Rookie replacement is missing: ${requiredLegacyReplacementFeature}`);
+}
+for (const requiredPetalCapFeature of ['PETAL_CAP = 1_000_000', 'CE-SELL-CAP', 'petalBalanceBefore']) {
+  if (!game.includes(requiredPetalCapFeature)) throw new Error(`Petal cap protection is missing: ${requiredPetalCapFeature}`);
+}
 for (const requiredRecruitFeature of ['recruitCode', 'recruitedBy', 'pendingRecruitCode', 'consumeInviteParams', "copyText(link, 'Invite link')"]) {
   if (!game.includes(requiredRecruitFeature)) throw new Error(`Account recruitment feature is missing: ${requiredRecruitFeature}`);
 }

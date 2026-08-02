@@ -18,8 +18,9 @@ The workflow validates required files and case-sensitive asset paths before ever
 ## Static-hosting behavior
 
 - Solo play, graphics, adaptive phone/tablet controls, mouse/keyboard controls, profiles, inventory, and settings run entirely in the browser.
-- A first-time visitor must create a named device account before playing or joining a shared room. Browsers carrying the old automatic Rookie profile receive a one-time required setup screen that preserves all existing progress and account data.
+- A first-time visitor must create a named device account before playing or joining a shared room. Browsers carrying the old automatic Rookie profile receive a one-time required setup screen that moves all progress and account data into a fresh named account, then removes the legacy Rookie record and its fallback copies.
 - Every device account has separate progress, stash, loadout, Petals, appearance, statistics, and settings in browser-local storage.
+- Each account can hold up to **1,000,000 Petals**. Imports, rewards, and saved balances are clamped to that cap, and merchant sales that would exceed it are safely cancelled without removing items.
 - Every account can copy a branded recruitment link. The invitee receives a one-time 100-Petal bonus on that newly created local account; static hosting cannot credit the inviter.
 - Use **Download Account** beside a profile to save its complete XML account file, then **Upload Account File** to restore it in another browser. These are portable local profiles, not secure cloud logins.
 - Multiplayer uses the included PeerJS client, secure PeerJS signaling, and STUN/TURN-assisted WebRTC connections. GitHub Pages supplies the required HTTPS origin; exceptionally restrictive networks can still block WebRTC.
