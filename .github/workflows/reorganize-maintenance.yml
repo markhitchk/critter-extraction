@@ -8,9 +8,14 @@ on:
       - tools/reorganize-repository.mjs
       - tools/.reorg-payload/**
       - .github/workflows/reorganize-maintenance.yml
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   reorganize:
