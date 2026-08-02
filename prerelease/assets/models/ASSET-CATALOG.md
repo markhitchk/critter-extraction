@@ -1,7 +1,18 @@
-# Authored 3D Asset Catalog
+# 3D Asset Blockout Catalog
 
-Generated GLB files: **26**.
+The current GLB files are **procedural blockouts**, not finished high-end 3D models.
 
-The pack includes the tactical puppy, all eight raiders, the remaining weapons, five armor models, Critter Pack, death box, freight car, ranger outpost, and three gameplay VFX meshes. Existing Pea Popper, Pine Valley, railway, crate, and terrain assets remain included.
+## Current reality
 
-Character models are real browser-loadable static GLBs. Skinning and animation clips are not represented as complete.
+- 32 asset records exist in the manifest.
+- 0 assets meet the production-ready standard.
+- Character and enemy files are static and unrigged.
+- Most generated models are assembled from box and diamond primitives.
+- Only a small Pine Valley subset and two weapons are connected to the prerelease renderer.
+- The remaining GLBs can be opened as files, but they do not automatically appear in gameplay.
+
+## Production-ready acceptance requirements
+
+A model must have a non-primitive sculpted silhouette, clean topology, UVs, finished PBR materials, correct scale and pivots, runtime integration, and validated LODs. Characters additionally need a skeleton, skin weights, animation clips, and weapon/backpack attachment sockets.
+
+The previous `ready` and `authored-model-coverage-complete` wording was inaccurate and has been removed.
