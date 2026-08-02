@@ -17,7 +17,7 @@ jobs:
   import-real-models:
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/import-real-cc0-models'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: Check out import branch
@@ -53,29 +53,83 @@ jobs:
         if: steps.completed.outputs.skip != 'true'
         run: python -m pip install --disable-pip-version-check gdown
 
-      - name: Download original Quaternius CC0 packs
+      - name: List public Quaternius source folders
         if: steps.completed.outputs.skip != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/cc0-assets/toon-shooter
-          mkdir -p /tmp/cc0-assets/sushi-restaurant
-          mkdir -p /tmp/cc0-assets/animated-animals
+          mkdir -p /tmp/cc0-index
+          gdown 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C' --folder --json --quiet > /tmp/cc0-index/toon.json
+          gdown 'https://drive.google.com/drive/folders/1srOaThdSqYBtmrqq9couZShM5r0cw_bH' --folder --json --quiet > /tmp/cc0-index/sushi.json
+          gdown 'https://drive.google.com/drive/folders/1uJ3N5HfB7jKTseJUNQr3N4YaN0UuEtHk' --folder --json --quiet > /tmp/cc0-index/animals.json
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const name of ['toon','sushi','animals']) {
+            const entries = JSON.parse(fs.readFileSync(`/tmp/cc0-index/${name}.json`, 'utf8'));
+            console.log(`${name}: ${entries.length} public files`);
+            console.log(entries.filter(entry => /\.gltf$/i.test(entry.path)).map(entry => entry.path).slice(0, 100).join('\n'));
+          }
+          NODE
 
-          gdown --folder \
-            'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C' \
-            -O /tmp/cc0-assets/toon-shooter
+      - name: Download selected original GLTF models
+        if: steps.completed.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { spawnSync } = require('child_process');
 
-          gdown --folder \
-            'https://drive.google.com/drive/folders/1srOaThdSqYBtmrqq9couZShM5r0cw_bH' \
-            -O /tmp/cc0-assets/sushi-restaurant
+          const selections = {
+            toon: [
+              'Character_Enemy.gltf',
+              'Character_Soldier.gltf',
+              'AK.gltf',
+              'SMG.gltf',
+              'Shotgun.gltf',
+              'Sniper.gltf',
+              'Pistol.gltf',
+              'Tree_1.gltf',
+              'Crate.gltf',
+              'Container_Long.gltf',
+              'Barrier_Large.gltf'
+            ],
+            sushi: ['Rabbit.gltf', 'Panda.gltf'],
+            animals: ['Husky.gltf', 'Shiba_Inu.gltf', 'Shiba Inu.gltf']
+          };
+          const destinations = {
+            toon: '/tmp/cc0-assets/toon-shooter',
+            sushi: '/tmp/cc0-assets/sushi-restaurant',
+            animals: '/tmp/cc0-assets/animated-animals'
+          };
 
-          gdown --folder \
-            'https://drive.google.com/drive/folders/1uJ3N5HfB7jKTseJUNQr3N4YaN0UuEtHk' \
-            -O /tmp/cc0-assets/animated-animals
-
-          echo 'Downloaded GLTF/GLB candidates:'
-          find /tmp/cc0-assets -type f \( -iname '*.gltf' -o -iname '*.glb' \) | sort | sed -n '1,120p'
+          for (const [pack, wanted] of Object.entries(selections)) {
+            const entries = JSON.parse(fs.readFileSync(`/tmp/cc0-index/${pack}.json`, 'utf8'));
+            const output = destinations[pack];
+            fs.mkdirSync(output, { recursive: true });
+            const normalizedWanted = new Set(wanted.map(value => value.toLowerCase().replaceAll('_', ' ')));
+            const matches = entries.filter(entry => {
+              const name = path.basename(entry.path).toLowerCase().replaceAll('_', ' ');
+              return normalizedWanted.has(name);
+            });
+            for (const target of wanted) {
+              const normalized = target.toLowerCase().replaceAll('_', ' ');
+              if (!matches.some(entry => path.basename(entry.path).toLowerCase().replaceAll('_', ' ') === normalized)) {
+                if (pack === 'animals' && normalized.startsWith('shiba ')) continue;
+                throw new Error(`Missing ${pack} source model: ${target}`);
+              }
+            }
+            const unique = [...new Map(matches.map(entry => [path.basename(entry.path).toLowerCase().replaceAll('_', ' '), entry])).values()];
+            for (const entry of unique) {
+              const destination = path.join(output, path.basename(entry.path).replaceAll(' ', '_'));
+              console.log(`Downloading ${entry.path} -> ${destination}`);
+              const result = spawnSync('gdown', [entry.url, '-O', destination], { stdio: 'inherit' });
+              if (result.status !== 0) throw new Error(`Download failed: ${entry.path}`);
+            }
+          }
+          NODE
+          find /tmp/cc0-assets -type f -iname '*.gltf' -print | sort
 
       - name: Convert, select, and validate real models
         if: steps.completed.outputs.skip != 'true'
@@ -105,7 +159,9 @@ jobs:
               throw new Error(`Imported model is not a substantive mesh: ${asset.id}`);
             }
           }
-          console.log(`Validated ${manifest.assets.length} external-authored CC0 models.`);
+          const rigged = characters.filter(asset => asset.skins > 0 || asset.animations > 0);
+          if (rigged.length < 4) throw new Error(`Expected at least four rigged/animated source models; found ${rigged.length}`);
+          console.log(`Validated ${manifest.assets.length} external-authored CC0 models; ${rigged.length} include skins or animation clips.`);
           console.table(manifest.assets.map(({id, bytes, meshes, skins, animations, materials, textures}) => ({id, bytes, meshes, skins, animations, materials, textures})));
           NODE
 
