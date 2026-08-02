@@ -14,7 +14,7 @@
     "check:portable": "node tools/verify-portable-parity.mjs",
     "validate:pages": "node tools/validate-pages.mjs",
     "validate": "npm run check:js && npm run check:inline && npm run check:errors && npm run check:links && npm run check:assets && npm run check:portable && npm run check:release && npm run validate:pages",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --config=tests/browser/playwright.config.js",
     "test": "npm run build:styles && npm run build:portable && npm run validate && npm run test:browser",
     "check:release": "node tools/check-release-consistency.mjs"
   },
