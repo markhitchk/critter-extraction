@@ -8,12 +8,12 @@ test('game shell loads from the organized browser test server', async ({ page })
   await expect(page.locator('#app')).toBeAttached();
 });
 
-test('high-end runtime bridge files are served', async ({ request }) => {
+test('live runtime entry files are served', async ({ request }) => {
   for (const path of [
-    '/core/rendering/high-end-glb-runtime.js',
-    '/core/rendering/high-end-world-patches.js',
-    '/core/rendering/high-end-ground-patches.js',
-    '/core/rendering/high-end-terrain-patches.js'
+    '/core/game/game-core.js',
+    '/core/rendering/model-library.js',
+    '/core/boot/required-files.js',
+    '/assets/loading/gameplay-reference.webp'
   ]) {
     const response = await request.get(path);
     expect(response.ok(), `${path} should be available`).toBeTruthy();
