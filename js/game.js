@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix5';
+  const CORE_URL = './js/game-core.js?v=0.27.1-hotfix6';
   const patches = [
     {
       name: 'canonical join-code parser',
@@ -36,12 +36,16 @@
       return sameName && sameXp && sameExtracts;
     };
     let canonicalUsername = importedUsername, targetIndex = -1;
-    const suffix = importedUsername.match(/^(.*)_([2-9]\d*)$/);
-    if (suffix) {
-      const baseLower = suffix[1].toLowerCase(), baseIndex = db.accounts.findIndex(x => String(x.username || '').trim().toLowerCase() === baseLower);
-      if (baseIndex >= 0 && sameProgressIdentity(db.accounts[baseIndex])) {
-        targetIndex = baseIndex;
-        canonicalUsername = db.accounts[baseIndex].username;
+    const underscoreIndex = importedUsername.lastIndexOf('_');
+    if (underscoreIndex > 0) {
+      const suffixText = importedUsername.slice(underscoreIndex + 1), suffixNumber = Number(suffixText);
+      if (suffixText && Number.isInteger(suffixNumber) && suffixNumber >= 2 && String(suffixNumber) === suffixText) {
+        const baseLower = importedUsername.slice(0, underscoreIndex).toLowerCase();
+        const baseIndex = db.accounts.findIndex(x => String(x.username || '').trim().toLowerCase() === baseLower);
+        if (baseIndex >= 0 && sameProgressIdentity(db.accounts[baseIndex])) {
+          targetIndex = baseIndex;
+          canonicalUsername = db.accounts[baseIndex].username;
+        }
       }
     }
     if (targetIndex < 0 && source.id) targetIndex = db.accounts.findIndex(x => x.id === source.id);
@@ -49,12 +53,15 @@
     const target = targetIndex >= 0 ? db.accounts[targetIndex] : null;
     if (target && !canonicalUsername) canonicalUsername = target.username;
     const canonicalLower = String(canonicalUsername || '').toLowerCase();
-    const escaped = canonicalLower.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&');
-    const staleAlias = escaped ? new RegExp('^' + escaped + '_[2-9]\\d*$', 'i') : null;
+    const aliasPrefix = canonicalLower ? canonicalLower + '_' : '';
     const removeIndexes = new Set();
     if (targetIndex >= 0) removeIndexes.add(targetIndex);
-    if (staleAlias) db.accounts.forEach((candidate, index) => {
-      if (index !== targetIndex && staleAlias.test(String(candidate.username || '').trim()) && sameProgressIdentity(candidate)) removeIndexes.add(index);
+    if (aliasPrefix) db.accounts.forEach((candidate, index) => {
+      const candidateName = String(candidate.username || '').trim().toLowerCase();
+      const aliasText = candidateName.startsWith(aliasPrefix) ? candidateName.slice(aliasPrefix.length) : '';
+      const aliasNumber = Number(aliasText);
+      const isNumberedAlias = aliasText && Number.isInteger(aliasNumber) && aliasNumber >= 2 && String(aliasNumber) === aliasText;
+      if (index !== targetIndex && isNumberedAlias && sameProgressIdentity(candidate)) removeIndexes.add(index);
     });
     const removedDuplicates = Math.max(0, removeIndexes.size - (targetIndex >= 0 ? 1 : 0));
     db.accounts = db.accounts.filter((_, index) => !removeIndexes.has(index));
