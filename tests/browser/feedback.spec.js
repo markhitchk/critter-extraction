@@ -118,6 +118,11 @@ test.beforeEach(async ({ page }) => {
 
 test('feedback report is drafted and reviewed inside the game', async ({ page }) => {
   await page.goto('/');
+  await page.evaluate(() => {
+    document.querySelector('#profileHandle').textContent = '@meadow_ranger';
+    document.querySelector('#profileName').textContent = 'Meadow Ranger';
+    document.querySelector('#topName').textContent = 'Meadow Ranger';
+  });
   await page.locator('#critter-feedback-launcher').click();
   await expect(page.locator('#critter-feedback-center')).toBeVisible();
   await expect(page.locator('#critter-feedback-center a')).toHaveCount(0);
@@ -132,7 +137,51 @@ test('feedback report is drafted and reviewed inside the game', async ({ page })
   await expect(page.locator('#cfc-review-title')).toContainText('[Bug]');
   await expect(page.locator('#cfc-review-title')).toContainText('Crosshair is above the shot');
   await expect(page.locator('#cfc-report-preview')).toContainText('Shots sometimes land above the center of the crosshair.');
+  await expect(page.locator('#cfc-report-preview')).toContainText('Username: @meadow_ranger');
+  await expect(page.locator('#cfc-report-preview')).toContainText('Display name: Meadow Ranger');
   await expect(page.locator('#cfc-report-preview')).toContainText('Privacy-safe environment');
+  await expect(page.locator('#cfc-github-auth')).toBeVisible();
+});
+
+test('feedback can create a GitHub issue directly from the UI API', async ({ page }) => {
+  let submitted = null;
+  let authorization = '';
+  await page.route(`${repoApi}/issues`, async route => {
+    authorization = route.request().headers().authorization || '';
+    submitted = route.request().postDataJSON();
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        number: 88,
+        html_url: 'https://github.com/markhitchk/critter-extraction/issues/88',
+        title: submitted.title,
+        body: submitted.body
+      })
+    });
+  });
+
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    document.querySelector('#profileHandle').textContent = '@direct_tester';
+    document.querySelector('#profileName').textContent = 'Direct Tester';
+    window.CritterIssueAPI.setGitHubToken('test-access-token');
+    return window.CritterIssueAPI.submit({
+      type: 'bug',
+      title: 'Direct send test',
+      category: 'Other',
+      details: 'Created without opening another page.',
+      diagnostics: false
+    });
+  });
+
+  expect(result.mode).toBe('api');
+  expect(result.provider).toBe('github');
+  expect(result.issueNumber).toBe(88);
+  expect(authorization).toBe('Bearer test-access-token');
+  expect(submitted.title).toBe('[Bug]: Direct send test');
+  expect(submitted.body).toContain('Username: @direct_tester');
+  expect(submitted.body).toContain('Created without opening another page.');
 });
 
 test('issues and comments are viewed inside the game', async ({ page }) => {
@@ -152,6 +201,8 @@ test('issues and comments are viewed inside the game', async ({ page }) => {
 test('issue draft URL is privacy safe and prefilled', async ({ page }) => {
   await page.goto('/?private-room-code=123456#secret');
   const result = await page.evaluate(() => {
+    document.querySelector('#profileHandle').textContent = '@privacy_tester';
+    document.querySelector('#profileName').textContent = 'Privacy Tester';
     const report = window.CritterIssueAPI.buildReport({
       type: 'bug',
       title: 'Test report',
@@ -169,7 +220,9 @@ test('issue draft URL is privacy safe and prefilled', async ({ page }) => {
   expect(result.path).toBe('/markhitchk/critter-extraction/issues/new');
   expect(result.title).toContain('[Bug]');
   expect(result.body).toContain('Visible problem');
+  expect(result.body).toContain('Username: @privacy_tester');
   expect(result.body).not.toContain('localStorage');
   expect(result.body).not.toContain('123456');
   expect(result.body).not.toContain('secret');
+  expect(result.body).not.toContain('test-access-token');
 });
