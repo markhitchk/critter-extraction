@@ -1631,3 +1631,31 @@ dialog#sellConfirmModal.modal[open]{
 
 /* source: core/styles/responsive.css */
 /* responsive styles are reserved for gradual extraction from base.css. */
+
+/* V27 MAIN MENU RECOVERY AND SHORT-VIEWPORT LAYOUT */
+body:not(.in-match){overflow-y:auto}
+body:not(.in-match) #app>main{min-height:calc(100dvh - 74px)}
+#menuScreen.active{display:block}
+#menuScreen .play-row button{min-height:46px}
+@media (min-width:901px) and (max-height:720px){
+  .screen{padding:14px 18px 32px}
+  .hero{min-height:320px;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)}
+  .hero-copy{padding:26px 30px}
+  .hero h1{font-size:clamp(34px,4.2vw,50px);line-height:1;margin-bottom:12px}
+  .hero p{font-size:13px;line-height:1.48;margin:0}
+  .play-row{margin-top:16px;gap:8px}
+  .play-row .xl{padding:11px 14px;font-size:13px}
+  .notice{margin-top:12px;line-height:1.4}
+  .hero-scene,.studio-hero{min-height:320px}
+  .dashboard{gap:12px;margin-top:12px}
+  .dashboard>.panel{padding:16px}
+  .profile-summary{margin:14px 0}
+  .stat-grid{margin-top:14px}
+  .loadout{padding:10px 0}
+}
+@media (max-width:900px) and (max-height:720px){
+  .hero-copy{padding:24px}
+  .hero h1{font-size:clamp(34px,9vw,48px)}
+  .hero-scene,.studio-hero{min-height:220px}
+}
+@media (max-width:620px){body:not(.in-match) #app>main{min-height:calc(100dvh - 66px)}}

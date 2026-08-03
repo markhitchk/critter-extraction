@@ -1918,7 +1918,7 @@
   $('#pauseControlsBtn').onclick=()=>{pauseSubmenuOpen=true;if(dom.pauseModal.open)dom.pauseModal.close();dom.helpModal.showModal();};
   $('#quitBtn').onclick=()=>{if(!confirm('Exit this run and return to the main menu? Unextracted loot will be lost.'))return;pauseMenuOpen=false;paused=false;endMatch(false,'You left the meadow before extracting.',true);};
   $('#exitBrowserBtn').onclick=()=>{if(!confirm('Exit the browser game? Unextracted loot will be lost.'))return;pauseMenuOpen=false;paused=false;if(match)endMatch(false,'You exited the browser game.',true);setTimeout(()=>{try{window.close();}catch(_){}setTimeout(()=>location.replace('about:blank'),80);},60);};
-  $('#brandBtn').onclick=()=>{if(match&&confirm('Leave the current run and return to the main menu?'))endMatch(false,'You left the meadow before extracting.',true);};
+  $('#brandBtn').onclick=()=>{if(match){if(confirm('Leave the current run and return to the main menu?'))endMatch(false,'You left the meadow before extracting.',true);}else resetMainMenuView();};
   dom.pauseModal.addEventListener('cancel',e=>{e.preventDefault();closePauseMenu();});
   let touchMovePointer=null,touchLookPointer=null,touchCrouched=false;
   function touchHaptic(ms=8){try{globalThis.navigator?.vibrate?.(ms);}catch(_){ }}
@@ -2915,10 +2915,23 @@
       const localResult = bankExtractedItems(); endMatch(true, msg.reason || 'The host completed extraction.', false, localResult);
     } else endMatch(false, msg.reason || 'The co-op drop ended.', false, {berries:0,xp:(getLocalPlayer()?.kills||0)*5,petalsEarned:0,overflow:0});
   }
+  function resetMainMenuView() {
+    for (const dialog of $$('dialog[open]')) {
+      try { dialog.close(); } catch (_) { dialog.removeAttribute('open'); }
+    }
+    document.body.classList.remove('in-match');
+    dom.gameScreen.classList.remove('active');
+    dom.menuScreen.classList.add('active');
+    if (dom.studioBoot) { dom.studioBoot.classList.add('is-hiding'); dom.studioBoot.hidden = true; }
+    if (dom.playOverlay) dom.playOverlay.hidden = true;
+    if (dom.interaction) dom.interaction.hidden = true;
+    window.scrollTo(0,0); document.documentElement.scrollTop=0; document.body.scrollTop=0;
+    requestAnimationFrame(() => $('#soloBtn')?.focus({preventScroll:true}));
+  }
   function returnToMenu() {
     if (match?.role !== 'solo') closePeer();
     match = null; players = {}; guestInputs=Object.create(null); paused = false; pauseMenuOpen = false; pauseSubmenuOpen = false; nearbyLoot = null; backpack = emptySlots(SLOT_COUNT);
-    document.body.classList.remove('in-match'); if(dom.worldLabels)dom.worldLabels.innerHTML=''; worldLabelNodes.clear(); dom.resultModal.close(); dom.playOverlay.hidden=true; dom.gameScreen.classList.remove('active'); dom.menuScreen.classList.add('active'); dom.interaction.hidden = true; refreshAccountUI();
+    if(dom.worldLabels)dom.worldLabels.innerHTML=''; worldLabelNodes.clear(); resetMainMenuView(); refreshAccountUI(); renderQuickbar();
   }
   $('#resultMenuBtn').onclick = returnToMenu;
   $('#soloBtn').onclick = () => startMatch('solo');
@@ -3121,6 +3134,7 @@
       clearInterval(timer);
       dom.bootBar.style.width = '100%';
       dom.bootStatus.textContent = 'Ready to extract!';
+      if(!match){document.body.classList.remove('in-match');dom.gameScreen.classList.remove('active');dom.menuScreen.classList.add('active');}
       window.__critterBootReport?.('ready', 'The menu and local game systems finished initializing.');
       setTimeout(() => {
         dom.studioBoot.classList.add('is-hiding');

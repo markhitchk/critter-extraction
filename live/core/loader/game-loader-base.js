@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const CORE_URL = './core/game/game-core.js?v=0.22.0';
+  const CORE_URL = './core/game/game-core.js?v=2026-08-03-main-menu-fix-1';
   const patches = [
     {
       name: 'canonical join-code parser',
