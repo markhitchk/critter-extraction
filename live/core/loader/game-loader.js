@@ -1,7 +1,7 @@
 (() => {
   'use strict';
-  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-host-disconnect-1';
-  const MODULES=['./core/loader/live-arena-patch-1.js?v=2026-08-03-host-disconnect-1','./core/loader/live-arena-patch-2.js?v=2026-08-03-host-disconnect-1','./core/loader/live-arena-patch-3.js?v=2026-08-03-host-disconnect-1','./core/loader/live-multiplayer-ui-patch.js?v=2026-08-03-host-disconnect-1','./core/loader/live-host-disconnect-patch.js?v=2026-08-03-host-disconnect-1'];
+  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-webrtc-stability-1';
+  const MODULES=['./core/loader/live-arena-patch-1.js?v=2026-08-03-webrtc-stability-1','./core/loader/live-arena-patch-2.js?v=2026-08-03-webrtc-stability-1','./core/loader/live-arena-patch-3.js?v=2026-08-03-webrtc-stability-1','./core/loader/live-multiplayer-ui-patch.js?v=2026-08-03-webrtc-stability-1','./core/loader/live-host-disconnect-patch.js?v=2026-08-03-webrtc-stability-1','./core/loader/live-webrtc-stability-patch.js?v=2026-08-03-webrtc-stability-1'];
   const nativeFetch=window.fetch.bind(window);
   window.__CRITTER_ARENA_PATCHES__=[];
   function one(source,name,pattern,replacement,required=true){
