@@ -1,0 +1,165 @@
+name: Repair LIVE main menu
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/main-menu-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair-main-menu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply main menu layout and state fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          stamp = '2026-08-03-main-menu-fix-1'
+          previous_stamp = '2026-08-03-live-arena-fix-4'
+
+          css_block = r'''
+
+/* V27 MAIN MENU RECOVERY AND SHORT-VIEWPORT LAYOUT */
+body:not(.in-match){overflow-y:auto}
+body:not(.in-match) #app>main{min-height:calc(100dvh - 74px)}
+#menuScreen.active{display:block}
+#menuScreen .play-row button{min-height:46px}
+@media (min-width:901px) and (max-height:720px){
+  .screen{padding:14px 18px 32px}
+  .hero{min-height:320px;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)}
+  .hero-copy{padding:26px 30px}
+  .hero h1{font-size:clamp(34px,4.2vw,50px);line-height:1;margin-bottom:12px}
+  .hero p{font-size:13px;line-height:1.48;margin:0}
+  .play-row{margin-top:16px;gap:8px}
+  .play-row .xl{padding:11px 14px;font-size:13px}
+  .notice{margin-top:12px;line-height:1.4}
+  .hero-scene,.studio-hero{min-height:320px}
+  .dashboard{gap:12px;margin-top:12px}
+  .dashboard>.panel{padding:16px}
+  .profile-summary{margin:14px 0}
+  .stat-grid{margin-top:14px}
+  .loadout{padding:10px 0}
+}
+@media (max-width:900px) and (max-height:720px){
+  .hero-copy{padding:24px}
+  .hero h1{font-size:clamp(34px,9vw,48px)}
+  .hero-scene,.studio-hero{min-height:220px}
+}
+@media (max-width:620px){body:not(.in-match) #app>main{min-height:calc(100dvh - 66px)}}
+'''
+
+          for css_path in [Path('live/core/styles/base.css'), Path('live/styles.css')]:
+              text = css_path.read_text(encoding='utf-8')
+              if 'V27 MAIN MENU RECOVERY AND SHORT-VIEWPORT LAYOUT' not in text:
+                  text = text.rstrip() + css_block + '\n'
+              css_path.write_text(text, encoding='utf-8')
+
+          game = Path('live/core/game/game-core.js')
+          text = game.read_text(encoding='utf-8')
+
+          old_return = r'''  function returnToMenu() {
+    if (match?.role !== 'solo') closePeer();
+    match = null; players = {}; guestInputs=Object.create(null); paused = false; pauseMenuOpen = false; pauseSubmenuOpen = false; nearbyLoot = null; backpack = emptySlots(SLOT_COUNT);
+    document.body.classList.remove('in-match'); if(dom.worldLabels)dom.worldLabels.innerHTML=''; worldLabelNodes.clear(); dom.resultModal.close(); dom.playOverlay.hidden=true; dom.gameScreen.classList.remove('active'); dom.menuScreen.classList.add('active'); dom.interaction.hidden = true; refreshAccountUI();
+  }'''
+          new_return = r'''  function resetMainMenuView() {
+    for (const dialog of $$('dialog[open]')) {
+      try { dialog.close(); } catch (_) { dialog.removeAttribute('open'); }
+    }
+    document.body.classList.remove('in-match');
+    dom.gameScreen.classList.remove('active');
+    dom.menuScreen.classList.add('active');
+    if (dom.studioBoot) { dom.studioBoot.classList.add('is-hiding'); dom.studioBoot.hidden = true; }
+    if (dom.playOverlay) dom.playOverlay.hidden = true;
+    if (dom.interaction) dom.interaction.hidden = true;
+    window.scrollTo(0,0); document.documentElement.scrollTop=0; document.body.scrollTop=0;
+    requestAnimationFrame(() => $('#soloBtn')?.focus({preventScroll:true}));
+  }
+  function returnToMenu() {
+    if (match?.role !== 'solo') closePeer();
+    match = null; players = {}; guestInputs=Object.create(null); paused = false; pauseMenuOpen = false; pauseSubmenuOpen = false; nearbyLoot = null; backpack = emptySlots(SLOT_COUNT);
+    if(dom.worldLabels)dom.worldLabels.innerHTML=''; worldLabelNodes.clear(); resetMainMenuView(); refreshAccountUI(); renderQuickbar();
+  }'''
+          if old_return in text:
+              text = text.replace(old_return, new_return, 1)
+          elif 'function resetMainMenuView()' not in text:
+              raise SystemExit('Could not replace returnToMenu with main menu reset')
+
+          old_brand = "  $('#brandBtn').onclick=()=>{if(match&&confirm('Leave the current run and return to the main menu?'))endMatch(false,'You left the meadow before extracting.',true);};"
+          new_brand = "  $('#brandBtn').onclick=()=>{if(match){if(confirm('Leave the current run and return to the main menu?'))endMatch(false,'You left the meadow before extracting.',true);}else resetMainMenuView();};"
+          if old_brand in text:
+              text = text.replace(old_brand, new_brand, 1)
+          elif new_brand not in text:
+              raise SystemExit('Could not repair brand main-menu action')
+
+          boot_line = "      dom.bootStatus.textContent = 'Ready to extract!';\n      window.__critterBootReport?.('ready', 'The menu and local game systems finished initializing.');"
+          boot_replacement = "      dom.bootStatus.textContent = 'Ready to extract!';\n      if(!match){document.body.classList.remove('in-match');dom.gameScreen.classList.remove('active');dom.menuScreen.classList.add('active');}\n      window.__critterBootReport?.('ready', 'The menu and local game systems finished initializing.');"
+          if boot_line in text:
+              text = text.replace(boot_line, boot_replacement, 1)
+          elif boot_replacement not in text:
+              raise SystemExit('Could not add startup menu-state recovery')
+
+          game.write_text(text, encoding='utf-8')
+
+          base_loader = Path('live/core/loader/game-loader-base.js')
+          text = base_loader.read_text(encoding='utf-8')
+          text, count = re.subn(
+              r"const CORE_URL = './core/game/game-core\.js\?v=[^']+';",
+              f"const CORE_URL = './core/game/game-core.js?v={stamp}';",
+              text,
+              count=1
+          )
+          if count != 1 and stamp not in text:
+              raise SystemExit('Could not update game-core cache URL')
+          base_loader.write_text(text, encoding='utf-8')
+
+          loader = Path('live/core/loader/game-loader.js')
+          text = loader.read_text(encoding='utf-8').replace(previous_stamp, stamp)
+          if stamp not in text:
+              raise SystemExit('Could not update LIVE loader cache stamp')
+          loader.write_text(text, encoding='utf-8')
+
+          index = Path('live/index.html')
+          text = index.read_text(encoding='utf-8')
+          text = re.sub(r'href="\./styles\.css(?:\?v=[^"]*)?"', f'href="./styles.css?v={stamp}"', text, count=1)
+          text = re.sub(r'src="\./core/loader/game-loader\.js\?v=[^"]+"', f'src="./core/loader/game-loader.js?v={stamp}"', text, count=1)
+          if f'./styles.css?v={stamp}' not in text or f'./core/loader/game-loader.js?v={stamp}' not in text:
+              raise SystemExit('Could not cache-bust LIVE main menu files')
+          index.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate repaired menu
+        shell: bash
+        run: |
+          node --check live/core/game/game-core.js
+          node --check live/core/loader/game-loader.js
+          node --check live/core/loader/game-loader-base.js
+          grep -q "V27 MAIN MENU RECOVERY" live/styles.css
+          grep -q "function resetMainMenuView" live/core/game/game-core.js
+          grep -q "2026-08-03-main-menu-fix-1" live/index.html
+          git diff --check
+
+      - name: Commit main menu repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live/index.html live/styles.css live/core/styles/base.css live/core/game/game-core.js live/core/loader/game-loader.js live/core/loader/game-loader-base.js
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Main menu repair already applied"
+            exit 0
+          fi
+          git commit -m "Fix LIVE main menu layout and reset"
+          git push
