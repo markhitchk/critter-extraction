@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION='1.0.0',DB_KEY='critterExtractionInventory',INSTALL_KEY='critterSecurityInstallIdV1',BANS_KEY='critterSecurityHostBansV1',EVENTS_KEY='critterSecurityEventsV1',CACHE_KEY='critterSecurityRemoteBanCacheV1';
+  const VERSION='1.0.1',DB_KEY='critterExtractionInventory',INSTALL_KEY='critterSecurityInstallIdV1',BANS_KEY='critterSecurityHostBansV1',EVENTS_KEY='critterSecurityEventsV1',CACHE_KEY='critterSecurityRemoteBanCacheV1';
   const nativeSet=Storage.prototype.setItem,nativeStringify=JSON.stringify;
   let internalWrite=false,remote={loaded:false,source:'none',updatedAt:'',bans:[],error:''},readyResolve;
   let ready=new Promise(resolve=>{readyResolve=resolve;});
@@ -28,12 +28,26 @@
   function find(idValue,{remoteOnly=false}={}){const id=identity(idValue);return remote.bans.find(b=>matches(b,id))||(remoteOnly?null:local().find(b=>matches(b,id)))||null;}
   function addBan({identity:idValue,identifiers,reason='Host ban',durationMs=null,source='manual',code=''}={}){const id=identity(idValue||{}),i=identifiers||{securityIds:id.securityId?[id.securityId]:[],installHashes:id.installHash?[id.installHash]:[],accountIdHashes:id.accountIdHash?[id.accountIdHash]:[],usernames:id.username?[id.username]:[],recruitCodes:id.recruitCode?[id.recruitCode]:[],profileFingerprints:id.profileFingerprint?[id.profileFingerprint]:[]};const ban=cleanBan({id:token('hostban',10),enabled:true,source,scope:'multiplayer',reason,createdAt:new Date().toISOString(),expiresAt:durationMs==null?null:new Date(Date.now()+Math.max(60000,+durationMs||0)).toISOString(),identifiers:i},'host');if(!ban)return null;const list=allLocal();list.push(ban);writeList(BANS_KEY,list,250);log('host-ban-added',{banId:ban.id,reason:ban.reason,code,expiresAt:ban.expiresAt||'permanent'});return ban;}
   function removeBan(id){const before=allLocal(),after=before.filter(b=>b.id!==text(id,80));writeList(BANS_KEY,after,250);if(after.length!==before.length)log('host-ban-removed',{banId:id});return after.length!==before.length;}
-  function autoBan(idValue,code){const id=identity(idValue),previous=allLocal().filter(b=>b.source==='fair-play'&&matches({...b,expiresAt:null},id)).length,offense=previous+1,duration=offense>=3?null:offense===2?604800000:86400000;return addBan({identity:id,reason:`Automatic Fair Play ban (${text(code||'FP-REMOVED',48)}). Offense ${offense}.`,durationMs:duration,source:'fair-play',code});}
+  function purgeFalseInputKeyBans(){
+    const before=allLocal();
+    const removed=before.filter(b=>b.source==='fair-play'&&/FP-INPUT-KEYS/i.test(String(b.reason||'')));
+    if(!removed.length)return 0;
+    const removedIds=new Set(removed.map(b=>b.id));
+    writeList(BANS_KEY,before.filter(b=>!removedIds.has(b.id)),250);
+    log('false-input-key-bans-cleared',{count:removed.length});
+    return removed.length;
+  }
+  function autoBan(idValue,code){
+    const cleanCode=text(code||'FP-REMOVED',48).toUpperCase();
+    if(cleanCode==='FP-INPUT-KEYS'){log('fair-play-auto-ban-skipped',{code:cleanCode,reason:'Equivalent or delayed browser key packets are normalized.'});return null;}
+    const id=identity(idValue),previous=allLocal().filter(b=>b.source==='fair-play'&&matches({...b,expiresAt:null},id)).length,offense=previous+1,duration=offense>=3?null:offense===2?604800000:86400000;
+    return addBan({identity:id,reason:`Automatic Fair Play ban (${cleanCode}). Offense ${offense}.`,durationMs:duration,source:'fair-play',code:cleanCode});
+  }
   async function loadRemote(){ready=new Promise(resolve=>{readyResolve=resolve;});try{const r=await fetch(banUrl,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(`HTTP ${r.status}`);const body=await r.text();if(body.length>1048576)throw new Error('ban list too large');const data=JSON.parse(body);if(+data.schemaVersion!==1||!Array.isArray(data.bans))throw new Error('unsupported ban schema');remote={loaded:true,source:'network',updatedAt:text(data.updatedAt||r.headers.get('last-modified'),48),bans:data.bans.map(v=>cleanBan(v,'remote')).filter(Boolean),error:''};rawSet(CACHE_KEY,nativeStringify({updatedAt:remote.updatedAt,bans:remote.bans}));log('remote-ban-list-loaded',{count:remote.bans.length});}catch(e){const c=parse(localStorage.getItem(CACHE_KEY));remote=c&&Array.isArray(c.bans)?{loaded:true,source:'cache',updatedAt:text(c.updatedAt,48),bans:c.bans.map(v=>cleanBan(v,'remote')).filter(Boolean),error:text(e?.message,160)}:{loaded:true,source:'unavailable',updatedAt:'',bans:[],error:text(e?.message,160)};log('remote-ban-list-fallback',{source:remote.source,error:remote.error});}finally{readyResolve(remote);window.dispatchEvent(new Event('critter-security-change'));}return remote;}
   function report(){return {type:'critter-extraction-security-report-v1',generatedAt:new Date().toISOString(),securityVersion:VERSION,identity:identity(),remote:{source:remote.source,updatedAt:remote.updatedAt,count:remote.bans.length,error:remote.error},localBans:local(),events:readList(EVENTS_KEY,200)};}
   function installHooks(){if(!JSON.stringify.__critterSecurityWrapped){function stringify(v,r,s){if(v&&typeof v==='object'&&Array.isArray(v.accounts)&&'activeId'in v)secureDb(v);return nativeStringify.call(JSON,v,r,s);}Object.defineProperty(stringify,'__critterSecurityWrapped',{value:true});JSON.stringify=stringify;}if(!Storage.prototype.setItem.__critterSecurityWrapped){function setItem(k,v){if(!internalWrite&&String(k)===DB_KEY){const db=secureDb(parse(String(v)));if(db)v=nativeStringify(db);}return nativeSet.call(this,k,v);}Object.defineProperty(setItem,'__critterSecurityWrapped',{value:true});Storage.prototype.setItem=setItem;}}
-  installHooks();installId();readDb();loadRemote();
-  const runtime={VERSION,banUrl,text,hash,identity,log,find,matches,localBans:local,allLocalBans:allLocal,addBan,removeBan,autoBan,loadRemote,remote:()=>remote,ready:()=>ready,events:()=>readList(EVENTS_KEY,200),report};
+  installHooks();installId();readDb();purgeFalseInputKeyBans();loadRemote();
+  const runtime={VERSION,banUrl,text,hash,identity,log,find,matches,localBans:local,allLocalBans:allLocal,addBan,removeBan,autoBan,purgeFalseInputKeyBans,loadRemote,remote:()=>remote,ready:()=>ready,events:()=>readList(EVENTS_KEY,200),report};
   window.CritterSecurityRuntime=runtime;
   window.CritterSecurity=Object.freeze({version:VERSION,remoteBanUrl:banUrl,ready:()=>ready,identity:()=>({...identity()}),findBan:v=>find(v||identity()),listRemoteBans:()=>remote.bans.map(v=>parse(nativeStringify(v))),listLocalBans:()=>local().map(v=>parse(nativeStringify(v))),addLocalBan:addBan,removeLocalBan:removeBan,events:runtime.events,reloadRemoteBans:loadRemote,stableHash:hash,report});
 })();
