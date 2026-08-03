@@ -1611,27 +1611,6 @@ dialog#sellConfirmModal.modal[open]{
   .touch-top-buttons{right:max(8px,env(safe-area-inset-right));gap:5px}.touch-top-buttons button{width:39px;height:39px}
 }
 
-/* source: core/styles/components.css */
-/* components styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/menus.css */
-/* menus styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/modals.css */
-/* modals styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/inventory.css */
-/* inventory styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/game-hud.css */
-/* game-hud styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/touch-controls.css */
-/* touch-controls styles are reserved for gradual extraction from base.css. */
-
-/* source: core/styles/responsive.css */
-/* responsive styles are reserved for gradual extraction from base.css. */
-
 /* V27 MAIN MENU RECOVERY AND SHORT-VIEWPORT LAYOUT */
 body:not(.in-match){overflow-y:auto}
 body:not(.in-match) #app>main{min-height:calc(100dvh - 74px)}
@@ -1659,3 +1638,24 @@ body:not(.in-match) #app>main{min-height:calc(100dvh - 74px)}
   .hero-scene,.studio-hero{min-height:220px}
 }
 @media (max-width:620px){body:not(.in-match) #app>main{min-height:calc(100dvh - 66px)}}
+
+/* source: core/styles/components.css */
+/* components styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/menus.css */
+/* menus styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/modals.css */
+/* modals styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/inventory.css */
+/* inventory styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/game-hud.css */
+/* game-hud styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/touch-controls.css */
+/* touch-controls styles are reserved for gradual extraction from base.css. */
+
+/* source: core/styles/responsive.css */
+/* responsive styles are reserved for gradual extraction from base.css. */
