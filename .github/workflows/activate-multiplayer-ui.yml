@@ -1,0 +1,86 @@
+name: Activate multiplayer UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/activate-multiplayer-ui.yml
+
+permissions:
+  contents: write
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate loader and transformed game
+        shell: bash
+        run: |
+          node --check live/core/loader/game-loader.js
+          node --check live/core/loader/game-loader-base.js
+          node --check live/core/loader/live-arena-patch-1.js
+          node --check live/core/loader/live-arena-patch-2.js
+          node --check live/core/loader/live-arena-patch-3.js
+          node --check live/core/loader/live-multiplayer-ui-patch.js
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          global.window={__CRITTER_ARENA_PATCHES__:[]};
+          const one=(source,name,pattern,replacement,required=true)=>{
+            const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g';
+            const matches=[...source.matchAll(new RegExp(pattern.source,flags))];
+            if(name==='hide arena beacon'&&!matches.length)return source;
+            if(name==='dynamic match badge'&&matches.length)return source.replace(new RegExp(pattern.source,flags),(...args)=>typeof replacement==='function'?replacement(...args):replacement);
+            if(matches.length!==1){
+              if(required)throw new Error(`LIVE patch ${matches.length?'ambiguous':'missing'}: ${name}`);
+              return source;
+            }
+            return source.replace(pattern,(...args)=>typeof replacement==='function'?replacement(...args):replacement);
+          };
+          const all=(source,name,pattern,replacement,required=true)=>{
+            const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g';
+            const matches=[...source.matchAll(new RegExp(pattern.source,flags))];
+            if(!matches.length){if(required)throw new Error(`LIVE patch missing: ${name}`);return source;}
+            return source.replace(new RegExp(pattern.source,flags),()=>replacement);
+          };
+          window.__CRITTER_PATCH_UTILS__={one,all};
+          for(const file of [
+            'live/core/loader/live-arena-patch-1.js',
+            'live/core/loader/live-arena-patch-2.js',
+            'live/core/loader/live-arena-patch-3.js',
+            'live/core/loader/live-multiplayer-ui-patch.js'
+          ])vm.runInThisContext(fs.readFileSync(file,'utf8'),{filename:file});
+          let source=fs.readFileSync('live/core/game/game-core.js','utf8');
+          for(const patch of window.__CRITTER_ARENA_PATCHES__)source=patch(source);
+          new Function(source);
+          for(const required of [
+            'function submitRoomChat',
+            "msg.type==='netPing'",
+            'PING ${multiplayerPingLabel()}',
+            'TEAM ONLY',
+            'if(isPvpMatch()&&!isLocal'
+          ])if(!source.includes(required))throw new Error(`Transformed source missing ${required}`);
+          console.log(`Validated ${window.__CRITTER_ARENA_PATCHES__.length} LIVE patch modules.`);
+          NODE
+
+      - name: Publish fresh LIVE loader URL
+        shell: bash
+        run: |
+          python3 -c "from pathlib import Path; p=Path('live/index.html'); s=p.read_text(encoding='utf-8'); old='game-loader.js?v=2026-08-03-main-menu-fix-1'; new='game-loader.js?v=2026-08-03-multiplayer-chat-ping-1'; assert old in s or new in s; p.write_text(s.replace(old,new),encoding='utf-8')"
+          grep -q "game-loader.js?v=2026-08-03-multiplayer-chat-ping-1" live/index.html
+          git diff --check
+
+      - name: Commit activation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live/index.html
+          if git diff --cached --quiet; then
+            echo "Multiplayer UI already activated"
+            exit 0
+          fi
+          git commit -m "Publish multiplayer chat ping and VS privacy"
+          git push
