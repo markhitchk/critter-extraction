@@ -1,8 +1,9 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "project": "Critter Extraction",
   "studio": "Harley's Studios",
-  "status": "authored-model-coverage-complete",
+  "status": "procedural-blockout-only",
+  "warning": "These files are primitive blockouts generated from boxes and diamond shapes. They are not high-end production models.",
   "runtime": {
     "preferredModelFormat": "glb",
     "upAxis": "Y",
@@ -16,113 +17,132 @@
   },
   "coverage": {
     "assetRecords": 32,
-    "readyRecords": 32,
-    "generatedBinaryModels": 26,
-    "note": "Character skinning and animations remain a separate task."
+    "productionReadyRecords": 0,
+    "blockoutRecords": 32,
+    "runtimeIntegratedRecords": 8,
+    "riggedCharacters": 0,
+    "animatedCharacters": 0
+  },
+  "acceptanceCriteria": {
+    "productionReadyRequires": [
+      "non-primitive sculpted silhouette",
+      "clean topology and UVs",
+      "finished PBR materials",
+      "correct gameplay scale and pivots",
+      "runtime integration",
+      "LOD validation"
+    ],
+    "charactersAdditionallyRequire": [
+      "skeleton",
+      "skinning",
+      "animation clips",
+      "weapon and backpack sockets"
+    ]
   },
   "assets": [
     {
       "id": "character.tactical_puppy",
       "category": "character",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/characters/tactical_puppy/tactical_puppy_lod0.glb",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.puppy_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/puppy_raider/puppy_raider_lod0.glb",
       "species": "puppy",
       "weapon": "weapon.pea_popper",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.bunny_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/bunny_raider/bunny_raider_lod0.glb",
       "species": "bunny",
       "weapon": "weapon.moonbeam",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.kitty_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/kitty_raider/kitty_raider_lod0.glb",
       "species": "kitty",
       "weapon": "weapon.honey_carbine",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.fox_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/fox_raider/fox_raider_lod0.glb",
       "species": "fox",
       "weapon": "weapon.acorn_sprayer",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.panda_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/panda_raider/panda_raider_lod0.glb",
       "species": "panda",
       "weapon": "weapon.carrot_scatter",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.bear_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/bear_raider/bear_raider_lod0.glb",
       "species": "bear",
       "weapon": "weapon.carrot_scatter",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.raccoon_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/raccoon_raider/raccoon_raider_lod0.glb",
       "species": "raccoon",
       "weapon": "weapon.pea_popper",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "enemy.redpanda_raider",
       "category": "enemy",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/enemies/redpanda_raider/redpanda_raider_lod0.glb",
       "species": "redpanda",
       "weapon": "weapon.honey_carbine",
       "rigState": "static",
-      "animationState": "pending"
+      "animationState": "missing"
     },
     {
       "id": "weapon.pea_popper",
       "category": "weapon",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "lods": {
         "lod0": "assets/models/weapons/pea_popper/pea_popper_lod0.glb",
         "lod1": "assets/models/weapons/pea_popper/pea_popper_lod1.glb",
@@ -132,8 +152,9 @@
     {
       "id": "weapon.acorn_sprayer",
       "category": "weapon",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "lods": {
         "lod0": "assets/models/weapons/acorn_sprayer/acorn_sprayer_lod0.glb",
         "lod1": "assets/models/weapons/acorn_sprayer/acorn_sprayer_lod1.glb",
@@ -143,91 +164,93 @@
     {
       "id": "weapon.honey_carbine",
       "category": "weapon",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/weapons/honey_carbine/honey_carbine_lod0.glb"
     },
     {
       "id": "weapon.carrot_scatter",
       "category": "weapon",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/weapons/carrot_scatter/carrot_scatter_lod0.glb"
     },
     {
       "id": "weapon.moonbeam",
       "category": "weapon",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/weapons/moonbeam/moonbeam_lod0.glb"
     },
     {
       "id": "armor.leaf_vest",
       "category": "armor",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/armor/leaf_vest/leaf_vest.glb",
       "slot": "chest"
     },
     {
       "id": "armor.feather_vest",
       "category": "armor",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/armor/feather_vest/feather_vest.glb",
       "slot": "chest"
     },
     {
       "id": "armor.bark_guard",
       "category": "armor",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/armor/bark_guard/bark_guard.glb",
       "slot": "chest"
     },
     {
       "id": "armor.root_padding",
       "category": "armor",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/armor/root_padding/root_padding.glb",
       "slot": "chest"
     },
     {
       "id": "armor.star_cloak",
       "category": "armor",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/armor/star_cloak/star_cloak.glb",
       "slot": "chest"
     },
     {
       "id": "backpack.critter_pack",
       "category": "backpack",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/backpacks/critter_pack/critter_pack.glb",
       "slot": "backpack_socket"
     },
     {
       "id": "loot.small_supply_crate",
       "category": "loot",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "runtimePath": "assets/models/loot/supply_crate/supply_crate.glb"
     },
     {
       "id": "loot.death_box",
       "category": "loot",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/loot/death_box/death_box.glb"
     },
     {
       "id": "terrain.pine_valley_ground",
       "category": "terrain",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "textures": {
         "baseColor": "assets/textures/terrain/pine_valley/dirt_basecolor.webp"
       },
@@ -236,8 +259,9 @@
     {
       "id": "vegetation.pine_family",
       "category": "vegetation",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "lods": {
         "lod0": "assets/models/vegetation/pine_tree/pine_tree_lod0.glb",
         "lod1": "assets/models/vegetation/pine_tree/pine_tree_lod0.glb",
@@ -248,61 +272,64 @@
     {
       "id": "vegetation.pine_grass",
       "category": "vegetation",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "runtimePath": "assets/models/vegetation/pine_grass/pine_grass_cluster.glb",
       "region": "pine-valley"
     },
     {
       "id": "rock.pine_cover_set",
       "category": "rock",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "runtimePath": "assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb",
       "region": "pine-valley"
     },
     {
       "id": "rail.pine_track_set",
       "category": "rail",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
+      "runtimeIntegrated": true,
       "runtimePath": "assets/models/railway/pine_rail_segment/pine_rail_segment.glb",
       "region": "pine-valley"
     },
     {
       "id": "rail.freight_car",
       "category": "rail",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/railway/freight_car/freight_car_lod0.glb"
     },
     {
       "id": "structure.ranger_outpost",
       "category": "structure",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/structures/ranger_outpost/ranger_outpost_lod0.glb",
       "region": "pine-valley"
     },
     {
       "id": "vfx.pea_muzzle_flash",
       "category": "vfx",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/vfx/pea_muzzle_flash/pea_muzzle_flash.glb"
     },
     {
       "id": "vfx.pea_impact",
       "category": "vfx",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/vfx/pea_impact/pea_impact.glb"
     },
     {
       "id": "vfx.loot_glow",
       "category": "vfx",
-      "status": "ready",
-      "productionState": "authored-low-poly",
+      "status": "blockout",
+      "productionState": "procedural-primitive-blockout",
       "runtimePath": "assets/models/vfx/loot_glow/loot_glow.glb"
     }
   ]
