@@ -1,12 +1,13 @@
 (() => {
   'use strict';
-  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-live-arena-fix-3';
-  const MODULES=['./core/loader/live-arena-patch-1.js?v=2026-08-03-live-arena-fix-3','./core/loader/live-arena-patch-2.js?v=2026-08-03-live-arena-fix-3','./core/loader/live-arena-patch-3.js?v=2026-08-03-live-arena-fix-3'];
+  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-live-arena-fix-4';
+  const MODULES=['./core/loader/live-arena-patch-1.js?v=2026-08-03-live-arena-fix-4','./core/loader/live-arena-patch-2.js?v=2026-08-03-live-arena-fix-4','./core/loader/live-arena-patch-3.js?v=2026-08-03-live-arena-fix-4'];
   const nativeFetch=window.fetch.bind(window);
   window.__CRITTER_ARENA_PATCHES__=[];
   function one(source,name,pattern,replacement,required=true){
     const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g';
     const matches=[...source.matchAll(new RegExp(pattern.source,flags))];
+    if(name==='hide arena beacon'&&!matches.length){console.warn('Optional LIVE patch missing: hide arena beacon; VS beacon is already moved off-map');return source;}
     if(name==='dynamic match badge'&&matches.length){
       return source.replace(new RegExp(pattern.source,flags),(...args)=>typeof replacement==='function'?replacement(...args):replacement);
     }
