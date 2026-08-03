@@ -3,11 +3,16 @@
   window.CritterBuildInfo = Object.freeze({ buildId: '', channel: 'github-pages', generatedAt: '' });
 
   // Security must load before game-loader.js so it can add stable XML profile
-  // identifiers and wrap PeerJS before multiplayer connections are created.
-  const files = ['security-core.js', 'security-network.js', 'security-ui.js'];
+  // identifiers, repair old false bans, and wrap PeerJS before multiplayer.
+  const files = [
+    'security-core.js',
+    'security-core-hotfix.js',
+    'security-network-v2.js',
+    'security-ui.js'
+  ];
   const src = file => window.CritterPaths?.resolve
-    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.0`)
-    : `./core/security/${file}?v=1.0.0`;
+    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.1`)
+    : `./core/security/${file}?v=1.0.1`;
 
   if (document.readyState === 'loading') {
     for (const file of files) {
@@ -18,8 +23,11 @@
     let chain = Promise.resolve();
     for (const file of files) chain = chain.then(() => new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = src(file); script.async = false; script.dataset.requiredBootFile = `core/security/${file}`;
-      script.onload = resolve; script.onerror = () => reject(new Error(`Could not load ${file}`));
+      script.src = src(file);
+      script.async = false;
+      script.dataset.requiredBootFile = `core/security/${file}`;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Could not load ${file}`));
       document.head.appendChild(script);
     }));
     chain.catch(error => console.error('Critter security startup failed', error));
