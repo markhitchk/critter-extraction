@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Critter Extraction — Real 3D Model Gallery</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
+  <style>
+    :root{color-scheme:dark;--cyan:#55f3ff;--panel:#101923;--panel2:#172532;--text:#eafcff;--muted:#9db8c3}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at top,#19313c 0,#071019 50%,#03070b 100%);font-family:system-ui,sans-serif;color:var(--text)}
+    header{padding:28px 22px;text-align:center;border-bottom:1px solid #2c6670;background:#071019dd;position:sticky;top:0;z-index:4;backdrop-filter:blur(12px)}
+    h1{margin:0;color:var(--cyan);font-size:clamp(1.45rem,4vw,2.35rem)}
+    header p{max-width:900px;margin:10px auto 0;color:var(--muted);line-height:1.5}
+    main{max-width:1500px;margin:auto;padding:24px}
+    h2{margin:28px 0 14px;color:#fff}
+    .note{border:1px solid #29606a;background:#0b1821;padding:14px 16px;border-radius:14px;color:#bad2da}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+    article{overflow:hidden;border:1px solid #2c6670;border-radius:18px;background:linear-gradient(145deg,var(--panel2),var(--panel));box-shadow:0 18px 45px #0008}
+    model-viewer{display:block;width:100%;height:360px;background:radial-gradient(circle,#334c59 0,#111d25 62%,#071019 100%);--poster-color:transparent}
+    .copy{padding:14px 16px 18px}
+    h3{margin:0 0 6px;color:var(--cyan)}
+    .tag{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:#21414a;color:#cfffff;font-size:.76rem}
+    code{display:block;margin-top:8px;overflow-wrap:anywhere;color:#d4e8ed;font-size:.76rem}
+    footer{text-align:center;padding:30px;color:#7f9aa5}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Real Authored 3D Model Gallery</h1>
+  <p>These are original Quaternius CC0 meshes imported as GLB files. They are not the earlier box-and-diamond blockouts. Drag to orbit, scroll to zoom, and use the animation selector on rigged models.</p>
+</header>
+<main>
+  <div class="note"><strong>Current state:</strong> weapons and selected environment assets are connected to prerelease gameplay. Character models are preserved with their original rigs and animations while the custom game renderer gains skinning and animation playback.</div>
+
+  <h2>Gameplay-integrated weapons</h2>
+  <section class="grid">
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/weapons/smg.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>SMG / Acorn Sprayer</h3><span class="tag">actual mesh</span><span class="tag">first-person</span><span class="tag">third-person</span><code>assets/models/third_party/quaternius/toon-shooter/weapons/smg.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/weapons/ak.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>AK / Honeycomb Carbine</h3><span class="tag">actual mesh</span><span class="tag">first-person</span><span class="tag">third-person</span><code>assets/models/third_party/quaternius/toon-shooter/weapons/ak.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/weapons/shotgun.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Shotgun / Carrot Scatter</h3><span class="tag">actual mesh</span><span class="tag">first-person</span><span class="tag">third-person</span><code>assets/models/third_party/quaternius/toon-shooter/weapons/shotgun.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/weapons/sniper.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Sniper / Moonbeam</h3><span class="tag">actual mesh</span><span class="tag">first-person</span><span class="tag">third-person</span><code>assets/models/third_party/quaternius/toon-shooter/weapons/sniper.glb</code></div></article>
+  </section>
+
+  <h2>Gameplay-integrated environment</h2>
+  <section class="grid">
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/environment/tree.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Pine Valley Tree</h3><span class="tag">actual mesh</span><span class="tag">world replacement</span><code>assets/models/third_party/quaternius/toon-shooter/environment/tree.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/environment/crate.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Supply Crate</h3><span class="tag">actual mesh</span><span class="tag">loot</span><span class="tag">cover</span><code>assets/models/third_party/quaternius/toon-shooter/environment/crate.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/environment/shipping_container.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Shipping Container</h3><span class="tag">actual mesh</span><span class="tag">rail-yard cover</span><code>assets/models/third_party/quaternius/toon-shooter/environment/shipping_container.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/environment/barrier.glb" camera-controls shadow-intensity="1" auto-rotate></model-viewer><div class="copy"><h3>Barrier</h3><span class="tag">actual mesh</span><span class="tag">source ready</span><code>assets/models/third_party/quaternius/toon-shooter/environment/barrier.glb</code></div></article>
+  </section>
+
+  <h2>Rigged and animated character sources</h2>
+  <section class="grid">
+    <article><model-viewer src="assets/models/third_party/quaternius/sushi-restaurant/characters/rabbit.glb" camera-controls shadow-intensity="1" animation-name="Idle" autoplay></model-viewer><div class="copy"><h3>Anthropomorphic Rabbit</h3><span class="tag">1 skin</span><span class="tag">30 animations</span><span class="tag">textured</span><code>assets/models/third_party/quaternius/sushi-restaurant/characters/rabbit.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/sushi-restaurant/characters/panda.glb" camera-controls shadow-intensity="1" animation-name="Idle" autoplay></model-viewer><div class="copy"><h3>Anthropomorphic Panda</h3><span class="tag">1 skin</span><span class="tag">30 animations</span><span class="tag">textured</span><code>assets/models/third_party/quaternius/sushi-restaurant/characters/panda.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/characters/character_soldier.glb" camera-controls shadow-intensity="1" autoplay></model-viewer><div class="copy"><h3>Toon Soldier</h3><span class="tag">1 skin</span><span class="tag">17 animations</span><span class="tag">18 meshes</span><code>assets/models/third_party/quaternius/toon-shooter/characters/character_soldier.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/toon-shooter/characters/character_enemy.glb" camera-controls shadow-intensity="1" autoplay></model-viewer><div class="copy"><h3>Toon Enemy</h3><span class="tag">1 skin</span><span class="tag">17 animations</span><span class="tag">16 meshes</span><code>assets/models/third_party/quaternius/toon-shooter/characters/character_enemy.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/animated-animals/husky.glb" camera-controls shadow-intensity="1" autoplay></model-viewer><div class="copy"><h3>Animated Husky</h3><span class="tag">1 skin</span><span class="tag">12 animations</span><span class="tag">5 materials</span><code>assets/models/third_party/quaternius/animated-animals/husky.glb</code></div></article>
+    <article><model-viewer src="assets/models/third_party/quaternius/animated-animals/shiba_inu.glb" camera-controls shadow-intensity="1" autoplay></model-viewer><div class="copy"><h3>Animated Shiba Inu</h3><span class="tag">1 skin</span><span class="tag">12 animations</span><span class="tag">6 materials</span><code>assets/models/third_party/quaternius/animated-animals/shiba_inu.glb</code></div></article>
+  </section>
+</main>
+<footer>Source assets: Quaternius • CC0-1.0 • See assets/models/third_party/LICENSES.md</footer>
+</body>
+</html>

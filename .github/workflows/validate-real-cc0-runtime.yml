@@ -1,0 +1,52 @@
+name: Validate Real CC0 Runtime
+
+on:
+  pull_request:
+    paths:
+      - 'prerelease/assets/models/third_party/**'
+      - 'prerelease/assets/manifest/real-cc0-assets.json'
+      - 'prerelease/core/rendering/high-end-acorn-patches.js'
+      - 'prerelease/core/rendering/real-cc0-runtime-patches.js'
+      - 'prerelease/core/rendering/model-library.js'
+      - 'prerelease/core/game/game-core.js'
+      - 'tools/check-real-cc0-runtime.mjs'
+      - '.github/workflows/validate-real-cc0-runtime.yml'
+  push:
+    branches:
+      - 'agent/import-real-cc0-models'
+    paths:
+      - 'prerelease/assets/models/third_party/**'
+      - 'prerelease/assets/manifest/real-cc0-assets.json'
+      - 'prerelease/core/rendering/high-end-acorn-patches.js'
+      - 'prerelease/core/rendering/real-cc0-runtime-patches.js'
+      - 'prerelease/core/rendering/model-library.js'
+      - 'prerelease/core/game/game-core.js'
+      - 'tools/check-real-cc0-runtime.mjs'
+      - '.github/workflows/validate-real-cc0-runtime.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-real-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check runtime JavaScript syntax
+        run: |
+          node --check prerelease/core/rendering/high-end-acorn-patches.js
+          node --check prerelease/core/rendering/real-cc0-runtime-patches.js
+          node --check prerelease/core/rendering/model-library.js
+          node --check tools/check-real-cc0-runtime.mjs
+
+      - name: Validate real authored models and integration
+        run: node tools/check-real-cc0-runtime.mjs

@@ -1,8 +1,8 @@
-/* Harley's Studios procedural game asset catalog.
-   Loaded before game.js and used by the character, enemy, and map systems. */
+/* Harley's Studios game asset catalog.
+   Loaded before game.js and used by character, enemy, weapon, and map systems. */
 window.HARLEYS_GAME_ASSETS = Object.freeze({
   studio: "Harley's Studios",
-  version: '2.0-character-map-refresh',
+  version: '2.1-real-cc0-source-import',
   enemyRoster: [
     { id:'puppy_raider', species:'puppy', body:'#d9a06f', accent:'#7b4d35', weaponId:'pea_popper' },
     { id:'bunny_raider', species:'bunny', body:'#f0ede8', accent:'#d6a6bd', weaponId:'moonbeam' },
@@ -34,9 +34,20 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     peaPopper: 'assets/models/weapons/pea_popper/pea_popper_lod0.glb',
     peaPopperLod1: 'assets/models/weapons/pea_popper/pea_popper_lod1.glb',
     peaPopperLod2: 'assets/models/weapons/pea_popper/pea_popper_lod2.glb',
-    acornSprayerLod2: 'assets/models/weapons/acorn_sprayer/acorn_sprayer_lod2.glb',
-    supplyCrate: 'assets/models/loot/supply_crate/supply_crate.glb',
-    pineTree: 'assets/models/vegetation/pine_tree/pine_tree_lod0.glb',
+    acornSprayer: 'assets/models/third_party/quaternius/toon-shooter/weapons/smg.glb',
+    honeyCarbine: 'assets/models/third_party/quaternius/toon-shooter/weapons/ak.glb',
+    carrotScatter: 'assets/models/third_party/quaternius/toon-shooter/weapons/shotgun.glb',
+    moonbeam: 'assets/models/third_party/quaternius/toon-shooter/weapons/sniper.glb',
+    supplyCrate: 'assets/models/third_party/quaternius/toon-shooter/environment/crate.glb',
+    pineTree: 'assets/models/third_party/quaternius/toon-shooter/environment/tree.glb',
+    shippingContainer: 'assets/models/third_party/quaternius/toon-shooter/environment/shipping_container.glb',
+    barrier: 'assets/models/third_party/quaternius/toon-shooter/environment/barrier.glb',
+    rabbitSource: 'assets/models/third_party/quaternius/sushi-restaurant/characters/rabbit.glb',
+    pandaSource: 'assets/models/third_party/quaternius/sushi-restaurant/characters/panda.glb',
+    huskySource: 'assets/models/third_party/quaternius/animated-animals/husky.glb',
+    shibaSource: 'assets/models/third_party/quaternius/animated-animals/shiba_inu.glb',
+    toonSoldierSource: 'assets/models/third_party/quaternius/toon-shooter/characters/character_soldier.glb',
+    toonEnemySource: 'assets/models/third_party/quaternius/toon-shooter/characters/character_enemy.glb',
     pineRock: 'assets/models/rocks/pine_valley_rock/pine_valley_rock_lod0.glb',
     pineGrass: 'assets/models/vegetation/pine_grass/pine_grass_cluster.glb',
     pineRail: 'assets/models/railway/pine_rail_segment/pine_rail_segment.glb',
@@ -51,11 +62,18 @@ window.HARLEYS_GAME_ASSETS = Object.freeze({
     ],
     aimSource: 'camera-center-ray',
     tracerSource: 'weapon-muzzle'
+  },
+  thirdPartySources: {
+    quaternius: {
+      license: 'CC0-1.0',
+      manifest: 'assets/manifest/real-cc0-assets.json',
+      licenseFile: 'assets/models/third_party/LICENSES.md'
+    }
   }
 });
 
-/* Load authored GLB bridges synchronously before game-loader.js fetches
-   game-core.js. Procedural rendering remains available as a safe fallback. */
+/* Load GLB bridges synchronously before game-loader.js fetches game-core.js.
+   Procedural rendering remains as an automatic fallback. */
 function loadAuthoredBridge(path) {
   if (document.readyState === 'loading') {
     document.write(`<script src="${path}" data-required-boot-file="${path.replace(/^\.\//, '')}"><\/script>`);
@@ -74,3 +92,4 @@ if (!window.HarleyHighEndGroundPatches) loadAuthoredBridge('./core/rendering/hig
 if (!window.HarleyHighEndTerrainPatches) loadAuthoredBridge('./core/rendering/high-end-terrain-patches.js');
 if (!window.HarleyHighEndLodPatches) loadAuthoredBridge('./core/rendering/high-end-lod-patches.js');
 if (!window.HarleyHighEndAcornPatches) loadAuthoredBridge('./core/rendering/high-end-acorn-patches.js');
+if (!window.CritterRealCc0RuntimePatches) loadAuthoredBridge('./core/rendering/real-cc0-runtime-patches.js');
