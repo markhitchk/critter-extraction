@@ -119,7 +119,7 @@
     source = one(
       source,
       'icon ping lobby roster',
-      /  function renderLobbyRoster\(\)\{[\s\S]*?\n  \}\n  function broadcastRoster/,
+      /  function renderLobbyRoster\(\)\{[\s\S]*?\n  function broadcastRoster/,
       stableLobbyRoster,
       false
     );
