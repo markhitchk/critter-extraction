@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  const VERSION='2026-08-03-profile-security-v6-1';
+  const VERSION='2026-08-03-profile-security-v6-2';
   const BASE=`./core/loader/game-loader-base.js?v=${VERSION}`;
-  const MODULES=['./core/loader/live-arena-patch-1.js','./core/loader/live-arena-patch-2.js','./core/loader/live-arena-patch-3.js','./core/loader/live-multiplayer-ui-patch.js','./core/loader/live-host-disconnect-patch.js','./core/loader/live-webrtc-stability-patch.js','./core/loader/live-arena-respawn-patch.js','./core/loader/live-minimap-revamp-patch.js','./core/loader/live-inventory-grid-patch.js','./core/loader/live-profile-security-patch.js'].map(url=>`${url}?v=${VERSION}`);
+  const MODULES=['./core/loader/live-arena-patch-1.js','./core/loader/live-arena-patch-2.js','./core/loader/live-arena-patch-3.js','./core/loader/live-multiplayer-ui-patch.js','./core/loader/live-host-disconnect-patch.js','./core/loader/live-webrtc-stability-patch.js','./core/loader/live-arena-respawn-patch.js','./core/loader/live-minimap-revamp-patch.js','./core/loader/live-inventory-grid-patch.js','./core/loader/live-profile-security-patch.js','./core/loader/live-profile-security-cache-patch.js'].map(url=>`${url}?v=${VERSION}`);
   const nativeFetch=window.fetch.bind(window);
   window.__CRITTER_ARENA_PATCHES__=[];
   function one(source,name,pattern,replacement,required=true){
