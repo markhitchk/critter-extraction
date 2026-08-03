@@ -1,0 +1,85 @@
+name: Fix LIVE arena beacon boot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/live-arena-beacon-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-live-arena-beacon:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply cache-safe arena beacon fix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_stamp = '2026-08-03-live-arena-fix-3'
+          new_stamp = '2026-08-03-live-arena-fix-4'
+
+          index = Path('live/index.html')
+          text = index.read_text(encoding='utf-8')
+          text = text.replace(
+              f'./core/loader/game-loader.js?v={old_stamp}',
+              f'./core/loader/game-loader.js?v={new_stamp}'
+          )
+          if f'./core/loader/game-loader.js?v={new_stamp}' not in text:
+              raise SystemExit('LIVE index loader cache stamp was not updated')
+          index.write_text(text, encoding='utf-8')
+
+          loader = Path('live/core/loader/game-loader.js')
+          text = loader.read_text(encoding='utf-8')
+          text = text.replace(old_stamp, new_stamp)
+          old_guard = "if(name==='dynamic match badge'&&matches.length){"
+          new_guard = "if(name==='hide arena beacon'&&!matches.length){console.warn('Optional LIVE patch missing: hide arena beacon; VS beacon is already moved off-map');return source;}\n    if(name==='dynamic match badge'&&matches.length){"
+          if old_guard in text:
+              text = text.replace(old_guard, new_guard, 1)
+          elif "name==='hide arena beacon'&&!matches.length" not in text:
+              raise SystemExit('Could not install optional hide-arena-beacon guard')
+          loader.write_text(text, encoding='utf-8')
+
+          patch1 = Path('live/core/loader/live-arena-patch-1.js')
+          text = patch1.read_text(encoding='utf-8')
+          old_extract = 'world.extract={x:0,z:0};'
+          new_extract = 'world.extract={x:1000000,z:1000000};'
+          if old_extract in text:
+              text = text.replace(old_extract, new_extract, 1)
+          elif new_extract not in text:
+              raise SystemExit('Could not move VS extraction beacon off-map')
+          patch1.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          node --check live/core/loader/game-loader.js
+          node --check live/core/loader/live-arena-patch-1.js
+          node --check live/core/loader/live-arena-patch-2.js
+          node --check live/core/loader/live-arena-patch-3.js
+          grep -q "live-arena-fix-4" live/index.html
+          grep -q "x:1000000,z:1000000" live/core/loader/live-arena-patch-1.js
+          grep -q "name==='hide arena beacon'&&!matches.length" live/core/loader/game-loader.js
+
+      - name: Commit LIVE boot fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live/index.html live/core/loader/game-loader.js live/core/loader/live-arena-patch-1.js
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "LIVE arena beacon fix already applied"
+            exit 0
+          fi
+          git commit -m "Fix LIVE arena beacon boot failure"
+          git push
