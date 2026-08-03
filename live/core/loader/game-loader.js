@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION='2026-08-03-ui-security-v7-chat-minimap-1';
+  const VERSION='2026-08-03-ui-security-v7-chat-minimap-2';
   const BASE=`./core/loader/game-loader-base.js?v=${VERSION}`;
   const MODULES=['./core/loader/live-arena-patch-1.js','./core/loader/live-arena-patch-2.js','./core/loader/live-arena-patch-3.js','./core/loader/live-multiplayer-ui-patch.js','./core/loader/live-host-disconnect-patch.js','./core/loader/live-webrtc-stability-patch.js','./core/loader/live-arena-respawn-patch.js','./core/loader/live-minimap-revamp-patch.js','./core/loader/live-inventory-grid-patch.js','./core/loader/live-profile-security-patch.js','./core/loader/live-profile-security-cache-patch.js','./core/loader/live-profile-legacy-export-fix-patch.js','./core/loader/live-ui-security-polish-patch.js'].map(url=>`${url}?v=${VERSION}`);
   const nativeFetch=window.fetch.bind(window);
@@ -9,6 +9,12 @@
     const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g';
     const matches=[...source.matchAll(new RegExp(pattern.source,flags))];
     if(name==='hide arena beacon'&&!matches.length){console.warn('Optional LIVE patch missing: hide arena beacon; VS beacon is already moved off-map');return source;}
+    if(name==='v7 export trust label'&&!matches.length){
+      const fallback=/account\.securityTrust\s*=\s*'encrypted-v6';(?=\s*account\.securityRevision)/;
+      if(fallback.test(source))return source.replace(fallback,"account.securityTrust = 'encrypted-v7';");
+      console.warn('Optional LIVE patch missing: v7 export trust label; secure export remains compatible');
+      return source;
+    }
     if(name==='dynamic match badge'&&matches.length){
       return source.replace(new RegExp(pattern.source,flags),(...args)=>typeof replacement==='function'?replacement(...args):replacement);
     }
