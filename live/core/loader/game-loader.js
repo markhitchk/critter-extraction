@@ -1,10 +1,22 @@
 (() => {
   'use strict';
-  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-live-arena-fix';
+  const BASE='./core/loader/game-loader-base.js?v=2026-08-03-live-arena-fix-2';
   const MODULES=['./core/loader/live-arena-patch-1.js','./core/loader/live-arena-patch-2.js','./core/loader/live-arena-patch-3.js'];
   const nativeFetch=window.fetch.bind(window);
   window.__CRITTER_ARENA_PATCHES__=[];
-  function one(source,name,pattern,replacement,required=true){const matches=[...source.matchAll(new RegExp(pattern.source,pattern.flags.includes('g')?pattern.flags:pattern.flags+'g'))];if(matches.length!==1){if(required)throw new Error(`LIVE patch ${matches.length?'ambiguous':'missing'}: ${name}`);console.warn(`Optional LIVE patch ${matches.length?'ambiguous':'missing'}: ${name}`);return source;}return source.replace(pattern,(...args)=>typeof replacement==='function'?replacement(...args):replacement);}
+  function one(source,name,pattern,replacement,required=true){
+    const flags=pattern.flags.includes('g')?pattern.flags:pattern.flags+'g';
+    const matches=[...source.matchAll(new RegExp(pattern.source,flags))];
+    if(name==='dynamic match badge'&&matches.length){
+      return source.replace(new RegExp(pattern.source,flags),(...args)=>typeof replacement==='function'?replacement(...args):replacement);
+    }
+    if(matches.length!==1){
+      if(required)throw new Error(`LIVE patch ${matches.length?'ambiguous':'missing'}: ${name}`);
+      console.warn(`Optional LIVE patch ${matches.length?'ambiguous':'missing'}: ${name}`);
+      return source;
+    }
+    return source.replace(pattern,(...args)=>typeof replacement==='function'?replacement(...args):replacement);
+  }
   function all(source,name,pattern,replacement,required=true){const matches=[...source.matchAll(new RegExp(pattern.source,pattern.flags.includes('g')?pattern.flags:pattern.flags+'g'))];if(!matches.length){if(required)throw new Error(`LIVE patch missing: ${name}`);console.warn(`Optional LIVE patch missing: ${name}`);return source;}return source.replace(new RegExp(pattern.source,pattern.flags.includes('g')?pattern.flags:pattern.flags+'g'),()=>replacement);}
   window.__CRITTER_PATCH_UTILS__={one,all};
   const load=url=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=url;script.onload=resolve;script.onerror=()=>reject(new Error(`Could not load ${url}`));document.head.appendChild(script);});
