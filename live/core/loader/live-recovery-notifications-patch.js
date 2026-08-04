@@ -381,6 +381,12 @@
       const topActions = document.querySelector('.top-actions');
       if (!topActions) return;
       recoveryUiReady = true;
+      if (!window.__CRITTER_RECOVERY_PAGE_EXIT_BOUND__) {
+        window.__CRITTER_RECOVERY_PAGE_EXIT_BOUND__ = true;
+        window.addEventListener('pagehide', () => {
+          markRecoveryInterrupted('The browser or network session ended before the run could finish.');
+        }, { capture:true });
+      }
 
       const button = document.createElement('button');
       button.type = 'button';
@@ -487,13 +493,6 @@
       'refresh notification account context',
       /  function refreshAccountUI\(\) \{\n    const a = activeAccount\(\);/,
       `  function refreshAccountUI() {\n    const a = activeAccount();\n    ensureRecoveryAccount(a);\n    if(!match)recoverInterruptedSnapshotForAccount(a);\n    refreshRecoveryNotifications();`
-    );
-
-    source = one(
-      source,
-      'save recovery checkpoint on page exit',
-      /  document\.addEventListener\('visibilitychange',\(\)=>\{if\(document\.hidden&&match&&!pauseMenuOpen\)openPauseMenu\(\);\}\);/,
-      match => `${match}\n  window.addEventListener('pagehide',()=>markRecoveryInterrupted('The browser or network session ended before the run could finish.'));`
     );
 
     source = one(
