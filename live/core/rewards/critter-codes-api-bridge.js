@@ -1,11 +1,11 @@
-/* Critter Codes global API bridge v1.4.0.
-   Publishes the packed runtime API and loads insured stash protection. */
+/* Critter Codes global API bridge v1.4.1.
+   Publishes the packed runtime API and loads insured stash and Critter unlock protection. */
 (() => {
   'use strict';
 
-  if (window.__CRITTER_CODES_API_BRIDGE__?.version === '1.4.0') return;
+  if (window.__CRITTER_CODES_API_BRIDGE__?.version === '1.4.1') return;
 
-  const VERSION = '1.4.0';
+  const VERSION = '1.4.1';
   const NativeBlob = window.Blob;
   const nativeAppend = HTMLHeadElement.prototype.appendChild;
   const state = {
@@ -50,20 +50,24 @@
 
   function resolveInsuranceUrl() {
     const current = [...document.scripts].find(script => /critter-codes-api-bridge\.js(?:[?#]|$)/.test(script.src));
-    return new URL('critter-codes-insurance.js?v=1.0.0', current?.src || document.baseURI).href;
+    return new URL('critter-codes-insurance.js?v=1.1.0', current?.src || document.baseURI).href;
   }
 
   function loadInsurance() {
-    if (window.CritterCodesInsurance) {
+    if (window.CritterCodesInsurance?.version === '1.1.0') {
       state.insuranceLoaded = true;
       window.CritterCodesInsurance.refresh?.();
       return Promise.resolve(window.CritterCodesInsurance);
     }
     const existing = document.getElementById('critter-codes-insurance-loader');
-    if (existing) return new Promise((resolve, reject) => {
-      existing.addEventListener('load', () => resolve(window.CritterCodesInsurance), { once: true });
-      existing.addEventListener('error', () => reject(new Error(`Failed to load Critter Codes insurance: ${existing.src}`)), { once: true });
-    });
+    if (existing) {
+      if (!/v=1\.1\.0(?:&|$)/.test(existing.src)) existing.remove();
+      else return new Promise((resolve, reject) => {
+        if (window.CritterCodesInsurance?.version === '1.1.0') return resolve(window.CritterCodesInsurance);
+        existing.addEventListener('load', () => resolve(window.CritterCodesInsurance), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`Failed to load Critter Codes insurance: ${existing.src}`)), { once: true });
+      });
+    }
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.id = 'critter-codes-insurance-loader';
