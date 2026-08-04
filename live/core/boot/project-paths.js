@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-1';
+  const FASTBOOT_VERSION = '2026-08-03-fastboot-2';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -52,7 +52,7 @@
   addHint({ path: `core/loader/game-loader-base.js?v=${FASTBOOT_VERSION}`, as: 'script' });
   addHint({ path: 'core/game/game-core.js?v=2026-08-03-main-menu-fix-1', as: 'fetch', crossOrigin: 'anonymous', priority: 'high' });
   addHint({ path: 'core/rewards/critter-codes.registry.js?v=2.0.0', as: 'script' });
-  addHint({ path: 'core/rewards/critter-codes.js?v=2.0.1', as: 'script' });
+  addHint({ path: 'core/rewards/critter-codes.js?v=2.0.2', as: 'script' });
   addHint({ path: 'assets/branding/HTG.png', as: 'image' });
 })();
 
@@ -140,7 +140,7 @@
   if (document.getElementById('critter-system-ui-loader')) return;
   const script = document.createElement('script');
   script.id = 'critter-system-ui-loader';
-  script.src = window.CritterPaths.resolve('core/ui/system-ui-refresh.js');
+  script.src = window.CritterPaths.resolve('core/ui/system-ui-refresh.js?v=2026-08-03-lobby-utilities-2');
   script.async = false;
   script.dataset.optionalUi = 'true';
   script.addEventListener('error', () => console.warn('Critter Extraction UI refresh could not be loaded.'));
@@ -155,9 +155,10 @@
   registry.src = window.CritterPaths.resolve('core/rewards/critter-codes.registry.js?v=2.0.0');
   registry.async = false;
   registry.addEventListener('load', () => {
+    if (document.getElementById('critter-codes-loader')) return;
     const system = document.createElement('script');
     system.id = 'critter-codes-loader';
-    system.src = window.CritterPaths.resolve('core/rewards/critter-codes.js?v=2.0.1');
+    system.src = window.CritterPaths.resolve('core/rewards/critter-codes.js?v=2.0.2');
     system.async = false;
     system.addEventListener('error', () => console.warn('Critter Codes interface could not be loaded.'));
     document.head.appendChild(system);
