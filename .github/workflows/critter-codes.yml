@@ -1,0 +1,38 @@
+name: Critter Codes
+
+on:
+  pull_request:
+    paths:
+      - 'live/core/rewards/**'
+      - 'live/core/boot/project-paths.js'
+      - 'live/assets/characters/**'
+      - 'live/tests/critter-codes*'
+      - 'tools/critter-codes/**'
+      - 'docs/CRITTER-CODES-TESTING.md'
+      - '.github/workflows/critter-codes.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'live/core/rewards/**'
+      - 'live/core/boot/project-paths.js'
+      - 'live/assets/characters/**'
+      - 'live/tests/critter-codes*'
+      - 'tools/critter-codes/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check live/core/boot/project-paths.js
+      - run: node --check live/core/rewards/critter-codes.js
+      - run: node --check live/core/rewards/critter-codes.registry.js
+      - run: for file in live/core/rewards/critter-codes.payload.*.js; do node --check "$file"; done
+      - run: node --check tools/critter-codes/generate-registry.mjs
+      - run: node live/tests/critter-codes.test.mjs
