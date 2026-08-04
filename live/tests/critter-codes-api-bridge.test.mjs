@@ -63,7 +63,10 @@ assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().blobPatchInstalled, tr
 assert.equal(appendedNodes[0]?.id, 'critter-codes-insurance-loader', 'bridge must request the insurance helper');
 
 const packedRuntime = `
-const CritterCodes=Object.freeze({redeem(){return 'redeemed';}});
+const CritterCodes=Object.freeze({
+  redeem(){return 'redeemed';},
+  open(){return 'opened';}
+});
 const CritterRewardRuntime=Object.freeze({version:'test'});
 `;
 const runtimeBlob = new sandbox.Blob([
@@ -76,7 +79,9 @@ assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().blobPatched, true, 're
 
 vm.runInContext(patched, sandbox, { filename: 'synthetic-packed-critter-codes-runtime.js' });
 assert.equal(typeof sandbox.CritterCodes?.redeem, 'function', 'packed runtime API was not published to window');
+assert.equal(typeof sandbox.CritterCodes?.open, 'function', 'packed runtime rewards UI was not published to window');
 assert.equal(sandbox.CritterCodes.redeem(), 'redeemed');
+assert.equal(sandbox.CritterCodes.open(), 'opened');
 assert.equal(sandbox.CritterRewardRuntime?.version, 'test');
 
 scheduled();
