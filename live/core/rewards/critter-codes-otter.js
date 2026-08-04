@@ -1,4 +1,4 @@
-/* Issue #59 — hashed CUDDLEPARTY Otter reward extension v1.0.0. */
+/* Issue #59 — hashed Otter reward extension v1.0.0. */
 (() => {
   'use strict';
   if (window.CritterCodesOtter) return;
