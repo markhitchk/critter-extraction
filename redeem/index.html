@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Opening Critter Codes…</title>
+  <script>
+    (() => {
+      const target = new URL('../live/redeem/', location.href);
+      target.search = location.search;
+      target.hash = location.hash;
+      location.replace(target.href);
+    })();
+  </script>
+</head>
+<body>
+  <p>Opening the <a id="redeemLink" href="../live/redeem/">Critter Codes terminal</a>…</p>
+  <script>
+    const link=document.getElementById('redeemLink');
+    link.href='../live/redeem/'+location.search+location.hash;
+  </script>
+</body>
+</html>
