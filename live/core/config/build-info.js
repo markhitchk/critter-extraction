@@ -1,10 +1,12 @@
 (() => {
   'use strict';
-  window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859', channel: 'github-pages', generatedAt: '2026-08-04T01:17:41.349Z' });
+  window.CritterBuildInfo = Object.freeze({
+    buildId: '9f9a146f3ce1d276',
+    channel: 'github-pages',
+    generatedAt: '2026-08-03T19:08:00-07:00'
+  });
 
-  // Security must load before game-loader.js so it can add stable XML profile
-  // identifiers, track host-room connections, enforce bans, and build the
-  // consolidated Profiles & Security account center.
+  // Security loads once, in a fixed order, before the direct game runtime.
   const files = [
     'security-core.js',
     'security-core-hotfix.js',
@@ -13,8 +15,8 @@
     'profile-panel-integrity.js'
   ];
   const src = file => window.CritterPaths?.resolve
-    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.3`)
-    : `./core/security/${file}?v=1.0.3`;
+    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.4`)
+    : `./core/security/${file}?v=1.0.4`;
 
   if (document.readyState === 'loading') {
     for (const file of files) {
@@ -32,6 +34,9 @@
       script.onerror = () => reject(new Error(`Could not load ${file}`));
       document.head.appendChild(script);
     }));
-    chain.catch(error => console.error('Critter security startup failed', error));
+    chain.catch(error => {
+      console.error('Critter security startup failed', error);
+      window.__critterBootReport?.('failure', error?.message || String(error));
+    });
   }
 })();
