@@ -1,59 +1,64 @@
 <!--
-AI ASSISTANTS: DO NOT EDIT, REWRITE, OR REPLACE THIS README.md during unrelated project work. Preserve this file exactly unless the repository owner explicitly requests a README change.
+AI ASSISTANTS: This README is intentionally branded and maintained by the repository owner.
+Only change it when the owner explicitly requests documentation or branding updates.
 -->
 
-<h1 align="center">Critter Extraction</h1>
+<div align="center">
+  <img src="assets/branding/icon.svg" alt="Critter Extraction logo" width="175">
 
-<p align="center">
-  <img src="assets/branding/icon.svg" alt="Critter Extraction game logo" width="220">
-</p>
+  # CRITTER EXTRACTION · TESTING
 
-**Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.
+  **UI · UX · GAMEPLAY VERIFICATION**
 
-Explore the map, fight enemy critters, collect weapons and gear, complete objectives, and reach the extraction zone with your loot.
+  <p>
+    <img alt="Testing channel" src="https://img.shields.io/badge/CHANNEL-TESTING-ffb84d?style=for-the-badge&labelColor=101820">
+    <img alt="Version v0.22.0" src="https://img.shields.io/badge/VERSION-v0.22.0-43b9ff?style=for-the-badge&labelColor=101820">
+  </p>
 
-## Play
+  <a href="https://markhitchk.github.io/critter-extraction/testing/"><img alt="Open the Testing build" src="https://img.shields.io/badge/⚙%20OPEN-TESTING%20BUILD-ffb84d?style=for-the-badge&labelColor=101820"></a>
 
-[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/)
+  <br><br>
+  <img src="assets/loading/cinematic-gameplay-fullhd.webp" alt="Critter Extraction gameplay artwork" width="860">
+</div>
 
-## Features
+> [!WARNING]
+> The Testing channel may contain unfinished interfaces, temporary diagnostics, test accounts, and gameplay changes that are not ready for normal players.
 
-- Solo, co-op, and PvP modes
-- First-person and third-person cameras
-- Weapons, armor, backpacks, loot, and death boxes
-- Inventory, account stash, and custom loadouts
-- Quests, objectives, merchants, and Petals
-- Enemy AI with adjustable difficulty and respawn settings
-- Direct browser multiplayer using room links and six-digit codes
-- Local player profiles with downloadable account backups
-- In-game Feedback Center for drafting reports and reading repository issues
-- Keyboard, mouse, and touchscreen controls
+## Testing mission
 
-## Unreal Engine 6 Release
+Use this channel for focused validation of Critter Extraction’s interface, controls, browser compatibility, gameplay flow, and multiplayer behavior without treating it as the public LIVE release.
 
-A new **Unreal Engine 6 edition of Critter Extraction is coming soon**.
+| Test area | What to verify |
+|:--|:--|
+| **UI and UX** | Menus, dialogs, HUD, inventory, stash, loadouts, readable sizing, and keyboard focus |
+| **Gameplay** | Aiming, hit alignment, AI reactions, objectives, loot, extraction, and respawns |
+| **Multiplayer** | Host/join flow, six-digit codes, player visibility, sync, disconnects, and VS rules |
+| **Devices** | Desktop, Chromebook, short-height windows, tablet, phone, mouse, keyboard, and touch |
+| **Profiles** | Account switching, XML backup/import, migration, password prompts, and recovery behavior |
 
-## Project Status
+## Recommended test sequence
 
-Critter Extraction is still being developed. Features, gameplay, and artwork may change as the game is improved.
+1. Create or import a disposable test profile.
+2. Verify the main menu and account/loadout panels at the current viewport size.
+3. Run a short Solo match and test combat, loot, objectives, inventory, and extraction.
+4. Test Host and Join from separate browser sessions or devices.
+5. Recheck dialogs and inventory at a smaller viewport.
+6. Submit a privacy-safe report through the in-game Feedback Center.
 
-## Current Version
+## Important data rule
 
-**v0.22.0**
+Do not use your only copy of a valuable profile in experimental testing. Download a backup first and never place profile XML, passwords, tokens, room payloads, or private player data in public issues.
 
+## Links
 
-## Credits
+- **[Open Testing](https://markhitchk.github.io/critter-extraction/testing/)**
+- **[Play LIVE](https://markhitchk.github.io/critter-extraction/live/)**
+- **[Project command center](../README.md)**
+- **[Report a test result](https://github.com/markhitchk/critter-extraction/issues/new/choose)**
 
-Created by **Harley’s Studios**.
+---
 
-## Feedback and Issues
-
-Use the **Feedback** button inside Critter Extraction to:
-
-- write and save a feedback draft
-- review privacy-safe diagnostics before publication
-- copy or download a report
-- browse open and closed repository issues
-- read issue descriptions and comments inside the game
-
-Because the production game is hosted as a static GitHub Pages site, the final publication confirmation is completed through GitHub unless a secure owner-managed feedback endpoint is configured.
+<div align="center">
+  <strong>Harley’s Studios · TESTING CHANNEL</strong><br>
+  Break it here so LIVE stays clean.
+</div>
