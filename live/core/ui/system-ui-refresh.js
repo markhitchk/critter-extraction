@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const UI_VERSION = '1.0.0';
+  const UI_VERSION = '1.0.1';
 
   function resolve(path) {
     if (window.CritterPaths && typeof window.CritterPaths.resolve === 'function') {
@@ -179,8 +179,12 @@
     makeDock(menuScreen);
   }
 
-  function enhanceDialogs() {
-    document.querySelectorAll('dialog.modal').forEach(dialog => {
+  function enhanceDialogs(root = document) {
+    const dialogs = [];
+    if (root instanceof HTMLDialogElement && root.matches('dialog.modal')) dialogs.push(root);
+    if (root?.querySelectorAll) dialogs.push(...root.querySelectorAll('dialog.modal'));
+
+    dialogs.forEach(dialog => {
       if (dialog.dataset.uiEnhanced === UI_VERSION) return;
       dialog.dataset.uiEnhanced = UI_VERSION;
       dialog.querySelectorAll('.icon-close').forEach(button => {
@@ -189,6 +193,83 @@
       const card = dialog.querySelector('.modal-card');
       if (card) card.setAttribute('data-dialog-id', dialog.id || 'dialog');
     });
+  }
+
+  function syncDialogState() {
+    if (!document.body) return;
+    document.body.classList.toggle('ui-dialog-open', Boolean(document.querySelector('dialog[open]')));
+  }
+
+  function installDialogObserver() {
+    if (!document.body || window.__CRITTER_DIALOG_OBSERVER__) return;
+
+    let frame = 0;
+    const pendingRoots = new Set();
+    const flush = () => {
+      frame = 0;
+      for (const root of pendingRoots) enhanceDialogs(root);
+      pendingRoots.clear();
+      syncDialogState();
+    };
+    const schedule = root => {
+      if (root) pendingRoots.add(root);
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        if (record.type === 'attributes') {
+          if (record.target instanceof HTMLDialogElement) schedule(record.target);
+          continue;
+        }
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (node.matches?.('dialog.modal') || node.querySelector?.('dialog.modal')) schedule(node);
+        }
+      }
+    });
+
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['open']
+    });
+
+    window.__CRITTER_DIALOG_OBSERVER__ = observer;
+    window.addEventListener('pagehide', () => {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      pendingRoots.clear();
+      window.__CRITTER_DIALOG_OBSERVER__ = null;
+    }, { once: true });
+  }
+
+  function startObserverAfterBoot() {
+    const start = () => {
+      enhanceDialogs();
+      syncDialogState();
+      installDialogObserver();
+    };
+
+    if (window.__CRITTER_BOOT__?.ready || document.getElementById('studioBoot')?.hidden) {
+      start();
+      return;
+    }
+
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (window.__CRITTER_BOOT__?.ready || document.getElementById('studioBoot')?.hidden || attempts >= 80) {
+        clearInterval(timer);
+        start();
+      }
+    }, 100);
+
+    window.addEventListener('critter-boot-ready', () => {
+      clearInterval(timer);
+      start();
+    }, { once: true });
   }
 
   function enhanceGlobalUX() {
@@ -225,12 +306,7 @@
       }
     });
 
-    const observer = new MutationObserver(() => {
-      enhanceDialogs();
-      const anyOpen = Boolean(document.querySelector('dialog[open]'));
-      document.body.classList.toggle('ui-dialog-open', anyOpen);
-    });
-    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    startObserverAfterBoot();
   }
 
   loadStyles();
