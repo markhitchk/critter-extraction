@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Critter Codes Tests</title>
+  <style>
+    body{margin:0;padding:24px;background:#090d18;color:#edfaff;font:15px/1.5 system-ui,sans-serif}main{max-width:980px;margin:auto}h1{color:#64e8ea}button{padding:12px 18px;border:1px solid #64e8ea;border-radius:12px;background:#153047;color:#fff;font-weight:800}.summary{margin:18px 0;padding:16px;border:1px solid #ffffff22;border-radius:16px;background:#ffffff08}.pass{color:#8ff3c8}.fail{color:#ff9dad}li{margin:7px 0}code{color:#ffd36f}
+  </style>
+  <script>
+    localStorage.setItem('critterExtractionInventory',JSON.stringify({schemaVersion:18,activeId:'test-account',accounts:[{id:'test-account',displayName:'Test Critter',username:'test_critter',petals:0,appearance:{species:'puppy'},settings:{volume:0},stash:Array(40).fill(null)}]}));
+  </script>
+  <script src="../core/boot/project-paths.js"></script>
+</head>
+<body>
+<main>
+  <h1>Critter Codes automated verification</h1>
+  <p>This page uses synthetic test codes only. Production code strings are not embedded here.</p>
+  <button id="run" type="button">Run tests</button>
+  <div id="summary" class="summary" aria-live="polite">Waiting to run.</div>
+  <ol id="results"></ol>
+</main>
+<script>
+(() => {
+  'use strict';
+  const STORAGE_KEY='critterExtractionInventory';
+  const TEST_DIGEST='b55af99e173d47861bbb76aee3011bfcbde44e6d5ddd5678fe1a2b8ca4c3ef57';
+  const results=[];
+  const assert=(condition,message)=>{if(!condition)throw new Error(message)};
+  const test=(name,fn)=>results.push({name,fn});
+  const resetDb=()=>localStorage.setItem(STORAGE_KEY,JSON.stringify({schemaVersion:18,activeId:'test-account',accounts:[{id:'test-account',displayName:'Test Critter',username:'test_critter',petals:0,appearance:{species:'puppy'},settings:{volume:0},stash:Array(40).fill(null)}]}));
+  const account=()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).accounts[0];
+  const expectReject=async(fn,code)=>{let caught='';try{await fn()}catch(error){caught=error.message}assert(caught===code,`expected ${code}, got ${caught||'success'}`)};
+
+  test('Registry contains ten unique hashed bundles',()=>{const entries=window.__CRITTER_CODE_REGISTRY__?.e||[];assert(entries.length===10,'registry size');assert(new Set(entries.map(item=>item.h)).size===10,'hashes must be unique');assert(entries.every(item=>/^[a-f0-9]{64}$/.test(item.h)),'hash shape');assert(entries.every(item=>!('code' in item)&&!('plaintext' in item)),'plaintext property found')});
+  test('Normalization ignores case, spaces, and hyphens',()=>{assert(CritterCodes.normalizeCode(' Ab-c 12 ')==='ABC12','normalization failed');assert(CritterCodes.normalizeCode('a-b c-1 2')===CritterCodes.normalizeCode('ABC12'),'equivalent forms differ')});
+  test('SHA-256 digest is consistent',async()=>{assert(await CritterCodes.sha256('Ab-c 12')===TEST_DIGEST,'digest mismatch')});
+  test('All eight playable reward critters have unique portraits and model bases',()=>{const critters=Object.values(CritterCodes.__test.CRITTERS);assert(critters.length===8,'critter count');assert(new Set(critters.map(item=>item.id)).size===8,'duplicate critter id');assert(new Set(critters.map(item=>item.portrait)).size===8,'portrait assets are not unique');assert(critters.every(item=>item.modelBase&&item.preset),'missing model data')});
+  test('Every required themed reward exists and is equippable',()=>{const rewards=Object.values(CritterCodes.__test.REWARDS),required=['backpack_frozen_expedition','trail_snowflake','backpack_shiny_scavenger','trail_feather','backpack_scavenger','title_loot_bandit','outfit_tactical_hoodie','nameplate_red_panda','outfit_raincoat','effect_lily_pad','armor_winter','wrap_frost','emote_relaxed','hat_orange','set_aquatic','trail_bubble'];assert(required.every(id=>rewards.some(item=>item.id===id)),'missing themed reward')});
+  test('Profile migration creates persistence fields without deleting existing data',()=>{const source={id:'x',petals:22,custom:'keep'};const migrated=CritterCodes.__test.migrateAccount(source);assert(migrated.custom==='keep','existing field lost');assert(Array.isArray(migrated.redeemedCodes)&&Array.isArray(migrated.notifications)&&Array.isArray(migrated.deliveryStorage),'migration arrays missing')});
+  test('Unique ownership grants once and reports duplicates',()=>{const t=CritterCodes.__test,profile=t.migrateAccount({petals:0}),reward=t.REWARDS.r04;assert(t.grantReward(profile,reward,'claim').status==='granted','first grant');assert(t.grantReward(profile,reward,'claim').status==='duplicate','duplicate policy')});
+  test('Currency respects the one-million Petal cap',()=>{const t=CritterCodes.__test,profile=t.migrateAccount({petals:999995}),result=t.grantReward(profile,t.REWARDS.r01,'claim');assert(profile.petals===1000000,'cap failed');assert(result.amount===5,'partial amount incorrect')});
+  test('Crates enter persistent Delivery Storage',()=>{const t=CritterCodes.__test,profile=t.migrateAccount({petals:0}),result=t.grantReward(profile,t.REWARDS.r02,'claim');assert(result.destination==='deliveryStorage','wrong destination');assert(profile.deliveryStorage[0].contents.length===4,'crate contents missing')});
+  test('Full stash keeps unclaimed delivery contents safe',()=>{resetDb();const db=JSON.parse(localStorage.getItem(STORAGE_KEY));db.accounts[0].stash=Array.from({length:40},()=>({id:'scrap',qty:20}));db.accounts[0].deliveryStorage=[{id:'delivery-test',rewardId:'crate_starter_supply',contents:[{id:'bandage',qty:2}]}];localStorage.setItem(STORAGE_KEY,JSON.stringify(db));const result=CritterCodes.claimDelivery('delivery-test');assert(result.moved===0&&result.remaining===2,'delivery was lost');assert(account().deliveryStorage[0].contents[0].qty===2,'overflow not persisted')});
+  test('Atomic multi-reward redemption creates history and an exact notification',async()=>{resetDb();const old=window.__CRITTER_CODE_REGISTRY__;window.__CRITTER_CODE_REGISTRY__={v:2,e:[{h:TEST_DIGEST,i:'test-bundle',r:['r03','r04'],a:1,s:0,x:0,m:'0.22.0',l:1,g:0,t:'snow'}]};const result=await CritterCodes.redeem('A-b c 12');const saved=account();assert(result.rewards.length===2,'bundle size');assert(saved.redeemedCodes.length===1,'history missing');assert(saved.notifications[0].rewardIds.length===2,'notification detail missing');window.__CRITTER_CODE_REGISTRY__=old});
+  test('Same code cannot redeem twice',async()=>{const old=window.__CRITTER_CODE_REGISTRY__;window.__CRITTER_CODE_REGISTRY__={v:2,e:[{h:TEST_DIGEST,i:'test-bundle',r:['r03'],a:1,s:0,x:0,m:'0.22.0',l:1,g:0,t:'welcome'}]};await expectReject(()=>CritterCodes.redeem('ABC12'),'already_redeemed');window.__CRITTER_CODE_REGISTRY__=old});
+  test('Disabled, future, expired, and version-locked states are distinct',async()=>{for(const [field,value,code] of [['a',0,'disabled_code'],['s',Date.now()+60000,'not_active'],['x',Date.now()-60000,'expired_code'],['m','99.0.0','version_locked']]){resetDb();const entry={h:TEST_DIGEST,i:'state-test',r:['r03'],a:1,s:0,x:0,m:'0.22.0',l:1,g:0,t:'welcome'};entry[field]=value;const old=window.__CRITTER_CODE_REGISTRY__;window.__CRITTER_CODE_REGISTRY__={v:2,e:[entry]};await expectReject(()=>CritterCodes.redeem('ABC12'),code);window.__CRITTER_CODE_REGISTRY__=old;}});
+  test('Missing reward definitions abort before profile mutation',async()=>{resetDb();const before=localStorage.getItem(STORAGE_KEY),old=window.__CRITTER_CODE_REGISTRY__;window.__CRITTER_CODE_REGISTRY__={v:2,e:[{h:TEST_DIGEST,i:'missing-test',r:['does-not-exist'],a:1,s:0,x:0,m:'0.22.0',l:1,g:0,t:'welcome'}]};await expectReject(()=>CritterCodes.redeem('ABC12'),'reward_definition_missing');assert(localStorage.getItem(STORAGE_KEY)===before,'profile changed after failed validation');window.__CRITTER_CODE_REGISTRY__=old});
+  test('Core bridge patches renderer hooks and profile packet fields',()=>{const bridge=window.__CRITTER_CODE_CORE_BRIDGE__;const sample="species=ap.species||'puppy';SPECIES[ap.species]||SPECIES.puppy;w=weaponFor(p);loadoutManifest:localLoadoutManifest(a)},a.displayName);return {displayName:safeText(profile.displayName||fallback,24)||fallback,username:;loadoutManifest: normalizeFairManifest(profile.loadoutManifest, loadoutId) }, invuln:;drawWeaponModel(p,baseY,frontX,frontZ,rightX,rightZ);drawAccessory(p,ap,baseY,rightX,rightZ,frontX,frontZ,backX,backZ);for(const fx of world.effects)drawEffect(fx);\n    renderer.end?.(); renderWorldLabels(cam);if(success&&match.objectives){match.objectives.extracted=true;updateHUD();}";const patched=bridge.patchGameCore(sample);assert(patched.includes('CritterRewardRuntime'),'runtime hook missing');assert(patched.includes('__CRITTER_CODE_CORE_PATCHED__'),'patch marker missing')});
+  test('Responsive, reduced-motion, keyboard, and controller affordances exist',()=>{const css=document.getElementById('critterCodesStyles')?.textContent||'';assert(css.includes('@media(max-width:620px)'),'mobile CSS missing');assert(css.includes('prefers-reduced-motion'),'reduced motion missing');assert(document.querySelectorAll('.cc-dialog button').length>=8,'keyboard controls missing');assert(typeof navigator.getGamepads==='function'||'getGamepads' in navigator,'controller API unavailable in this browser')});
+
+  async function run(){const list=document.getElementById('results'),summary=document.getElementById('summary');if(!window.CritterCodes){summary.className='summary fail';summary.textContent='Critter Codes did not finish loading.';return;}list.innerHTML='';let passed=0;for(const item of results){const row=document.createElement('li');try{await item.fn();row.className='pass';row.textContent=`PASS — ${item.name}`;passed+=1}catch(error){row.className='fail';row.textContent=`FAIL — ${item.name}: ${error.message}`;}list.appendChild(row);}summary.className=`summary ${passed===results.length?'pass':'fail'}`;summary.textContent=`${passed} / ${results.length} tests passed.`;resetDb();}
+  document.getElementById('run').addEventListener('click',run);
+  addEventListener('load',()=>setTimeout(run,100));
+})();
+</script>
+</body>
+</html>
