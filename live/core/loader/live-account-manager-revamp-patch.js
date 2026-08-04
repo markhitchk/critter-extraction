@@ -26,6 +26,33 @@
       return;
     }
 
+    const removeStorageMeter = () => {
+      const labels = [...card.querySelectorAll('*')].filter(element =>
+        element.children.length === 0 && element.textContent.trim().toUpperCase() === 'LOCAL STORAGE'
+      );
+      labels.forEach(label => {
+        let target = label.parentElement;
+        while (target && target !== card && !/browser storage/i.test(target.textContent)) {
+          target = target.parentElement;
+        }
+        if (!target || target === card) {
+          label.parentElement?.remove();
+          return;
+        }
+        const combined = target.textContent.toUpperCase();
+        if (combined.includes('ACTIVE ACCOUNT') || combined.includes('PROFILES')) {
+          const storageChild = [...target.children].find(child => /LOCAL STORAGE/i.test(child.textContent));
+          if (storageChild) storageChild.remove();
+          else label.parentElement?.remove();
+        } else {
+          target.remove();
+        }
+      });
+    };
+    removeStorageMeter();
+    setTimeout(removeStorageMeter, 0);
+    new MutationObserver(removeStorageMeter).observe(card, { childList:true, subtree:true });
+
     card.classList.add('account-manager-revamp');
     const eyebrow = card.querySelector(':scope > header .eyebrow');
     const title = card.querySelector(':scope > header h2');
@@ -87,7 +114,7 @@
     quickSection.className = 'account-manager-section account-quick-section';
     quickSection.innerHTML = `
       <div class="account-section-heading">
-        <div><span class="eyebrow">QUICK ACCESS</span><h3>Game tools</h3><p>The former top-bar controls now live with your profile tools.</p></div>
+        <div><span class="eyebrow">QUICK ACCESS</span><h3>Game tools</h3><p>Controls, settings, and your Petals balance stay close to your profile.</p></div>
       </div>
       <div class="account-quick-actions" id="accountQuickActions"></div>`;
 
@@ -95,14 +122,29 @@
     const controlsButton = document.querySelector('.top-actions [data-open="helpModal"]');
     const settingsButton = document.querySelector('.top-actions [data-open="settingsModal"]');
     const petalsButton = document.getElementById('topPetalsBtn');
-    const topbarTools = [controlsButton, settingsButton, petalsButton].filter(Boolean);
-    topbarTools.forEach(button => {
+    [controlsButton, settingsButton].filter(Boolean).forEach(button => {
       button.classList.add('account-quick-button');
       button.addEventListener('click', () => {
         if (modal.open && typeof modal.close === 'function') modal.close();
       }, true);
       quickActions.appendChild(button);
     });
+    if (petalsButton) {
+      const petalsQuickButton = document.createElement('button');
+      petalsQuickButton.type = 'button';
+      petalsQuickButton.className = 'petals-chip account-quick-button account-petals-proxy';
+      const syncPetalsProxy = () => {
+        petalsQuickButton.innerHTML = petalsButton.innerHTML;
+        petalsQuickButton.setAttribute('aria-label', petalsButton.getAttribute('aria-label') || 'Open Trading Post');
+      };
+      petalsQuickButton.addEventListener('click', () => {
+        if (modal.open && typeof modal.close === 'function') modal.close();
+        petalsButton.click();
+      });
+      syncPetalsProxy();
+      new MutationObserver(syncPetalsProxy).observe(petalsButton, { childList:true, subtree:true, characterData:true });
+      quickActions.appendChild(petalsQuickButton);
+    }
 
     const profilesSection = document.createElement('section');
     profilesSection.className = 'account-manager-section account-profiles-section';
@@ -126,11 +168,20 @@
     const transferSection = document.createElement('section');
     transferSection.className = 'account-manager-section account-transfer-section';
     transferSection.innerHTML = `
-      <div class="account-section-heading"><div><span class="eyebrow">RESTORE OR TRANSFER</span><h3>Move a profile</h3><p>Use a file or link. Matching profiles ask before they are replaced.</p></div></div>
-      <div class="account-transfer-grid">
-        <article><span aria-hidden="true">↓</span><div><strong>Restore a backup</strong><small>Import an encrypted v7 XML file from this or another browser.</small></div><div class="account-transfer-actions" id="restoreFileActions"></div></article>
-        <article><span aria-hidden="true">↗</span><div><strong>Use a profile link</strong><small>Paste a copied profile link or a direct XML URL.</small></div><div class="account-link-import" id="profileLinkImport"></div></article>
-        <article><span aria-hidden="true">＋</span><div><strong>Other options</strong><small>Use an older backup code, share a game invite, or start fresh.</small></div><div class="account-transfer-actions" id="otherProfileActions"></div></article>
+      <div class="account-section-heading"><div><span class="eyebrow">RESTORE OR TRANSFER</span><h3>Move a profile</h3><p>Open only the transfer method you need.</p></div></div>
+      <div class="account-transfer-folds">
+        <details class="account-transfer-fold">
+          <summary><span aria-hidden="true">↓</span><div><strong>Upload an XML backup</strong><small>Restore an encrypted v7 account file.</small></div><b aria-hidden="true">⌄</b></summary>
+          <div class="account-transfer-panel account-transfer-actions" id="restoreFileActions"></div>
+        </details>
+        <details class="account-transfer-fold">
+          <summary><span aria-hidden="true">↗</span><div><strong>Import from a profile link</strong><small>Use a copied profile link or direct XML URL.</small></div><b aria-hidden="true">⌄</b></summary>
+          <div class="account-transfer-panel account-link-import" id="profileLinkImport"></div>
+        </details>
+        <details class="account-transfer-fold">
+          <summary><span aria-hidden="true">＋</span><div><strong>More profile options</strong><small>Backup codes, game invites, and new profiles.</small></div><b aria-hidden="true">⌄</b></summary>
+          <div class="account-transfer-panel account-transfer-actions" id="otherProfileActions"></div>
+        </details>
       </div>`;
 
     const restoreActions = transferSection.querySelector('#restoreFileActions');
@@ -198,6 +249,8 @@
       if (search) search.value = '';
       refreshRows();
     });
+    document.getElementById('accountBtn')?.addEventListener('click', () => setTimeout(removeStorageMeter, 0));
+    document.getElementById('accountsBtn')?.addEventListener('click', () => setTimeout(removeStorageMeter, 0));
     setTimeout(refreshRows, 0);
 
     if (!document.getElementById('accountManagerRevampStyles')) {
@@ -207,7 +260,8 @@
 body.critter-main-menu-active .topbar{justify-content:space-between!important}
 body.critter-main-menu-active .topbar>.brand{display:flex!important;visibility:visible!important}
 body.critter-main-menu-active .top-actions{margin-left:auto!important}
-body.critter-main-menu-active .top-actions>:not(#accountBtn){display:none!important}
+body.critter-main-menu-active .top-actions>:not(#accountBtn):not(#topPetalsBtn){display:none!important}
+body.critter-main-menu-active #topPetalsBtn{display:flex!important}
 body.critter-main-menu-active #accountBtn small{font-size:0}
 body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-size:9px}
 #accountsModal .account-manager-revamp{width:min(920px,calc(100vw - 18px))!important;max-height:calc(100dvh - 18px)!important;overflow:auto!important;padding:16px!important}
@@ -229,9 +283,19 @@ body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-siz
 #accountsModal .account-row button{min-height:34px!important;padding:7px 10px!important;font-size:9px!important}
 .account-password-section{padding-bottom:10px}.account-security-simple{margin:0!important;padding:10px!important;border-radius:13px!important;display:grid!important;grid-template-columns:minmax(180px,1fr) minmax(180px,.8fr) auto!important;align-items:end!important;gap:10px!important}
 .account-security-simple>div:first-child{align-self:center}.account-security-simple label{margin:0!important}.account-security-simple .account-backup-actions{display:flex!important;gap:5px!important;flex-wrap:wrap!important}.account-security-simple p{grid-column:1/-1!important;margin:0!important;font-size:8px!important;color:var(--muted)!important}
-.account-transfer-grid{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px}.account-transfer-grid article{display:grid;grid-template-columns:auto 1fr;gap:8px;align-content:start;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(0,0,0,.12)}.account-transfer-grid article>span{font-size:18px;color:var(--cyan,#64e8ea)}.account-transfer-grid strong{font-size:11px}.account-transfer-grid small{display:block;margin-top:3px;color:var(--muted);font-size:8px;line-height:1.35}.account-transfer-actions,.account-link-import{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.account-link-import .xml-profile-tools{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;background:none!important}.account-link-import label{min-width:0!important}.account-link-import input{width:100%!important;min-width:0!important}.account-transfer-actions button,.account-link-import button{min-height:36px!important;font-size:9px!important}
-@media(max-width:760px){.account-quick-actions{grid-template-columns:1fr}.account-transfer-grid{grid-template-columns:1fr}.account-security-simple{grid-template-columns:1fr}.account-security-simple p{grid-column:1}.account-toolbar{grid-template-columns:1fr 1fr}.account-toolbar .account-search-field{grid-column:1/-1}#accountsModal .account-row{grid-template-columns:auto minmax(0,1fr)!important}#accountsModal .account-row>div:last-child{grid-column:1/-1;justify-content:flex-start!important}.account-section-heading{align-items:flex-start}.account-manager-intro{align-items:flex-start;flex-direction:column}}
-@media(max-height:700px){#accountsModal .account-manager-revamp{padding:12px!important}.account-manager-layout{gap:8px}.account-manager-section{padding:9px}#accountsModal .account-list{max-height:190px!important}.account-section-heading{margin-bottom:7px}.account-transfer-grid article{padding:8px}}
+.account-transfer-folds{display:grid;gap:8px}
+.account-transfer-fold{border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(0,0,0,.12);overflow:hidden}
+.account-transfer-fold>summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;list-style:none;background:rgba(255,255,255,.025)}
+.account-transfer-fold>summary::-webkit-details-marker{display:none}
+.account-transfer-fold>summary>span{font-size:18px;color:var(--cyan,#64e8ea)}
+.account-transfer-fold>summary>div{display:grid;gap:2px}.account-transfer-fold>summary strong{font-size:11px}.account-transfer-fold>summary small{font-size:8px;color:var(--muted)}
+.account-transfer-fold>summary>b{font-size:16px;transition:transform .15s}.account-transfer-fold[open]>summary>b{transform:rotate(180deg)}
+.account-transfer-panel{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07)}
+.account-transfer-actions,.account-link-import{display:flex;flex-wrap:wrap;gap:6px}
+.account-link-import .xml-profile-tools{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;background:none!important}.account-link-import label{min-width:0!important}.account-link-import input{width:100%!important;min-width:0!important}.account-transfer-actions button,.account-link-import button{min-height:36px!important;font-size:9px!important}
+@media(max-width:760px){.account-quick-actions{grid-template-columns:1fr}.account-security-simple{grid-template-columns:1fr}.account-security-simple p{grid-column:1}.account-toolbar{grid-template-columns:1fr 1fr}.account-toolbar .account-search-field{grid-column:1/-1}#accountsModal .account-row{grid-template-columns:auto minmax(0,1fr)!important}#accountsModal .account-row>div:last-child{grid-column:1/-1;justify-content:flex-start!important}.account-section-heading{align-items:flex-start}.account-manager-intro{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){body.critter-main-menu-active .topbar{gap:8px!important}body.critter-main-menu-active .topbar>.brand span small{display:none!important}body.critter-main-menu-active #topPetalsBtn{padding:7px 9px!important}}
+@media(max-height:700px){#accountsModal .account-manager-revamp{padding:12px!important}.account-manager-layout{gap:8px}.account-manager-section{padding:9px}#accountsModal .account-list{max-height:190px!important}.account-section-heading{margin-bottom:7px}.account-transfer-fold>summary{padding:9px 10px}}
 `;
       document.head.appendChild(style);
     }
