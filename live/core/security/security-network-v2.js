@@ -3,6 +3,9 @@
   const S = window.CritterSecurityRuntime;
   if (!S) return;
 
+  const connectionRecords = new Map();
+  let connectionSequence = 0;
+
   const parse = data => {
     try {
       return { message: typeof data === 'string' ? JSON.parse(data) : data, string: typeof data === 'string' };
@@ -13,6 +16,67 @@
   const encode = packet => packet.string ? JSON.stringify(packet.message) : packet.message;
   const isGlobalBan = ban => ban?.banType === 'global' || ban?.source === 'remote' ||
     S.remote().bans.some(item => item.id === ban?.id || item.id === ban?.banId);
+  const emitSecurityChange = () => window.dispatchEvent(new Event('critter-security-change'));
+
+  const cleanProfile = profile => {
+    if (!profile || typeof profile !== 'object') return null;
+    const level = Math.max(0, Math.floor(Number(profile.level) || 0));
+    const petals = Math.max(0, Math.floor(Number(profile.petals) || 0));
+    return {
+      displayName: S.text(profile.displayName || profile.name || 'Connected Critter', 32),
+      username: S.text(profile.username || '', 32),
+      level,
+      petals,
+      loadoutId: S.text(profile.loadoutId || '', 48),
+      species: S.text(profile.appearance?.species || profile.species || '', 32),
+      avatar: /^https?:\/\//i.test(String(profile.avatar || '')) ? String(profile.avatar).slice(0, 500) : ''
+    };
+  };
+
+  function publicConnection(record) {
+    if (!record) return null;
+    return {
+      id: record.id,
+      direction: record.direction,
+      status: record.status,
+      peerId: record.peerId,
+      connectedAt: record.connectedAt,
+      closedAt: record.closedAt || null,
+      identity: { ...(record.identity || {}) },
+      profile: record.profile ? { ...record.profile } : null,
+      banned: !!record.banned,
+      rejected: !!record.connection?.__critterSecurityRejected
+    };
+  }
+
+  function registerConnection(connection, direction, identity) {
+    if (!connection) return null;
+    const existingId = connection.__critterSecurityConnectionId;
+    if (existingId && connectionRecords.has(existingId)) return connectionRecords.get(existingId);
+    const id = `security-connection-${++connectionSequence}`;
+    connection.__critterSecurityConnectionId = id;
+    const record = {
+      id,
+      connection,
+      direction: S.text(direction || 'unknown', 32),
+      status: connection.open ? 'connected' : 'connecting',
+      peerId: S.text(connection.peer || connection.connectionId || '', 96),
+      connectedAt: new Date().toISOString(),
+      closedAt: null,
+      identity: S.identity(identity || connection.metadata?.security || {}),
+      profile: null,
+      banned: false
+    };
+    connectionRecords.set(id, record);
+    emitSecurityChange();
+    return record;
+  }
+
+  function updateConnection(record, patch = {}) {
+    if (!record) return;
+    Object.assign(record, patch);
+    emitSecurityChange();
+  }
 
   function ensureStyles() {
     if (document.getElementById('critterSecurityBlockStyles')) return;
@@ -91,6 +155,8 @@
   function reject(connection, ban, stage) {
     if (!connection || connection.__critterSecurityRejected) return;
     connection.__critterSecurityRejected = true;
+    const record = connectionRecords.get(connection.__critterSecurityConnectionId);
+    if (record) updateConnection(record, { status: 'blocked', banned: true });
     S.log('connection-blocked', {
       stage,
       banId: ban.id,
@@ -111,6 +177,7 @@
     connection.__critterSecurityDirection = direction;
     const metadata = S.identity(connection.metadata?.security || {});
     if (metadata.securityId || metadata.installHash || metadata.username) connection.__critterSecurityIdentity = metadata;
+    const record = registerConnection(connection, direction, metadata);
 
     const nativeSend = typeof connection.send === 'function' ? connection.send.bind(connection) : null;
     if (nativeSend) connection.send = function (data) {
@@ -122,6 +189,7 @@
           connection.__critterFairPlayBanCreated = true;
           const ban = S.autoBan(connection.__critterSecurityIdentity || metadata, message.code || 'FP-REMOVED');
           S.log('fair-play-removal', { code: message.code || 'FP-REMOVED', banId: ban?.id || '', autoBanCreated: !!ban });
+          if (record && ban) updateConnection(record, { banned: true });
         }
         return nativeSend(encode(packet));
       }
@@ -129,29 +197,46 @@
     };
 
     const nativeOn = typeof connection.on === 'function' ? connection.on.bind(connection) : null;
-    if (nativeOn) connection.on = function (event, callback) {
-      if (event !== 'data' || typeof callback !== 'function') return nativeOn(event, callback);
-      return nativeOn('data', data => {
-        const packet = parse(data), message = packet.message;
-        if (message?.type === 'securityBan') {
-          S.log('ban-notice-received', { banId: message.banId || '', banType: message.banType || 'host', reason: message.reason || '' });
-          showBlockScreen(message);
-          setTimeout(() => { try { connection.close(); } catch (_) {} }, 50);
-          return;
-        }
-        if (message?.type === 'profile' && message.profile && typeof message.profile === 'object') {
-          const identity = S.identity(message.profile.security || {});
-          connection.__critterSecurityIdentity = identity;
-          Promise.race([S.ready(), new Promise(resolve => setTimeout(resolve, 1500))]).then(() => {
-            const ban = S.find(identity);
-            if (ban) reject(connection, ban, 'profile');
-            else if (!connection.__critterSecurityRejected) callback(data);
-          });
-          return;
-        }
-        if (!connection.__critterSecurityRejected) callback(data);
+    if (nativeOn) {
+      nativeOn('open', () => updateConnection(record, { status: 'connected' }));
+      nativeOn('close', () => {
+        updateConnection(record, { status: 'closed', closedAt: new Date().toISOString() });
+        setTimeout(() => {
+          const current = connectionRecords.get(record.id);
+          if (current?.status === 'closed') {
+            connectionRecords.delete(record.id);
+            emitSecurityChange();
+          }
+        }, 300000);
       });
-    };
+      nativeOn('error', error => updateConnection(record, { status: 'error', error: S.text(error?.message || 'Connection error', 120) }));
+
+      connection.on = function (event, callback) {
+        if (event !== 'data' || typeof callback !== 'function') return nativeOn(event, callback);
+        return nativeOn('data', data => {
+          const packet = parse(data), message = packet.message;
+          if (message?.type === 'securityBan') {
+            S.log('ban-notice-received', { banId: message.banId || '', banType: message.banType || 'host', reason: message.reason || '' });
+            showBlockScreen(message);
+            updateConnection(record, { status: 'blocked', banned: true });
+            setTimeout(() => { try { connection.close(); } catch (_) {} }, 50);
+            return;
+          }
+          if (message?.type === 'profile' && message.profile && typeof message.profile === 'object') {
+            const identity = S.identity(message.profile.security || {});
+            connection.__critterSecurityIdentity = identity;
+            updateConnection(record, { identity, profile: cleanProfile(message.profile), status: 'connected' });
+            Promise.race([S.ready(), new Promise(resolve => setTimeout(resolve, 1500))]).then(() => {
+              const ban = S.find(identity);
+              if (ban) reject(connection, ban, 'profile');
+              else if (!connection.__critterSecurityRejected) callback(data);
+            });
+            return;
+          }
+          if (!connection.__critterSecurityRejected) callback(data);
+        });
+      };
+    }
     return connection;
   }
 
@@ -192,6 +277,8 @@
             Promise.race([S.ready(), new Promise(resolve => setTimeout(resolve, 1500))]).then(() => {
               const identity = connection.__critterSecurityIdentity || S.identity(connection.metadata?.security || {});
               connection.__critterSecurityIdentity = identity;
+              const record = connectionRecords.get(connection.__critterSecurityConnectionId);
+              if (record) updateConnection(record, { identity });
               const ban = S.find(identity);
               if (ban) reject(connection, ban, 'metadata');
               else callback(connection);
@@ -225,6 +312,22 @@
     }
   }
 
+  S.connections = ({ includeClosed = false, direction = '' } = {}) => [...connectionRecords.values()]
+    .filter(record => includeClosed || record.status !== 'closed')
+    .filter(record => !direction || record.direction === direction)
+    .map(publicConnection);
+  S.connection = id => publicConnection(connectionRecords.get(String(id || '')));
+  S.hostBanConnection = (id, { reason = 'Removed by the room host.', durationMs = 86400000, disconnect = true } = {}) => {
+    const record = connectionRecords.get(String(id || ''));
+    if (!record || record.direction !== 'host-inbound') return null;
+    const identity = record.identity || S.identity(record.connection?.metadata?.security || {});
+    const ban = S.addBan({ identity, reason: S.text(reason, 180) || 'Removed by the room host.', durationMs, source: 'manual' });
+    if (!ban) return null;
+    updateConnection(record, { banned: true });
+    if (disconnect) reject(record.connection, ban, 'manual-host-ban');
+    S.log('host-player-banned', { connectionId: record.id, username: identity.username || '', banId: ban.id });
+    return ban;
+  };
   S.showBanDialog = showBlockScreen;
   S.wrapSecurityConnection = wrapConnection;
   install();
