@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-6';
+  const FASTBOOT_VERSION = '2026-08-03-fastboot-7-new-critters';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -47,6 +47,8 @@
   window.CritterPaths = Object.freeze({ projectRoot, resolve, relative });
   window.__CRITTER_FASTBOOT_VERSION__ = FASTBOOT_VERSION;
 
+  addHint({ path: `core/ui/new-critter-runtime-patch.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
+  addHint({ path: `core/ui/new-critter-appearance.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/game/game-runtime.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/loader/live-patches.bundle.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/loader/game-loader-base.js?v=${FASTBOOT_VERSION}`, as: 'script' });
@@ -134,6 +136,23 @@
 
   window.__CRITTER_CODE_RUNTIME_INTERCEPTOR__ = Object.freeze({ report, patch });
   window.__CRITTER_CODE_CORE_BRIDGE__ = Object.freeze({ report, patchGameCore: patch });
+})();
+
+(() => {
+  'use strict';
+  const load = (id, path, onload) => {
+    if (document.getElementById(id)) { onload?.(); return; }
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = window.CritterPaths.resolve(path);
+    script.async = false;
+    if (onload) script.addEventListener('load', onload, { once:true });
+    script.addEventListener('error', () => console.warn(`Could not load ${path}.`), { once:true });
+    document.head.appendChild(script);
+  };
+  load('new-critter-runtime-patch-loader', 'core/ui/new-critter-runtime-patch.js?v=2026-08-03-1', () => {
+    load('new-critter-appearance-loader', 'core/ui/new-critter-appearance.js?v=2026-08-03-1');
+  });
 })();
 
 (() => {
