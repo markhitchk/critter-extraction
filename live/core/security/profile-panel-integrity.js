@@ -201,6 +201,7 @@
     const style = document.createElement('style');
     style.id = 'profilePanelIntegrityStyles';
     style.textContent = `
+      body #menuScreen nav.lobby-action-dock{display:none!important}
       #accountsModal .profile-local-notice{display:flex!important;align-items:center;gap:8px;margin:8px 0 12px!important;padding:10px 12px!important}
       #accountsModal .profile-local-notice span{color:var(--muted);font-size:10px}
       #accountsModal .profile-missing-notice{display:grid;gap:3px;margin:0 0 10px;padding:11px 12px;border:1px solid rgba(255,211,111,.35);border-radius:12px;background:rgba(255,211,111,.07)}
@@ -230,6 +231,7 @@
   }
 
   function start() {
+    installStyles();
     let attempts = 0;
     const bootRepair = () => {
       repair();
