@@ -21,6 +21,19 @@
     window.CritterNotifications?.push?.({type:'moderation',title:'Chat message filtered',message,source:'Room Chat'});toast('Message censored — private warning added',2600);
   }
   window.__CRITTER_PRIVATE_CHAT_CENSOR_NOTICE__=appendPrivateChatCensorNotice;
+  if(!window.CritterNotifications){
+    window.CritterNotifications={
+      push(data){
+        const account=typeof ensureRecoveryAccount==='function'?ensureRecoveryAccount(activeAccount()):activeAccount();if(!account)return '';
+        if(!Array.isArray(account.notifications))account.notifications=[];
+        const entry={id:'notice-'+uid(),type:safeText(data?.type||'info',24)||'info',title:safeText(data?.title||'Notification',80)||'Notification',body:safeText(data?.message||data?.body||'',240),createdAt:Date.now(),unread:true,status:'info',items:[]};
+        account.notifications.push(entry);account.notifications=account.notifications.slice(-30);saveDB();if(typeof refreshRecoveryNotifications==='function')refreshRecoveryNotifications();
+        window.dispatchEvent(new CustomEvent('critter-notification',{detail:{...entry,message:entry.body}}));return entry.id;
+      },
+      list(){const account=activeAccount();return (Array.isArray(account?.notifications)?account.notifications:[]).map(entry=>({...deepCopy(entry),message:entry.body||''}));},
+      open(){if(window.__CRITTER_RECOVERY__?.open)window.__CRITTER_RECOVERY__.open();}
+    };
+  }
 `;
       source=source.replace(audienceAnchor,helpers+audienceAnchor);
     }else console.warn('Optional LIVE patch missing: private chat censorship helper anchor');
