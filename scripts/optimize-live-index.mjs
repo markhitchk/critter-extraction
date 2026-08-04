@@ -35,8 +35,8 @@ html = html
   .replace(/\n?<script src="\.\/core\/security\/profile-panel-integrity\.js(?:\?v=[^"]*)?"[^>]*><\/script>/g, '')
   .replace('<script src="./core/shared/github-issues.js"></script>', '<script defer src="./core/shared/github-issues.js"></script>')
   .replace('<script src="./core/ui/github-feedback.js"></script>', '<script defer src="./core/ui/github-feedback.js"></script>')
-  .replace(/(<span id="(?:host|join)LobbyCount">)1\s*\/\s*4(<\/span>)/g, '$11 / 8$2')
-  .replace(/(<input id="joinRoomPin"[^>]*maxlength=")\d+("[^>]*>)/, '$16$2')
+  .replace(/(<span id="(?:host|join)LobbyCount">)1\s*\/\s*4(<\/span>)/g, (_match, open, close) => `${open}1 / 8${close}`)
+  .replace(/(<input id="joinRoomPin"[^>]*maxlength=")\d+("[^>]*>)/, (_match, before, after) => `${before}6${after}`)
   .replace('One host and up to three guests join with a six-digit room code.', 'One host and up to seven guests join with a six-digit room code.');
 
 if (!html.includes(`game-loader.js?v=${version}&loader=${loaderRevision}`)) {
