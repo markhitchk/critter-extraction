@@ -91,15 +91,44 @@
     });
   }
 
+  // Wrapper to avoid indefinite hanging when a script never fires onload.
+  // Uses a timeout and ensures the original loadScript resolution/rejection clears the timer.
+  function loadScriptWithTimeout(url, label, attributes = {}, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        const error = new Error(`${label} did not finish loading within ${timeoutMs}ms`);
+        error.code = 'CE-BOOT-TIMEOUT-002';
+        error.sourceRaw = url;
+        reject(error);
+      }, timeoutMs);
+
+      loadScript(url, label, attributes).then(res => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(res);
+      }).catch(err => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
+
   async function loadSecurity() {
     report('core-loading', 'Loading Fair Play and profile security…', 30);
     for (let index = 0; index < SECURITY_FILES.length; index += 1) {
       const file = SECURITY_FILES[index];
       if (!fileReady(file)) {
-        await loadScript(securityUrl(file), `security file ${file}`, {
+        // Use timeout wrapper to fail fast if a security script stalls
+        await loadScriptWithTimeout(securityUrl(file), `security file ${file}`, {
           requiredBootFile: `core/security/${file}`,
           critterSecurityFile: file
-        });
+        }, 15000);
       }
       if (!fileReady(file)) {
         const error = new Error(`Security file loaded but did not initialize: ${file}`);
@@ -163,10 +192,11 @@
       await loadSecurity();
 
       report('game-script-started', 'Loading the updated game runtime and main-menu UI…', 56);
-      await loadScript(RUNTIME, 'updated game runtime', {
+      // runtime may be larger/slower; give it a slightly longer timeout
+      await loadScriptWithTimeout(RUNTIME, 'updated game runtime', {
         requiredBootFile: 'core/game/game-runtime.js',
         critterRuntime: 'updated-ui-runtime'
-      });
+      }, 30000);
 
       if (!window.__CRITTER_DIAGNOSTICS__ && !window.__CRITTER_DEBUG__) {
         const error = new Error('The updated game runtime file loaded but did not initialize the game systems.');
@@ -176,10 +206,10 @@
       }
 
       report('game-initialized', 'Restoring the updated profile and security interface…', 86);
-      await loadScript(PROFILE_PANEL, 'updated profile interface', {
+      await loadScriptWithTimeout(PROFILE_PANEL, 'updated profile interface', {
         requiredBootFile: 'core/security/profile-panel-integrity.js',
         critterSecurityFile: 'profile-panel-integrity.js'
-      });
+      }, 15000);
       if (!window.__CRITTER_PROFILE_MANAGER_V2__) {
         const error = new Error('The updated profile interface loaded but did not initialize.');
         error.code = 'CE-BOOT-INIT-001';
