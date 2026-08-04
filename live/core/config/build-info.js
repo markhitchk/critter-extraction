@@ -13,8 +13,8 @@
     'profile-panel-integrity.js'
   ];
   const src = file => window.CritterPaths?.resolve
-    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.1`)
-    : `./core/security/${file}?v=1.0.1`;
+    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.2`)
+    : `./core/security/${file}?v=1.0.2`;
 
   if (document.readyState === 'loading') {
     for (const file of files) {
