@@ -1,9 +1,11 @@
-/* Harley's Studios — new Critter Code character Appearance integration. */
+/* Harley's Studios — Critter Code Appearance integration v3. */
 (() => {
   'use strict';
-  if (window.__NEW_CRITTER_APPEARANCE_V2__) return;
-  window.__NEW_CRITTER_APPEARANCE_V2__ = true;
+  if (window.__NEW_CRITTER_APPEARANCE_V3__) return;
+  window.__NEW_CRITTER_APPEARANCE_V3__ = true;
 
+  const STORAGE_KEY = 'critterExtractionInventory';
+  const STARTERS = new Set(['puppy','bunny','kitty','fox','panda','bear','raccoon','redpanda']);
   const DEFINITIONS = Object.freeze({
     penguin:{name:'Penguin',body:'#26364b',accent:'#f4f7fb',asset:'penguin.svg',aliases:['penguin','penguinparty','critter_penguin']},
     crow:{name:'Crow',body:'#202430',accent:'#515a70',asset:'crow.svg',aliases:['crow','crowcollector','critter_crow']},
@@ -12,44 +14,86 @@
     capybara:{name:'Capybara',body:'#ad7651',accent:'#6d4734',asset:'capybara.svg',aliases:['capybara','capybarachill','critter_capybara']},
     axolotl:{name:'Axolotl',body:'#f1a9bd',accent:'#cf638f',asset:'axolotl.svg',aliases:['axolotl','axolotlaqua','critter_axolotl']}
   });
-  const STARTERS = new Set(['puppy','bunny','kitty','fox','panda','bear','raccoon','redpanda']);
-  const STORAGE_KEY = 'critterExtractionInventory';
-  let scheduled = false;
+  const controlIds = ['species','bodyColor','accentColor','accessory','eyeStyle'];
+  let refreshQueued = false;
 
-  function account() {
-    try {
-      const db = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      return db?.accounts?.find(item => item?.id === db.activeId) || db?.accounts?.[0] || null;
-    } catch (_) { return null; }
+  function readDb() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+    catch (_) { return null; }
+  }
+  function activeAccount(db = readDb()) {
+    return db?.accounts?.find(item => item?.id === db.activeId) || db?.accounts?.[0] || null;
   }
   function flatten(value, seen = new Set()) {
     if (value == null) return '';
     if (typeof value !== 'object') return String(value).toLowerCase();
     if (seen.has(value)) return '';
     seen.add(value);
-    return Object.entries(value).map(([key, item]) => `${key} ${flatten(item, seen)}`).join(' ').toLowerCase();
+    return Object.entries(value).map(([key,item]) => `${key} ${flatten(item, seen)}`).join(' ').toLowerCase();
   }
   function owns(id) {
+    id = String(id || '').toLowerCase();
     if (STARTERS.has(id)) return true;
     const def = DEFINITIONS[id];
     if (!def) return false;
-    const haystack = flatten(account());
+    const haystack = flatten(activeAccount());
     return def.aliases.some(alias => haystack.includes(alias));
+  }
+  function validColor(value, fallback) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
   }
   function assetUrl(file) {
     return window.CritterPaths?.resolve?.(`assets/characters/${file}`) || `./assets/characters/${file}`;
   }
-  function cardSpecies(card) {
-    const direct = card?.dataset?.species || card?.dataset?.character || card?.getAttribute?.('data-value');
-    if (direct) return String(direct).toLowerCase().replace(/[^a-z]/g, '');
-    const text = String(card?.textContent || '').toLowerCase();
-    return Object.entries(DEFINITIONS).find(([, def]) => text.includes(def.name.toLowerCase()))?.[0] || '';
+  function persistControls() {
+    const species = document.getElementById('species');
+    const body = document.getElementById('bodyColor');
+    const accent = document.getElementById('accentColor');
+    const accessory = document.getElementById('accessory');
+    const eyes = document.getElementById('eyeStyle');
+    if (!species || !body || !accent || !accessory || !eyes) return false;
+    const id = String(species.value || 'puppy').toLowerCase();
+    if (!owns(id)) return false;
+    const db = readDb(), account = activeAccount(db);
+    if (!db || !account) return false;
+    const def = DEFINITIONS[id] || {};
+    account.appearance = {
+      ...(account.appearance || {}),
+      species:id,
+      bodyColor:validColor(body.value, def.body || '#d9a06f'),
+      accentColor:validColor(accent.value, def.accent || '#7b4d35'),
+      accessory:String(accessory.value || 'none'),
+      eyeStyle:String(eyes.value || 'dot')
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      window.dispatchEvent(new CustomEvent('critter-appearance-updated', { detail:{ ...account.appearance } }));
+      return true;
+    } catch (_) { return false; }
+  }
+  function updatePreview() {
+    const select = document.getElementById('species');
+    const body = document.getElementById('bodyColor');
+    const accent = document.getElementById('accentColor');
+    const preview = document.getElementById('critterPreviewAsset');
+    const shell = document.getElementById('critterPreview');
+    if (!select) return;
+    const id = String(select.value || '').toLowerCase(), def = DEFINITIONS[id];
+    if (def && owns(id) && preview) {
+      const src = assetUrl(def.asset);
+      if (preview.src !== src) preview.src = src;
+      preview.alt = `${def.name} critter preview`;
+    }
+    if (shell) {
+      shell.style.setProperty('--critter-body-color', validColor(body?.value, def?.body || '#d9a06f'));
+      shell.style.setProperty('--critter-accent-color', validColor(accent?.value, def?.accent || '#7b4d35'));
+    }
   }
   function refreshNow() {
-    scheduled = false;
+    refreshQueued = false;
     const select = document.getElementById('species');
     if (!select) return;
-    for (const [id, def] of Object.entries(DEFINITIONS)) {
+    for (const [id,def] of Object.entries(DEFINITIONS)) {
       let option = [...select.options].find(item => item.value === id);
       if (!option) {
         option = document.createElement('option');
@@ -57,77 +101,62 @@
         select.appendChild(option);
       }
       const unlocked = owns(id);
-      const label = unlocked ? def.name : `🔒 ${def.name} — Critter Code`;
-      if (option.disabled !== !unlocked) option.disabled = !unlocked;
-      if (option.textContent !== label) option.textContent = label;
+      option.disabled = !unlocked;
+      option.textContent = unlocked ? def.name : `🔒 ${def.name} — Critter Code`;
     }
-
-    const roster = document.getElementById('characterRoster');
-    if (roster) {
-      for (const card of roster.querySelectorAll('button,[role="option"],label,.character-card,.character-option')) {
-        const id = cardSpecies(card);
-        if (!DEFINITIONS[id]) continue;
-        const locked = !owns(id);
-        if (card.dataset.critterLocked !== String(locked)) card.dataset.critterLocked = String(locked);
-        card.setAttribute('aria-disabled', String(locked));
-        card.classList.toggle('critter-locked', locked);
-        let badge = card.querySelector('.new-critter-lock');
-        if (locked && !badge) {
-          badge = document.createElement('span');
-          badge.className = 'new-critter-lock';
-          badge.innerHTML = '<b>🔒</b><small>Unlock with a Critter Code</small>';
-          card.appendChild(badge);
-        } else if (!locked && badge) badge.remove();
-      }
+    for (const id of controlIds) {
+      const control = document.getElementById(id);
+      if (control && id !== 'species') control.disabled = false;
     }
-
-    const id = String(select.value || '').toLowerCase();
-    const def = DEFINITIONS[id];
-    if (def && owns(id)) {
-      const preview = document.getElementById('critterPreviewAsset');
-      if (preview && !preview.src.endsWith(`/assets/characters/${def.asset}`)) {
-        preview.src = assetUrl(def.asset);
-        preview.alt = `${def.name} critter preview`;
-      }
-    }
+    updatePreview();
   }
   function refresh() {
-    if (scheduled) return;
-    scheduled = true;
+    if (refreshQueued) return;
+    refreshQueued = true;
     requestAnimationFrame(refreshNow);
+  }
+  function onSpeciesChange() {
+    const select = document.getElementById('species');
+    const def = DEFINITIONS[String(select?.value || '').toLowerCase()];
+    if (def && owns(select.value)) {
+      const body = document.getElementById('bodyColor');
+      const accent = document.getElementById('accentColor');
+      if (body) body.value = def.body;
+      if (accent) accent.value = def.accent;
+    }
+    setTimeout(() => { persistControls(); updatePreview(); }, 0);
   }
   function install() {
     if (!document.getElementById('newCritterAppearanceStyles')) {
       const style = document.createElement('style');
       style.id = 'newCritterAppearanceStyles';
-      style.textContent = `#characterRoster{max-height:min(44vh,430px);overflow:auto;align-content:start;padding-right:5px;scrollbar-gutter:stable}#characterRoster [data-critter-locked="true"]{position:relative;filter:saturate(.35);opacity:.68;cursor:not-allowed!important}.new-critter-lock{position:absolute;inset:auto 7px 7px;display:grid;place-items:center;gap:1px;padding:5px 7px;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(7,10,20,.88);color:#fff;pointer-events:none;text-align:center}.new-critter-lock small{font-size:8px;line-height:1.15}@media(max-width:760px){#characterRoster{max-height:38vh}.expanded-customize{grid-template-columns:1fr!important}.critter-preview{min-height:210px}}`;
+      style.textContent = `#characterRoster{max-height:min(44vh,430px);overflow:auto;align-content:start;padding-right:5px;scrollbar-gutter:stable}.critter-preview{background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--critter-accent-color,#64e8ea) 28%,transparent),transparent 58%),linear-gradient(145deg,color-mix(in srgb,var(--critter-body-color,#26364b) 18%,#11182a),#0a1020)!important}.customize-controls input[type="color"],.customize-controls select{pointer-events:auto!important;opacity:1!important;filter:none!important}.customize-controls input[type="color"]{min-height:46px;cursor:pointer}@media(max-width:760px){#characterRoster{max-height:38vh}.expanded-customize{grid-template-columns:1fr!important}.critter-preview{min-height:210px}}`;
       document.head.appendChild(style);
     }
-    document.addEventListener('click', event => {
-      const locked = event.target.closest?.('[data-critter-locked="true"]');
-      if (!locked) return;
+    const form = document.getElementById('customizeForm');
+    const species = document.getElementById('species');
+    species?.addEventListener('change', onSpeciesChange);
+    for (const id of ['bodyColor','accentColor','accessory','eyeStyle']) {
+      const control = document.getElementById(id);
+      control?.addEventListener('input', () => { updatePreview(); setTimeout(persistControls, 0); });
+      control?.addEventListener('change', () => { updatePreview(); setTimeout(persistControls, 0); });
+    }
+    form?.addEventListener('submit', event => {
+      if (!species || owns(species.value)) {
+        persistControls();
+        return;
+      }
       event.preventDefault();
       event.stopImmediatePropagation();
-      window.CritterCodes?.open?.();
-    }, true);
-    document.getElementById('customizeForm')?.addEventListener('submit', event => {
-      const select = document.getElementById('species');
-      if (!select || owns(select.value)) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      select.value = 'puppy';
+      species.value = 'puppy';
       refresh();
     }, true);
-    document.getElementById('species')?.addEventListener('change', refresh);
-    new MutationObserver(refresh).observe(document.body, { childList:true, subtree:true });
     addEventListener('storage', refresh);
     addEventListener('focus', refresh);
-    addEventListener('critter-codes-api-ready', refresh);
-    addEventListener('critter-codes-runtime-exported', refresh);
     addEventListener('critter-code-redeemed', refresh);
     document.addEventListener('critter-code-redeemed', refresh);
     refresh();
   }
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', install, { once:true }) : install();
-  window.NewCritterAppearance = Object.freeze({ definitions:DEFINITIONS, owns, refresh });
+  window.NewCritterAppearance = Object.freeze({ definitions:DEFINITIONS, owns, refresh, save:persistControls });
 })();
