@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Redeem Critter Code | Critter Extraction</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07111f;--panel:#101d31;--panel2:#0b1628;--line:rgba(118,235,236,.35);--cyan:#76ebec;--mint:#82f1c3;--gold:#ffd878;--text:#f4fbff;--muted:#aebbd0;--danger:#ff94ab}
+    *{box-sizing:border-box}html{min-height:100%;background:var(--bg)}body{min-height:100vh;margin:0;color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 18% 8%,rgba(71,218,226,.17),transparent 32rem),radial-gradient(circle at 84% 90%,rgba(124,104,255,.13),transparent 34rem),linear-gradient(155deg,#07111f,#080d19 62%,#11142b);display:grid;place-items:center;padding:clamp(16px,4vw,42px)}
+    button,input{font:inherit}.shell{width:min(980px,100%);display:grid;grid-template-columns:minmax(0,1.18fr) minmax(270px,.82fr);overflow:hidden;border:1px solid var(--line);border-radius:30px;background:rgba(9,18,32,.9);box-shadow:0 30px 90px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.035);backdrop-filter:blur(22px)}
+    .hero{position:relative;min-height:630px;padding:clamp(30px,6vw,72px);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:linear-gradient(145deg,rgba(12,29,49,.97),rgba(8,18,32,.97))}.hero:before{content:"";position:absolute;width:460px;height:460px;right:-180px;top:-190px;border-radius:50%;background:radial-gradient(circle,rgba(118,235,236,.28),transparent 68%)}.hero>*{position:relative;z-index:1}
+    .brand{display:flex;align-items:center;gap:13px}.brand img{width:58px;height:58px;object-fit:contain;border:1px solid rgba(118,235,236,.38);border-radius:18px;background:rgba(255,255,255,.04);padding:7px}.brand strong{display:block;font-size:18px}.brand span,.eyebrow{color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+    h1{max-width:650px;margin:42px 0 18px;font-size:clamp(43px,7vw,78px);line-height:.94;letter-spacing:-.055em;text-wrap:balance}.lead{max-width:610px;margin:0;color:#cfdaea;font-size:clamp(15px,1.8vw,18px);line-height:1.68}.feature-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}.feature-row span{padding:8px 10px;border:1px solid rgba(255,255,255,.11);border-radius:999px;background:rgba(255,255,255,.035);color:#dce7f5;font-size:10px;font-weight:800}.feature-row span:before{content:"";display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint)}
+    .target{margin-top:36px;padding:14px 16px;border:1px solid rgba(118,235,236,.2);border-radius:16px;background:rgba(118,235,236,.055)}.target small{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.target strong{display:block;margin-top:3px;color:var(--cyan);font-size:19px;overflow-wrap:anywhere}.target p{margin:6px 0 0;color:var(--muted);font-size:11px}
+    .terminal{display:flex;flex-direction:column;justify-content:center;padding:clamp(25px,4vw,44px);background:linear-gradient(180deg,rgba(14,25,44,.98),rgba(8,16,29,.98))}.terminal-card{padding:24px;border:1px solid rgba(255,255,255,.1);border-radius:23px;background:rgba(255,255,255,.035)}.terminal h2{margin:5px 0 8px;font-size:27px}.terminal-copy{margin:0 0 21px;color:var(--muted);font-size:12px}.status{display:flex;align-items:flex-start;gap:9px;min-height:42px;margin-bottom:16px;padding:11px 12px;border:1px solid rgba(255,216,120,.2);border-radius:13px;background:rgba(255,216,120,.055);color:#e5d6ac;font-size:11px}.status:before{content:"";width:8px;height:8px;margin-top:4px;flex:0 0 auto;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}.status.ready{border-color:rgba(130,241,195,.25);background:rgba(130,241,195,.06);color:#bdf5da}.status.ready:before{background:var(--mint);box-shadow:0 0 11px var(--mint)}.status.error{border-color:rgba(255,148,171,.28);background:rgba(255,148,171,.07);color:#ffc0ce}.status.error:before{background:var(--danger);box-shadow:0 0 11px var(--danger)}
+    form{display:grid;gap:12px}label{display:grid;gap:7px;color:#dffeff;font-size:10px;font-weight:900;letter-spacing:.14em}input{width:100%;height:58px;padding:0 15px;color:#fff;font:900 18px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;text-align:center;text-transform:uppercase;letter-spacing:.1em;border:1px solid rgba(118,235,236,.35);border-radius:15px;outline:none;background:#07101e}input:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(118,235,236,.1)}button{min-height:52px;padding:0 18px;border-radius:14px;font-weight:900;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.primary{color:#061519;border:1px solid #8ff7e2;background:linear-gradient(135deg,#8ff7e2,#67dbe4);box-shadow:0 12px 28px rgba(103,219,228,.15)}.secondary{color:var(--text);border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.message{min-height:43px;margin:0;padding-top:4px;color:var(--muted);font-size:12px}.message.success{color:var(--mint)}.message.error{color:var(--danger)}.small-note{margin:19px 0 0;color:#8795aa;font-size:10px;line-height:1.55}.links{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}.links a{color:#dceafa;font-size:11px;text-decoration:none}.links a:hover{color:var(--cyan)}
+    @media(max-width:780px){body{padding:0}.shell{grid-template-columns:1fr;border-radius:0;min-height:100vh}.hero{min-height:auto;padding:28px 22px}.hero h1{margin-top:34px}.terminal{padding:22px}.target{margin-top:28px}}@media(max-width:430px){.brand img{width:48px;height:48px}.terminal-card{padding:18px}.actions{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="brand"><img src="../assets/branding/HTG.png" alt="Harley's Studios"><div><span>Harley's Studios</span><strong>Critter Extraction</strong></div></div>
+        <h1>Unlock something wild.</h1>
+        <p class="lead">Enter a Critter Code to claim permanent animals, cosmetics, trails, titles, Petals, crates, and event rewards for the active profile saved in this browser.</p>
+        <div class="feature-row"><span>Permanent rewards</span><span>Profile saved</span><span>Fair Play checked</span></div>
+      </div>
+      <div id="targetCard" class="target"><small>Redeeming for</small><strong id="targetName">Active local profile</strong><p id="targetNote">The active Critter Extraction profile in this browser receives the reward.</p></div>
+    </section>
+
+    <section class="terminal" aria-labelledby="redeemTitle">
+      <div class="terminal-card">
+        <span class="eyebrow">Secure Rewards Terminal</span>
+        <h2 id="redeemTitle">Redeem Critter Code</h2>
+        <p class="terminal-copy">Codes ignore capitalization, spaces, and hyphens.</p>
+        <div id="runtimeStatus" class="status" role="status" aria-live="polite">Loading the Critter Codes reward system…</div>
+        <form id="redeemForm" novalidate>
+          <label for="codeInput">CRITTER CODE</label>
+          <input id="codeInput" name="code" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PENGUINPARTY" disabled>
+          <button id="redeemButton" class="primary" type="submit" disabled>Redeem Code</button>
+          <p id="redeemMessage" class="message" aria-live="polite">Waiting for the secure runtime.</p>
+        </form>
+        <div class="actions"><button id="openRewards" class="secondary" type="button" disabled>View Rewards</button><button id="backToGame" class="secondary" type="button">Back to Game</button></div>
+        <p class="small-note">A username in the URL is a display and safety check only. This static browser build cannot remotely modify another person's profile. Rewards always go to the active profile stored on this browser.</p>
+        <nav class="links" aria-label="More information"><a href="../../docs/CRITTER-CODES.md">Public code list</a><a href="../">Open Critter Extraction</a></nav>
+      </div>
+    </section>
+  </main>
+
+  <script src="../core/boot/project-paths.js?v=2026-08-03-redeem-1"></script>
+  <script>
+  (() => {
+    'use strict';
+    const STORAGE_KEY='critterExtractionInventory';
+    const status=document.getElementById('runtimeStatus');
+    const form=document.getElementById('redeemForm');
+    const input=document.getElementById('codeInput');
+    const submit=document.getElementById('redeemButton');
+    const message=document.getElementById('redeemMessage');
+    const rewards=document.getElementById('openRewards');
+    const targetName=document.getElementById('targetName');
+    const targetNote=document.getElementById('targetNote');
+
+    function clean(value,max=32){return String(value||'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,max)}
+    function requestedUser(){
+      const raw=decodeURIComponent(location.search.slice(1));
+      if(raw.startsWith('@'))return clean(raw.slice(1));
+      const params=new URLSearchParams(location.search);
+      return clean(params.get('username')||params.get('user')||'').replace(/^@/,'');
+    }
+    function activeAccount(){
+      try{const db=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');return db?.accounts?.find(account=>account?.id===db.activeId)||db?.accounts?.[0]||null}catch(_){return null}
+    }
+    function showTarget(){
+      const requested=requestedUser(),account=activeAccount();
+      const local=clean(account?.username||account?.displayName||'');
+      if(requested){
+        targetName.textContent='@'+requested;
+        if(!account)targetNote.textContent='No active local profile was found. Open the game and create or import this profile first.';
+        else if(local&&local.toLowerCase()!==requested.toLowerCase())targetNote.textContent=`This browser is currently using @${local}. Rewards will go to that local profile, not a remote @${requested} account.`;
+        else targetNote.textContent='The requested username matches the active local profile in this browser.';
+      }else if(account){
+        targetName.textContent=local?'@'+local:clean(account.displayName||'Active profile');
+        targetNote.textContent='Rewards will be saved to this active local profile.';
+      }
+    }
+    function setStatus(text,tone='') {status.textContent=text;status.className=`status ${tone}`.trim()}
+    function setMessage(text,tone=''){message.textContent=text;message.className=`message ${tone}`.trim()}
+    function enable(){setStatus('Critter Codes ready. Enter a code below.','ready');input.disabled=false;submit.disabled=false;rewards.disabled=typeof window.CritterCodes?.openRewards!=='function';setMessage('Your reward will be saved to the active local profile.');input.focus()}
+    function diagnostic(){const bridge=window.__CRITTER_CODES_API_BRIDGE__?.state?.();return bridge?.lastError||window.__CRITTER_CODES_RUNTIME_EXPORT_ERROR__||window.CritterCodesEntry?.state?.().detail||''}
+    function waitForApi(){
+      const started=performance.now();
+      const check=()=>{
+        if(typeof window.CritterCodes?.redeem==='function'){enable();return}
+        window.__CRITTER_CODES_API_BRIDGE__?.refresh?.();
+        if(performance.now()-started>30000){const detail=diagnostic();setStatus('The Critter Codes reward system could not initialize.','error');setMessage(detail||'Reload this page after the latest game update has deployed.','error');return}
+        setTimeout(check,80);
+      };
+      check();
+    }
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const code=clean(input.value,64);
+      if(!code){setMessage('Enter a Critter Code first.','error');input.focus();return}
+      if(typeof window.CritterCodes?.redeem!=='function'){setMessage('The reward system is not ready yet.','error');return}
+      submit.disabled=true;input.disabled=true;setMessage('Checking code…');
+      try{
+        const result=await window.CritterCodes.redeem(code);
+        input.value='';
+        const count=Array.isArray(result?.rewards)?result.rewards.length:0;
+        setMessage(count?`Code redeemed. ${count} reward${count===1?'':'s'} added to this profile.`:'Code redeemed. Your rewards were added to this profile.','success');
+        rewards.disabled=typeof window.CritterCodes?.openRewards!=='function';
+      }catch(error){
+        const messages={invalid_code:'That Critter Code is not valid.',already_redeemed:'This profile already redeemed that code.',expired_code:'That Critter Code has expired.',disabled_code:'That Critter Code is disabled.',not_active:'That Critter Code is not active yet.',version_locked:'Update Critter Extraction before using this code.',profile_corrupt:'The active profile could not safely store rewards.',reward_definition_missing:'This reward bundle is temporarily unavailable.'};
+        setMessage(messages[error?.message]||'The code could not be redeemed. Try again.','error');
+      }finally{submit.disabled=false;input.disabled=false;input.focus()}
+    });
+    rewards.addEventListener('click',()=>window.CritterCodes?.openRewards?.());
+    document.getElementById('backToGame').addEventListener('click',()=>location.href='../');
+    window.addEventListener('critter-codes-api-ready',enable);
+    window.addEventListener('critter-codes-runtime-exported',()=>window.__CRITTER_CODES_API_BRIDGE__?.refresh?.());
+    showTarget();waitForApi();
+  })();
+  </script>
+</body>
+</html>
