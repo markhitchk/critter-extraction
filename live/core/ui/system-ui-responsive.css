@@ -1,3 +1,5 @@
+@import url("./system-ui-main-menu-fit.css?v=2026-08-03-main-menu-fit-1");
+
 /* Responsive behavior */
 @media(max-width:1120px){
   .critter-ui-refresh .lobby-shell{grid-template-columns:minmax(0,1fr) 330px}
