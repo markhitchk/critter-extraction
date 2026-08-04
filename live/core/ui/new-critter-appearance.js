@@ -1,8 +1,8 @@
-/* Harley's Studios — Appearance scrolling and Critter Code locks v4. */
+/* Harley's Studios — Appearance scrolling and Critter Code locks v5. */
 (() => {
   'use strict';
-  if (window.__NEW_CRITTER_APPEARANCE_V4__) return;
-  window.__NEW_CRITTER_APPEARANCE_V4__ = true;
+  if (window.__NEW_CRITTER_APPEARANCE_V5__) return;
+  window.__NEW_CRITTER_APPEARANCE_V5__ = true;
 
   const STORAGE_KEY = 'critterExtractionInventory';
   const STARTERS = new Set(['puppy','bunny','kitty','fox','panda','bear']);
@@ -14,7 +14,8 @@
     frog:{name:'Frog',body:'#71b85a',accent:'#d6ee8e',asset:'frog.svg',keys:['frog','critter_frog','b05']},
     arcticfox:{name:'Arctic Fox',body:'#eef5fb',accent:'#b9d4e8',asset:'arcticfox.svg',keys:['arcticfox','arctic_fox','critter_arctic_fox','b07']},
     capybara:{name:'Capybara',body:'#ad7651',accent:'#6d4734',asset:'capybara.svg',keys:['capybara','critter_capybara','b08']},
-    axolotl:{name:'Axolotl',body:'#f1a9bd',accent:'#cf638f',asset:'axolotl.svg',keys:['axolotl','critter_axolotl','b09']}
+    axolotl:{name:'Axolotl',body:'#f1a9bd',accent:'#cf638f',asset:'axolotl.svg',keys:['axolotl','critter_axolotl','b09']},
+    otter:{name:'Otter',body:'#765039',accent:'#d7aa7c',asset:'otter.svg',keys:['otter','critter_otter','b11']}
   });
   const OWNERSHIP_KEY = /owned|ownership|unlock|redeem|claim|reward|code|bundle/i;
   let queued = false;
@@ -77,6 +78,16 @@
     return window.CritterPaths?.resolve?.(`assets/characters/${file}`) || `./assets/characters/${file}`;
   }
 
+  function loadOtterRewardExtension() {
+    if (window.CritterCodesOtter || document.getElementById('critter-codes-otter-loader')) return;
+    const script = document.createElement('script');
+    script.id = 'critter-codes-otter-loader';
+    script.async = false;
+    script.src = window.CritterPaths?.resolve?.('core/rewards/critter-codes-otter.js?v=1.0.0') || '../rewards/critter-codes-otter.js?v=1.0.0';
+    script.addEventListener('error', () => console.warn('The Otter Critter Code extension could not be loaded.'), { once:true });
+    document.head.appendChild(script);
+  }
+
   function persistControls() {
     const species = document.getElementById('species');
     const body = document.getElementById('bodyColor');
@@ -94,7 +105,8 @@
       bodyColor:validColor(body.value, reward.body || '#d9a06f'),
       accentColor:validColor(accent.value, reward.accent || '#7b4d35'),
       accessory:String(accessory.value || 'none'),
-      eyeStyle:String(eyes.value || 'dot')
+      eyeStyle:String(eyes.value || 'dot'),
+      rewardCritterId:reward ? `critter_${id}` : ''
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
@@ -194,6 +206,7 @@
   }
 
   function install() {
+    loadOtterRewardExtension();
     if (!document.getElementById('newCritterAppearanceStyles')) {
       const style = document.createElement('style');
       style.id = 'newCritterAppearanceStyles';
