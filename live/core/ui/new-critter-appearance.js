@@ -106,7 +106,7 @@
       accentColor:validColor(accent.value, reward.accent || '#7b4d35'),
       accessory:String(accessory.value || 'none'),
       eyeStyle:String(eyes.value || 'dot'),
-      rewardCritterId:reward ? `critter_${id}` : ''
+      rewardCritterId:REWARDS[id] ? `critter_${id}` : ''
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
