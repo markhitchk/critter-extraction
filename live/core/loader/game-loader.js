@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION='2026-08-03-ui-security-v7-chat-minimap-10';
+  const VERSION='2026-08-03-ui-security-v7-chat-minimap-11';
   const BASE=`./core/loader/game-loader-base.js?v=${VERSION}`;
   const MODULES=['./core/loader/live-arena-patch-1.js','./core/loader/live-arena-patch-2.js','./core/loader/live-arena-patch-3.js','./core/loader/live-multiplayer-ui-patch.js','./core/loader/live-host-disconnect-patch.js','./core/loader/live-webrtc-stability-patch.js','./core/loader/live-arena-respawn-patch.js','./core/loader/live-minimap-revamp-patch.js','./core/loader/live-inventory-grid-patch.js','./core/loader/live-profile-security-patch.js','./core/loader/live-profile-security-cache-patch.js','./core/loader/live-profile-legacy-export-fix-patch.js','./core/loader/live-ui-security-polish-patch.js','./core/loader/live-viewport-chat-fix-patch.js','./core/loader/live-inventory-modal-final-fix.js','./core/loader/live-network-status-panel-fix.js','./core/loader/live-host-peer-pings-fix.js','./core/loader/live-all-player-pings-fix.js','./core/loader/live-recovery-fairplay-compat-patch.js','./core/loader/live-recovery-notifications-patch.js','./core/loader/live-private-chat-censor-notice-fix.js','./core/loader/live-coop-pause-redesign-fix.js'].map(url=>`${url}?v=${VERSION}`);
   const nativeFetch=window.fetch.bind(window);
@@ -13,6 +13,10 @@
       const fallback=/account\.securityTrust\s*=\s*'encrypted-v6';(?=\s*account\.securityRevision)/;
       if(fallback.test(source))return source.replace(fallback,"account.securityTrust = 'encrypted-v7';");
       console.warn('Optional LIVE patch missing: v7 export trust label; secure export remains compatible');
+      return source;
+    }
+    if((name==='protect remaining players after fair play removal'||name==='handle recovery protection and disqualify removed cheater')&&!matches.length){
+      console.warn(`Optional LIVE patch missing: ${name}; Fair Play compatibility was already normalized`);
       return source;
     }
     if(name==='dynamic match badge'&&matches.length){
