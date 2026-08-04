@@ -1,0 +1,148 @@
+/* Main-menu content containment fixes
+   Keeps Quick Access and Career content inside their cards at every supported width. */
+
+.critter-ui-refresh #menuScreen .lobby-sidebar,
+.critter-ui-refresh #menuScreen .lobby-sidebar > .panel,
+.critter-ui-refresh #menuScreen .stats-panel,
+.critter-ui-refresh #menuScreen .lobby-action-dock,
+.critter-ui-refresh #menuScreen .dashboard-action-panel,
+.critter-ui-refresh #menuScreen .quick-access-panel,
+.critter-ui-refresh #menuScreen .quick-actions-panel,
+.critter-ui-refresh #menuScreen .lobby-dock-button {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Quick Access */
+.critter-ui-refresh #menuScreen .lobby-action-dock,
+.critter-ui-refresh #menuScreen .dashboard-action-panel,
+.critter-ui-refresh #menuScreen .quick-access-panel,
+.critter-ui-refresh #menuScreen .quick-actions-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.critter-ui-refresh #menuScreen .lobby-action-dock::before,
+.critter-ui-refresh #menuScreen .dashboard-action-panel::before,
+.critter-ui-refresh #menuScreen .quick-access-panel::before,
+.critter-ui-refresh #menuScreen .quick-actions-panel::before {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.critter-ui-refresh #menuScreen .lobby-dock-button {
+  width: 100%;
+  overflow: hidden;
+  align-content: center;
+}
+
+.critter-ui-refresh #menuScreen .lobby-dock-button strong,
+.critter-ui-refresh #menuScreen .lobby-dock-button small {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.critter-ui-refresh #menuScreen .lobby-dock-button strong {
+  line-height: 1.2;
+}
+
+.critter-ui-refresh #menuScreen .lobby-dock-button small {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.3;
+}
+
+/* Career */
+.critter-ui-refresh #menuScreen .stats-panel .panel-heading,
+.critter-ui-refresh #menuScreen .lobby-stats-card .panel-heading {
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .panel-heading > div,
+.critter-ui-refresh #menuScreen .lobby-stats-card .panel-heading > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .panel-heading h2,
+.critter-ui-refresh #menuScreen .lobby-stats-card .panel-heading h2,
+.critter-ui-refresh #menuScreen .stats-panel .panel-heading .pill,
+.critter-ui-refresh #menuScreen .lobby-stats-card .panel-heading .pill {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .stat-grid,
+.critter-ui-refresh #menuScreen .lobby-stats-card .stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .stat-grid > div,
+.critter-ui-refresh #menuScreen .lobby-stats-card .stat-grid > div {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .stat-grid strong,
+.critter-ui-refresh #menuScreen .lobby-stats-card .stat-grid strong {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.critter-ui-refresh #menuScreen .stats-panel .stat-grid span,
+.critter-ui-refresh #menuScreen .lobby-stats-card .stat-grid span {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+@media (max-width: 1120px) {
+  .critter-ui-refresh #menuScreen .lobby-action-dock,
+  .critter-ui-refresh #menuScreen .dashboard-action-panel,
+  .critter-ui-refresh #menuScreen .quick-access-panel,
+  .critter-ui-refresh #menuScreen .quick-actions-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .critter-ui-refresh #menuScreen .lobby-action-dock,
+  .critter-ui-refresh #menuScreen .dashboard-action-panel,
+  .critter-ui-refresh #menuScreen .quick-access-panel,
+  .critter-ui-refresh #menuScreen .quick-actions-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .critter-ui-refresh #menuScreen .lobby-dock-button small {
+    display: block;
+  }
+}
+
+@media (max-width: 360px) {
+  .critter-ui-refresh #menuScreen .lobby-action-dock,
+  .critter-ui-refresh #menuScreen .dashboard-action-panel,
+  .critter-ui-refresh #menuScreen .quick-access-panel,
+  .critter-ui-refresh #menuScreen .quick-actions-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
