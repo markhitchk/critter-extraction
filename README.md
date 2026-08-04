@@ -121,41 +121,6 @@ Keep profile XML, backup passwords, room payloads, access tokens, and private ac
 
 Read the technical boundary in **[Profile Security](docs/PROFILE-SECURITY.md)** and the multiplayer enforcement design in **[Security and Ban System](live/security/README.md)**.
 
-## Repository map
-
-```text
-critter-extraction/
-├── live/          # Current public build
-├── prerelease/    # Upcoming release work and authored asset integration
-├── testing/       # Focused UI, UX, and gameplay testing
-├── tech-preview/  # Experimental systems
-├── docs/          # Cross-channel technical documentation
-├── scripts/       # Build and optimization scripts
-└── README.md      # Project command center
-```
-
-Each channel is designed to be independently deployable. The repository root routes players to the LIVE build while preserving query strings and URL fragments used by game links.
-
-## Development checks
-
-Run project validation from the channel being changed. For LIVE work:
-
-```bash
-cd live
-npm ci
-npm test
-```
-
-Useful focused commands:
-
-```bash
-npm run validate
-npm run check:portable
-npm run test:browser
-```
-
-See **[Contributing](live/CONTRIBUTING.md)** before changing saves, multiplayer, generated files, or compatibility adapters.
-
 ## Feedback and issue reports
 
 The in-game **Feedback Center** can draft reports, preview privacy-safe diagnostics, copy or download the report, and browse repository issues. Direct publication requires either a temporary user-provided GitHub connection or an owner-managed secure endpoint.
