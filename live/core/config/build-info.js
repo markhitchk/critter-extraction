@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  window.CritterBuildInfo = Object.freeze({ buildId: '2ec97d13fb4bef45', channel: 'github-pages', generatedAt: '2026-08-04T01:14:42.117Z' });
+  window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859', channel: 'github-pages', generatedAt: '2026-08-04T01:17:41.349Z' });
 
   // Security must load before game-loader.js so it can add stable XML profile
   // identifiers, repair old false bans, and wrap PeerJS before multiplayer.

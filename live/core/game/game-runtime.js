@@ -1,4 +1,4 @@
-/* Generated Fast Boot runtime 2ec97d13fb4bef45. Do not edit directly. */
+/* Generated Fast Boot runtime 3391f2959d123859. Do not edit directly. */
 (() => {
 'use strict';
 
@@ -3013,34 +3013,39 @@ dialog#loadoutModal.modal[open]{position:fixed!important;inset:0!important;margi
       new MutationObserver(syncMainMenuState).observe(menuScreen, { attributes:true, attributeFilter:['class'] });
     }
 
+    const cleanMainMenuChrome = () => {
+      document.querySelector('a.ui-skip-link[href="#menuScreen"]')?.remove();
+      const dock = document.querySelector('#menuScreen nav.lobby-action-dock');
+      const dashboard = document.querySelector('#menuScreen .dashboard');
+      if (dock && dashboard && dock.parentElement !== dashboard) {
+        dock.classList.add('dashboard-action-panel');
+        dashboard.prepend(dock);
+      }
+    };
+    cleanMainMenuChrome();
+    if (menuScreen && !menuScreen.dataset.chromeObserverReady) {
+      menuScreen.dataset.chromeObserverReady = 'true';
+      new MutationObserver(cleanMainMenuChrome).observe(menuScreen, { childList:true, subtree:true });
+    }
+
     const modal = document.getElementById('accountsModal');
     const card = modal?.querySelector('.modal-card');
     const accountList = document.getElementById('accountList');
-    if (!modal || !card || !accountList || document.getElementById('accountManagerRevamp')) {
-      return;
-    }
+    if (!modal || !card || !accountList || document.getElementById('accountManagerRevamp')) return;
 
     const removeStorageMeter = () => {
       const labels = [...card.querySelectorAll('*')].filter(element =>
         element.children.length === 0 && element.textContent.trim().toUpperCase() === 'LOCAL STORAGE'
       );
       labels.forEach(label => {
-        let target = label.parentElement;
-        while (target && target !== card && !/browser storage/i.test(target.textContent)) {
-          target = target.parentElement;
-        }
-        if (!target || target === card) {
-          label.parentElement?.remove();
-          return;
-        }
-        const combined = target.textContent.toUpperCase();
-        if (combined.includes('ACTIVE ACCOUNT') || combined.includes('PROFILES')) {
-          const storageChild = [...target.children].find(child => /LOCAL STORAGE/i.test(child.textContent));
-          if (storageChild) storageChild.remove();
-          else label.parentElement?.remove();
-        } else {
-          target.remove();
-        }
+        const parent = label.parentElement;
+        if (!parent) return;
+        const directStorageCard = [...parent.parentElement?.children || []].find(child =>
+          child !== parent && /LOCAL STORAGE/i.test(child.textContent) && /browser storage/i.test(child.textContent)
+        );
+        if (directStorageCard) directStorageCard.remove();
+        else if (/browser storage/i.test(parent.textContent)) parent.remove();
+        else label.remove();
       });
     };
     removeStorageMeter();
@@ -3258,6 +3263,12 @@ body.critter-main-menu-active .top-actions>:not(#accountBtn):not(#topPetalsBtn){
 body.critter-main-menu-active #topPetalsBtn{display:flex!important}
 body.critter-main-menu-active #accountBtn small{font-size:0}
 body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-size:9px}
+a.ui-skip-link[href="#menuScreen"]{display:none!important}
+#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel{grid-column:1/-1!important;position:static!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:auto!important;max-width:none!important;margin:0!important;padding:12px!important;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important;z-index:auto!important;border-radius:18px!important}
+#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel:before{content:'QUICK ACTIONS';grid-column:1/-1;color:var(--muted);font-size:8px;font-weight:900;letter-spacing:.14em;padding:0 2px 2px}
+#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel .lobby-dock-button{min-width:0!important;min-height:58px!important;padding:10px 9px!important;border-radius:13px!important;text-align:left!important;align-items:flex-start!important;justify-content:center!important}
+#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel .lobby-dock-button strong{font-size:11px!important}
+#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel .lobby-dock-button small{font-size:8px!important;line-height:1.3!important}
 #accountsModal .account-manager-revamp{width:min(920px,calc(100vw - 18px))!important;max-height:calc(100dvh - 18px)!important;overflow:auto!important;padding:16px!important}
 .account-manager-intro{display:flex!important;align-items:center;gap:8px!important;margin:8px 0 12px!important;padding:10px 12px!important}
 .account-manager-intro span{color:var(--muted);font-size:10px}
@@ -3287,7 +3298,9 @@ body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-siz
 .account-transfer-panel{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07)}
 .account-transfer-actions,.account-link-import{display:flex;flex-wrap:wrap;gap:6px}
 .account-link-import .xml-profile-tools{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;background:none!important}.account-link-import label{min-width:0!important}.account-link-import input{width:100%!important;min-width:0!important}.account-transfer-actions button,.account-link-import button{min-height:36px!important;font-size:9px!important}
+@media(max-width:1000px){#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(max-width:760px){.account-quick-actions{grid-template-columns:1fr}.account-security-simple{grid-template-columns:1fr}.account-security-simple p{grid-column:1}.account-toolbar{grid-template-columns:1fr 1fr}.account-toolbar .account-search-field{grid-column:1/-1}#accountsModal .account-row{grid-template-columns:auto minmax(0,1fr)!important}#accountsModal .account-row>div:last-child{grid-column:1/-1;justify-content:flex-start!important}.account-section-heading{align-items:flex-start}.account-manager-intro{align-items:flex-start;flex-direction:column}}
+@media(max-width:600px){#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:10px!important}#menuScreen .dashboard>.lobby-action-dock.dashboard-action-panel .lobby-dock-button{min-height:54px!important}}
 @media(max-width:560px){body.critter-main-menu-active .topbar{gap:8px!important}body.critter-main-menu-active .topbar>.brand span small{display:none!important}body.critter-main-menu-active #topPetalsBtn{padding:7px 9px!important}}
 @media(max-height:700px){#accountsModal .account-manager-revamp{padding:12px!important}.account-manager-layout{gap:8px}.account-manager-section{padding:9px}#accountsModal .account-list{max-height:190px!important}.account-section-heading{margin-bottom:7px}.account-transfer-fold>summary{padding:9px 10px}}
 `;
