@@ -31,7 +31,8 @@ const patchFiles = [
   'live/core/loader/live-private-chat-censor-notice-fix.js',
   'live/core/loader/live-coop-pause-redesign-fix.js',
   'live/core/loader/live-empty-recovery-notice-fix.js',
-  'live/core/loader/live-loadout-modal-viewport-fix.js'
+  'live/core/loader/live-loadout-modal-viewport-fix.js',
+  'live/core/loader/live-account-manager-revamp-patch.js'
 ];
 
 const corePath = 'live/core/game/game-core.js';
