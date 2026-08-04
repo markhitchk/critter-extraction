@@ -4,9 +4,9 @@
   if (window.__CRITTER_DIRECT_LOADER_ACTIVE__) return;
   window.__CRITTER_DIRECT_LOADER_ACTIVE__ = true;
 
-  const VERSION = '2026-08-03-updated-ui-runtime-1';
+  const VERSION = '2026-08-03-startup-fix-2';
   const BUILD_ID = String(window.CritterBuildInfo?.buildId || VERSION).replace(/[^A-Za-z0-9._-]/g, '');
-  const SECURITY_VERSION = '1.0.8';
+  const SECURITY_VERSION = '1.0.9';
   const SECURITY_FILES = [
     'security-core.js',
     'security-core-hotfix.js',
@@ -40,7 +40,7 @@
 
   function fail(error, stage) {
     const entry = failureEntry(error, stage);
-    console.error('Critter Extraction updated UI startup failed', error);
+    console.error('Critter Extraction startup failed', error);
 
     try { window.__CRITTER_BOOT__?.markFailed?.(entry); } catch (_) { }
 
@@ -59,6 +59,19 @@
     window.__CRITTER_EMERGENCY__?.(entry.message);
   }
 
+  function warnOptionalProfile(error) {
+    const entry = {
+      ...failureEntry(error, 'profile-interface'),
+      severity: 'warning',
+      code: error?.code || 'CE-PROFILE-UI-001'
+    };
+    console.warn('Critter Extraction profile enhancement did not load; the game remains playable.', error);
+    try { window.CritterErrors?.capture?.(entry); } catch (_) { }
+    try {
+      window.dispatchEvent(new CustomEvent('critter:profile-interface-warning', { detail: entry }));
+    } catch (_) { }
+  }
+
   function securityUrl(file) {
     const relative = `core/security/${file}?v=${SECURITY_VERSION}`;
     return window.CritterPaths?.resolve
@@ -74,48 +87,49 @@
     return false;
   }
 
-  function loadScript(url, label, attributes = {}) {
+  function loadScript(url, label, attributes = {}, timeoutMs = 20000) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
+      let settled = false;
+      let timer = 0;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        script.onload = null;
+        script.onerror = null;
+      };
+
+      const finish = callback => value => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback(value);
+      };
+
+      const resolveOnce = finish(resolve);
+      const rejectOnce = finish(reject);
+
       script.src = url;
       script.async = false;
       Object.assign(script.dataset, attributes);
-      script.onload = () => resolve(script);
+      script.onload = () => resolveOnce(script);
       script.onerror = () => {
         const error = new Error(`Could not load required ${label}.`);
         error.code = 'CE-BOOT-FILE-001';
         error.sourceRaw = url;
-        reject(error);
+        rejectOnce(error);
       };
-      document.head.appendChild(script);
-    });
-  }
 
-  // Wrapper to avoid indefinite hanging when a script never fires onload.
-  // Uses a timeout and ensures the original loadScript resolution/rejection clears the timer.
-  function loadScriptWithTimeout(url, label, attributes = {}, timeoutMs = 15000) {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        const error = new Error(`${label} did not finish loading within ${timeoutMs}ms`);
+      timer = setTimeout(() => {
+        const error = new Error(`${label} did not finish loading within ${timeoutMs}ms.`);
         error.code = 'CE-BOOT-TIMEOUT-002';
         error.sourceRaw = url;
-        reject(error);
+        script.dataset.loadTimedOut = 'true';
+        script.remove();
+        rejectOnce(error);
       }, timeoutMs);
 
-      loadScript(url, label, attributes).then(res => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(res);
-      }).catch(err => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        reject(err);
-      });
+      document.head.appendChild(script);
     });
   }
 
@@ -124,11 +138,10 @@
     for (let index = 0; index < SECURITY_FILES.length; index += 1) {
       const file = SECURITY_FILES[index];
       if (!fileReady(file)) {
-        // Use timeout wrapper to fail fast if a security script stalls
-        await loadScriptWithTimeout(securityUrl(file), `security file ${file}`, {
+        await loadScript(securityUrl(file), `security file ${file}`, {
           requiredBootFile: `core/security/${file}`,
           critterSecurityFile: file
-        }, 15000);
+        }, 20000);
       }
       if (!fileReady(file)) {
         const error = new Error(`Security file loaded but did not initialize: ${file}`);
@@ -140,6 +153,28 @@
     }
   }
 
+  function normalizeStaticMarkup() {
+    for (const id of ['hostLobbyCount', 'joinLobbyCount']) {
+      const node = document.getElementById(id);
+      if (node && /^\s*1\s*\/\s*4\s*$/.test(node.textContent || '')) node.textContent = '1 / 8';
+    }
+
+    const pin = document.getElementById('joinRoomPin');
+    if (pin) {
+      pin.maxLength = 6;
+      pin.pattern = '[0-9]{6}';
+      pin.inputMode = 'numeric';
+      const cleaned = String(pin.value || '').replace(/\D/g, '').slice(0, 6);
+      if (pin.value !== cleaned) pin.value = cleaned;
+    }
+
+    document.querySelectorAll('#helpModal p').forEach(paragraph => {
+      const copy = paragraph.textContent || '';
+      if (!copy.includes('One host and up to three guests')) return;
+      paragraph.textContent = copy.replace('One host and up to three guests', 'One host and up to seven guests');
+    });
+  }
+
   function menuReady() {
     const splash = document.getElementById('studioBoot');
     const runtimeInitialized = !!window.__CRITTER_DIAGNOSTICS__ || !!window.__CRITTER_DEBUG__;
@@ -147,7 +182,7 @@
     return !!window.__CRITTER_BOOT__?.ready || (runtimeInitialized && splashFinished);
   }
 
-  function waitForGame(timeoutMs = 18000) {
+  function waitForGame(timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
       const started = performance.now();
       const check = () => {
@@ -160,7 +195,7 @@
           return reject(error);
         }
         if (performance.now() - started >= timeoutMs) {
-          const error = new Error('The updated game runtime loaded but the main menu did not become ready within 18 seconds.');
+          const error = new Error('The updated game runtime loaded but the main menu did not become ready within 30 seconds.');
           error.code = 'CE-BOOT-TIMEOUT-001';
           error.sourceRaw = RUNTIME;
           return reject(error);
@@ -169,6 +204,20 @@
       };
       check();
     });
+  }
+
+  async function loadProfileEnhancement() {
+    if (window.__CRITTER_PROFILE_MANAGER_V2__) return;
+    await loadScript(PROFILE_PANEL, 'updated profile interface', {
+      critterOptionalBootFile: 'core/security/profile-panel-integrity.js',
+      critterSecurityFile: 'profile-panel-integrity.js'
+    }, 20000);
+    if (!window.__CRITTER_PROFILE_MANAGER_V2__) {
+      const error = new Error('The updated profile interface loaded but did not initialize.');
+      error.code = 'CE-BOOT-INIT-001';
+      error.sourceRaw = PROFILE_PANEL;
+      throw error;
+    }
   }
 
   function mark(name) {
@@ -188,15 +237,14 @@
     mark('critter-updated-ui-runtime-start');
     try {
       window.__CRITTER_PREBUILT_RUNTIME__ = false;
-      report('core-loading', 'Starting updated game and profile systems…', 26);
+      report('core-loading', 'Starting updated game and security systems…', 26);
       await loadSecurity();
 
-      report('game-script-started', 'Loading the updated game runtime and main-menu UI…', 56);
-      // runtime may be larger/slower; give it a slightly longer timeout
-      await loadScriptWithTimeout(RUNTIME, 'updated game runtime', {
+      report('game-script-started', 'Loading the game runtime and main-menu UI…', 56);
+      await loadScript(RUNTIME, 'updated game runtime', {
         requiredBootFile: 'core/game/game-runtime.js',
         critterRuntime: 'updated-ui-runtime'
-      }, 30000);
+      }, 45000);
 
       if (!window.__CRITTER_DIAGNOSTICS__ && !window.__CRITTER_DEBUG__) {
         const error = new Error('The updated game runtime file loaded but did not initialize the game systems.');
@@ -205,19 +253,8 @@
         throw error;
       }
 
-      report('game-initialized', 'Restoring the updated profile and security interface…', 86);
-      await loadScriptWithTimeout(PROFILE_PANEL, 'updated profile interface', {
-        requiredBootFile: 'core/security/profile-panel-integrity.js',
-        critterSecurityFile: 'profile-panel-integrity.js'
-      }, 15000);
-      if (!window.__CRITTER_PROFILE_MANAGER_V2__) {
-        const error = new Error('The updated profile interface loaded but did not initialize.');
-        error.code = 'CE-BOOT-INIT-001';
-        error.sourceRaw = PROFILE_PANEL;
-        throw error;
-      }
-
-      report('game-initialized', 'Updated main menu and profile interface ready. Finishing startup…', 94);
+      normalizeStaticMarkup();
+      report('game-initialized', 'Finishing the main menu and local profile startup…', 88);
       await waitForGame();
 
       window.__CRITTER_PREBUILT_RUNTIME__ = true;
@@ -228,8 +265,15 @@
         totalMs: measure('Critter Updated UI Runtime', 'critter-updated-ui-runtime-start', 'critter-updated-ui-runtime-end')
       });
 
-      report('ready', 'The updated main menu, profile interface, game runtime, and security systems are ready.', 100);
+      report('ready', 'The main menu, game runtime, and required security systems are ready.', 100);
       window.CritterErrorUI?.clear?.();
+
+      window.__CRITTER_PROFILE_PANEL_PROMISE__ = loadProfileEnhancement()
+        .then(() => {
+          normalizeStaticMarkup();
+          window.dispatchEvent(new Event('critter:profile-interface-ready'));
+        })
+        .catch(warnOptionalProfile);
     } catch (error) {
       fail(error, 'updated-ui-runtime');
     }

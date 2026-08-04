@@ -5,12 +5,20 @@
   if (!state || window.__CRITTER_BOOT_MONITOR_ACTIVE__) return;
   window.__CRITTER_BOOT_MONITOR_ACTIVE__ = true;
 
+  const SLOW_TIMEOUT_MS = 12000;
+  const FATAL_TIMEOUT_MS = 90000;
+
   let slowTimer = 0;
   let fatalTimer = 0;
   let fatalShown = false;
   let slowShown = false;
 
-  const elapsed = () => state.detectedElapsedMs ? state.detectedElapsedMs() : 0;
+  function clearTimers() {
+    clearTimeout(slowTimer);
+    clearTimeout(fatalTimer);
+    slowTimer = 0;
+    fatalTimer = 0;
+  }
 
   function paint(stage, detail, progress) {
     const status = document.getElementById('bootStatus');
@@ -39,8 +47,7 @@
   function reportFatal(input) {
     if (state.ready || fatalShown) return;
     fatalShown = true;
-    clearTimeout(slowTimer);
-    clearTimeout(fatalTimer);
+    clearTimers();
     const entry = capture(input);
     try { state.markFailed?.(entry); } catch (_) {
       state.failed = true;
@@ -60,8 +67,7 @@
     if (name === 'ready') {
       state.ready = true;
       state.failed = false;
-      clearTimeout(slowTimer);
-      clearTimeout(fatalTimer);
+      clearTimers();
       record('ready', detail || 'The menu and local game systems finished initializing.', 100);
       window.CritterErrorUI?.clear?.();
       return;
@@ -126,23 +132,23 @@
   });
 
   function armTimers() {
-    clearTimeout(slowTimer);
-    clearTimeout(fatalTimer);
+    clearTimers();
     slowTimer = setTimeout(() => {
       if (state.ready || state.failed || slowShown) return;
       slowShown = true;
       record('slow', state.detail || 'Startup is taking longer than expected.', Math.max(72, state.progress || 0));
       window.CritterErrorUI?.showSlow?.(state);
-    }, 10000);
+    }, SLOW_TIMEOUT_MS);
+
     fatalTimer = setTimeout(() => {
       if (state.ready || state.failed) return;
       reportFatal({
         code: 'CE-BOOT-TIMEOUT-001',
         system: 'boot',
         stage: state.stage || 'startup-timeout',
-        message: `The game did not finish initialization within 25 seconds. Last stage: ${state.detail || state.stage || 'unknown'}.`
+        message: `The game did not finish initialization within ${Math.round(FATAL_TIMEOUT_MS / 1000)} seconds. Last stage: ${state.detail || state.stage || 'unknown'}.`
       });
-    }, 25000);
+    }, FATAL_TIMEOUT_MS);
   }
 
   if (document.readyState === 'loading') {
@@ -154,4 +160,6 @@
     record('dom-ready', 'Document loaded. Starting required game files…', 20);
     armTimers();
   }
+
+  addEventListener('pagehide', clearTimers, { once: true });
 })();
