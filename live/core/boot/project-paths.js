@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-5';
+  const FASTBOOT_VERSION = '2026-08-03-fastboot-6';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -53,7 +53,7 @@
   addHint({ path: 'core/game/game-core.js?v=2026-08-03-main-menu-fix-1', as: 'fetch', crossOrigin: 'anonymous', priority: 'high' });
   addHint({ path: 'core/rewards/critter-codes.registry.js?v=2.0.0', as: 'script' });
   addHint({ path: 'core/rewards/critter-codes-api-bridge.js?v=1.2.0', as: 'script' });
-  addHint({ path: 'core/rewards/critter-codes.js?v=2.0.2', as: 'script' });
+  addHint({ path: 'core/rewards/critter-codes.js?v=2.1.0', as: 'script' });
   addHint({ path: 'assets/branding/HTG.png', as: 'image' });
 })();
 
@@ -159,7 +159,7 @@
     }
     const system = document.createElement('script');
     system.id = 'critter-codes-loader';
-    system.src = window.CritterPaths.resolve('core/rewards/critter-codes.js?v=2.0.2');
+    system.src = window.CritterPaths.resolve('core/rewards/critter-codes.js?v=2.1.0');
     system.async = false;
     system.addEventListener('load', () => window.__CRITTER_CODES_API_BRIDGE__?.refresh?.());
     system.addEventListener('error', () => console.warn('Critter Codes interface could not be loaded.'));
