@@ -4,16 +4,16 @@
   if (window.__CRITTER_DIRECT_LOADER_ACTIVE__) return;
   window.__CRITTER_DIRECT_LOADER_ACTIVE__ = true;
 
-  const VERSION = '2026-08-03-canonical-core-1';
+  const VERSION = '2026-08-03-updated-ui-runtime-1';
   const BUILD_ID = String(window.CritterBuildInfo?.buildId || VERSION).replace(/[^A-Za-z0-9._-]/g, '');
-  const SECURITY_VERSION = '1.0.7';
+  const SECURITY_VERSION = '1.0.8';
   const SECURITY_FILES = [
     'security-core.js',
     'security-core-hotfix.js',
     'security-network-v2.js',
     'security-ui.js'
   ];
-  const CORE_LOADER = `./core/loader/game-loader-base.js?v=${BUILD_ID}-${VERSION}`;
+  const RUNTIME = `./core/game/game-runtime.js?v=${BUILD_ID}`;
   const PROFILE_PANEL = `./core/security/profile-panel-integrity.js?v=${SECURITY_VERSION}`;
 
   function report(stage, detail, progress) {
@@ -23,7 +23,7 @@
     } catch (_) { }
   }
 
-  function failureEntry(error, stage = 'canonical-core-loader') {
+  function failureEntry(error, stage = 'updated-ui-runtime') {
     return {
       code: error?.code || 'CE-BOOT-JS-001',
       severity: 'fatal',
@@ -40,7 +40,7 @@
 
   function fail(error, stage) {
     const entry = failureEntry(error, stage);
-    console.error('Critter Extraction canonical startup failed', error);
+    console.error('Critter Extraction updated UI startup failed', error);
 
     try { window.__CRITTER_BOOT__?.markFailed?.(entry); } catch (_) { }
 
@@ -107,33 +107,33 @@
         error.sourceRaw = securityUrl(file);
         throw error;
       }
-      report('core-loading', `Security ready: ${file}`, 32 + ((index + 1) / SECURITY_FILES.length) * 16);
+      report('core-loading', `Security ready: ${file}`, 32 + ((index + 1) / SECURITY_FILES.length) * 14);
     }
   }
 
-  function runtimeReady() {
-    return !!window.__CRITTER_BOOT__?.ready ||
-      !!window.__CRITTER_DIAGNOSTICS__ ||
-      !!window.__CRITTER_DEBUG__;
+  function menuReady() {
+    const splash = document.getElementById('studioBoot');
+    const runtimeInitialized = !!window.__CRITTER_DIAGNOSTICS__ || !!window.__CRITTER_DEBUG__;
+    const splashFinished = !splash || splash.hidden || splash.classList.contains('is-hiding');
+    return !!window.__CRITTER_BOOT__?.ready || (runtimeInitialized && splashFinished);
   }
 
-  function waitForGame(timeoutMs = 25000) {
+  function waitForGame(timeoutMs = 18000) {
     return new Promise((resolve, reject) => {
       const started = performance.now();
       const check = () => {
-        if (window.__CRITTER_BOOT__?.ready) return resolve('boot-ready');
+        if (menuReady()) return resolve();
         if (window.__CRITTER_BOOT__?.failed) {
           const last = window.__CRITTER_BOOT__?.lastError;
           const error = new Error(last?.message || window.__CRITTER_BOOT__?.detail || 'Game initialization failed.');
           error.code = last?.code || 'CE-BOOT-INIT-001';
-          error.sourceRaw = last?.sourceRaw || CORE_LOADER;
+          error.sourceRaw = last?.sourceRaw || RUNTIME;
           return reject(error);
         }
-        if (runtimeReady() && performance.now() - started >= 4300) return resolve('runtime-ready');
         if (performance.now() - started >= timeoutMs) {
-          const error = new Error('The canonical game core did not finish initialization within 25 seconds.');
+          const error = new Error('The updated game runtime loaded but the main menu did not become ready within 18 seconds.');
           error.code = 'CE-BOOT-TIMEOUT-001';
-          error.sourceRaw = CORE_LOADER;
+          error.sourceRaw = RUNTIME;
           return reject(error);
         }
         setTimeout(check, 60);
@@ -156,37 +156,52 @@
   }
 
   (async () => {
-    mark('critter-canonical-core-start');
+    mark('critter-updated-ui-runtime-start');
     try {
       window.__CRITTER_PREBUILT_RUNTIME__ = false;
-      report('core-loading', 'Starting required game systems…', 26);
+      report('core-loading', 'Starting updated game and profile systems…', 26);
       await loadSecurity();
 
-      report('game-script-started', 'Loading the canonical game core…', 58);
-      await loadScript(CORE_LOADER, 'canonical game core loader', {
-        requiredBootFile: 'core/loader/game-loader-base.js',
-        critterRuntime: 'canonical-core'
+      report('game-script-started', 'Loading the updated game runtime and main-menu UI…', 56);
+      await loadScript(RUNTIME, 'updated game runtime', {
+        requiredBootFile: 'core/game/game-runtime.js',
+        critterRuntime: 'updated-ui-runtime'
       });
 
-      report('game-initialized', 'Game core loaded. Finishing menu and profile setup…', 82);
+      if (!window.__CRITTER_DIAGNOSTICS__ && !window.__CRITTER_DEBUG__) {
+        const error = new Error('The updated game runtime file loaded but did not initialize the game systems.');
+        error.code = 'CE-BOOT-INIT-001';
+        error.sourceRaw = RUNTIME;
+        throw error;
+      }
+
+      report('game-initialized', 'Restoring the updated profile and security interface…', 86);
+      await loadScript(PROFILE_PANEL, 'updated profile interface', {
+        requiredBootFile: 'core/security/profile-panel-integrity.js',
+        critterSecurityFile: 'profile-panel-integrity.js'
+      });
+      if (!window.__CRITTER_PROFILE_MANAGER_V2__) {
+        const error = new Error('The updated profile interface loaded but did not initialize.');
+        error.code = 'CE-BOOT-INIT-001';
+        error.sourceRaw = PROFILE_PANEL;
+        throw error;
+      }
+
+      report('game-initialized', 'Updated main menu and profile interface ready. Finishing startup…', 94);
       await waitForGame();
 
-      window.__CRITTER_PREBUILT_RUNTIME__ = false;
-      mark('critter-canonical-core-end');
+      window.__CRITTER_PREBUILT_RUNTIME__ = true;
+      mark('critter-updated-ui-runtime-end');
       window.__CRITTER_FASTBOOT_METRICS__ = Object.freeze({
-        mode: 'canonical-core-loader',
+        mode: 'updated-ui-runtime',
         buildId: BUILD_ID,
-        totalMs: measure('Critter Canonical Core', 'critter-canonical-core-start', 'critter-canonical-core-end')
+        totalMs: measure('Critter Updated UI Runtime', 'critter-updated-ui-runtime-start', 'critter-updated-ui-runtime-end')
       });
 
-      report('ready', 'The canonical game core and required security systems are ready.', 100);
+      report('ready', 'The updated main menu, profile interface, game runtime, and security systems are ready.', 100);
       window.CritterErrorUI?.clear?.();
-
-      loadScript(PROFILE_PANEL, 'profile security interface', {
-        critterSecurityFile: 'profile-panel-integrity.js'
-      }).catch(error => console.warn('Profile security interface did not load', error));
     } catch (error) {
-      fail(error, 'canonical-core-loader');
+      fail(error, 'updated-ui-runtime');
     }
   })();
 })();
