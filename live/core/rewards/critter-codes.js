@@ -1,10 +1,13 @@
-/* Critter Codes production loader v2.0.2. Valid codes are never stored in this file. */
+/* Critter Codes production loader v2.1.0. Valid codes are never stored in this file. */
 (() => {
   'use strict';
 
-  const VERSION = '2.0.2';
-  const paths = [1,2,3,4,5,6,7].map(part => `core/rewards/critter-codes.payload.${part}.js?v=${VERSION}`);
-  const resolve = path => window.CritterPaths?.resolve?.(path) || `./${path}`;
+  if (window.__CRITTER_CODES_LOADER_V210__) return;
+  window.__CRITTER_CODES_LOADER_V210__ = true;
+
+  const VERSION = '2.1.0';
+  const PAYLOAD_PARTS = 7;
+  const resolve = path => window.CritterPaths?.resolve?.(path) || new URL(`../../${String(path).replace(/^\/+/, '')}`, document.currentScript?.src || location.href).href;
   const state = { status: 'loading', detail: 'Loading secure reward terminal…' };
   let uiScheduled = false;
 
@@ -21,34 +24,14 @@
       #menuScreen .lobby-utility-rail>.panel{min-width:0;padding:16px 18px;border-radius:20px;box-sizing:border-box}
       .critter-codes-entry-panel{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,250px);gap:7px 16px;align-items:center;overflow:hidden;border-color:rgba(100,232,234,.48)!important;background:linear-gradient(145deg,rgba(20,34,59,.96),rgba(11,22,39,.96))!important}
       .critter-codes-entry-panel:before{content:"";position:absolute;inset:-80% 52% 20% -22%;background:radial-gradient(circle,rgba(100,232,234,.22),transparent 68%);pointer-events:none}
-      .critter-codes-entry-panel>*{position:relative;z-index:1}
-      .critter-codes-entry-panel .panel-heading{grid-column:1;min-width:0}
-      .critter-codes-entry-panel .panel-heading h2{margin:0}
+      .critter-codes-entry-panel>*{position:relative;z-index:1}.critter-codes-entry-panel .panel-heading{grid-column:1;min-width:0}.critter-codes-entry-panel .panel-heading h2{margin:0}
       .cc-entry-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(100,232,234,.55);border-radius:14px;background:rgba(100,232,234,.12);font-size:21px;box-shadow:0 0 24px rgba(100,232,234,.13)}
-      .cc-entry-copy{grid-column:1;margin:0;color:var(--muted,#b9c4d6);font-size:12px;line-height:1.45}
-      .critter-codes-entry-panel>.critter-codes-entry-button{grid-column:2;grid-row:1/3;width:100%;min-height:48px}
-      .cc-entry-status{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:2px;color:var(--muted,#b9c4d6);font-size:10px;min-width:0}
-      .cc-entry-status span{min-width:0;overflow-wrap:anywhere}
-      .cc-entry-status i{width:8px;height:8px;border-radius:50%;background:#ffd36f;box-shadow:0 0 9px currentColor;flex:0 0 auto}
-      .cc-entry-status[data-state="ready"] i{background:#72f2bd}.cc-entry-status[data-state="error"] i{background:#ff7f9f}
-      .fair-play-lobby-panel{display:grid;gap:9px;align-content:center;border-color:rgba(126,247,212,.3)!important;background:linear-gradient(145deg,rgba(24,42,51,.94),rgba(12,24,35,.96))!important}
-      .fair-play-lobby-panel .panel-heading{align-items:center}.fair-play-lobby-panel h2{margin:0}.fair-play-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(126,247,212,.45);border-radius:14px;background:rgba(126,247,212,.1);font-size:20px}
-      .fair-play-copy{margin:0;color:var(--muted,#b9c4d6);font-size:11px;line-height:1.45}
-      .fair-play-status{display:flex;align-items:center;gap:7px;color:#b9c4d6;font-size:10px;min-width:0}.fair-play-status i{width:8px;height:8px;border-radius:50%;background:#ffd36f;flex:0 0 auto}.fair-play-status[data-state="ready"] i{background:#72f2bd;box-shadow:0 0 10px #72f2bd}.fair-play-status[data-state="error"] i{background:#ff7f9f}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed{position:static!important;inset:auto!important;transform:none!important;width:100%!important;max-width:none!important;margin:12px 0 0!important;padding:10px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;overflow:hidden!important;box-sizing:border-box!important}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed:before{content:"QUICK ACTIONS";grid-column:1/-1;color:var(--muted,#aeb2d1);font-size:9px;font-weight:900;letter-spacing:.16em;padding:0 2px 2px}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button{width:100%!important;min-width:0!important;min-height:62px!important;padding:10px 12px!important;overflow:hidden!important;align-content:center!important;text-align:left!important}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button strong,#menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button small{display:block!important;min-width:0!important;max-width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:normal!important;word-break:normal!important;hyphens:none!important}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button strong{font-size:12px!important;line-height:1.2!important}
-      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button small{font-size:9px!important;line-height:1.3!important;margin-top:3px}
-      .cc-entry-card{width:min(560px,calc(100vw - 28px));border:1px solid rgba(100,232,234,.5)!important;background:linear-gradient(155deg,#111a2d,#0a1221)!important}
-      .cc-entry-form{display:grid;gap:12px;padding:4px 0}.cc-entry-form label{display:grid;gap:7px;color:#dffcff;font-weight:800;letter-spacing:.06em;font-size:.78rem}
-      .cc-entry-form input{width:100%;box-sizing:border-box;padding:15px 16px;border:1px solid rgba(100,232,234,.42);border-radius:14px;background:#070d19;color:#fff;font:800 1rem/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em;outline:none}
-      .cc-entry-form input:focus{border-color:#64e8ea;box-shadow:0 0 0 3px rgba(100,232,234,.13)}.cc-entry-actions{display:grid;grid-template-columns:1fr auto;gap:10px}.cc-entry-message{min-height:24px;margin:0;color:#b9c4d6}.cc-entry-message.success{color:#72f2bd}.cc-entry-message.error{color:#ff9dad}
-      @media(max-width:900px){#menuScreen .lobby-utility-rail{grid-template-columns:1fr}.critter-codes-entry-panel{grid-template-columns:minmax(0,1fr) minmax(180px,230px)}}
-      @media(max-width:760px){#menuScreen>.lobby-action-dock.lobby-action-dock-fixed{grid-template-columns:repeat(2,minmax(0,1fr))!important}.critter-codes-entry-button .cc-entry-label{display:inline}.cc-entry-actions{grid-template-columns:1fr}.critter-codes-entry-panel{grid-template-columns:1fr}.critter-codes-entry-panel>.critter-codes-entry-button{grid-column:1;grid-row:auto}.critter-codes-entry-panel{grid-column:1/-1}}
-      @media(max-width:390px){#menuScreen>.lobby-action-dock.lobby-action-dock-fixed{grid-template-columns:1fr!important}}
-      @media(prefers-reduced-motion:reduce){.critter-codes-entry-panel:before{display:none}.critter-codes-entry-button .cc-entry-dot,.cc-entry-status i,.fair-play-status i{box-shadow:none}}
+      .cc-entry-copy{grid-column:1;margin:0;color:var(--muted,#b9c4d6);font-size:12px;line-height:1.45}.critter-codes-entry-panel>.critter-codes-entry-button{grid-column:2;grid-row:1/3;width:100%;min-height:48px}
+      .cc-entry-status{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:2px;color:var(--muted,#b9c4d6);font-size:10px;min-width:0}.cc-entry-status span{min-width:0;overflow-wrap:anywhere}.cc-entry-status i{width:8px;height:8px;border-radius:50%;background:#ffd36f;box-shadow:0 0 9px currentColor;flex:0 0 auto}.cc-entry-status[data-state="ready"] i{background:#72f2bd}.cc-entry-status[data-state="error"] i{background:#ff7f9f}
+      .fair-play-lobby-panel{display:grid;gap:9px;align-content:center;border-color:rgba(126,247,212,.3)!important;background:linear-gradient(145deg,rgba(24,42,51,.94),rgba(12,24,35,.96))!important}.fair-play-lobby-panel .panel-heading{align-items:center}.fair-play-lobby-panel h2{margin:0}.fair-play-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(126,247,212,.45);border-radius:14px;background:rgba(126,247,212,.1);font-size:20px}.fair-play-copy{margin:0;color:var(--muted,#b9c4d6);font-size:11px;line-height:1.45}.fair-play-status{display:flex;align-items:center;gap:7px;color:#b9c4d6;font-size:10px;min-width:0}.fair-play-status i{width:8px;height:8px;border-radius:50%;background:#ffd36f;flex:0 0 auto}.fair-play-status[data-state="ready"] i{background:#72f2bd;box-shadow:0 0 10px #72f2bd}.fair-play-status[data-state="error"] i{background:#ff7f9f}
+      #menuScreen>.lobby-action-dock.lobby-action-dock-fixed{position:static!important;inset:auto!important;transform:none!important;width:100%!important;max-width:none!important;margin:12px 0 0!important;padding:10px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;overflow:hidden!important;box-sizing:border-box!important}#menuScreen>.lobby-action-dock.lobby-action-dock-fixed:before{content:"QUICK ACTIONS";grid-column:1/-1;color:var(--muted,#aeb2d1);font-size:9px;font-weight:900;letter-spacing:.16em;padding:0 2px 2px}#menuScreen>.lobby-action-dock.lobby-action-dock-fixed .lobby-dock-button{width:100%!important;min-width:0!important;min-height:62px!important;padding:10px 12px!important;overflow:hidden!important;align-content:center!important;text-align:left!important}
+      .cc-entry-card{width:min(560px,calc(100vw - 28px));border:1px solid rgba(100,232,234,.5)!important;background:linear-gradient(155deg,#111a2d,#0a1221)!important}.cc-entry-form{display:grid;gap:12px;padding:4px 0}.cc-entry-form label{display:grid;gap:7px;color:#dffcff;font-weight:800;letter-spacing:.06em;font-size:.78rem}.cc-entry-form input{width:100%;box-sizing:border-box;padding:15px 16px;border:1px solid rgba(100,232,234,.42);border-radius:14px;background:#070d19;color:#fff;font:800 1rem/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em;outline:none}.cc-entry-form input:focus{border-color:#64e8ea;box-shadow:0 0 0 3px rgba(100,232,234,.13)}.cc-entry-actions{display:grid;grid-template-columns:1fr auto;gap:10px}.cc-entry-message{min-height:24px;margin:0;color:#b9c4d6}.cc-entry-message.success{color:#72f2bd}.cc-entry-message.error{color:#ff9dad}
+      @media(max-width:900px){#menuScreen .lobby-utility-rail{grid-template-columns:1fr}.critter-codes-entry-panel{grid-template-columns:minmax(0,1fr) minmax(180px,230px)}}@media(max-width:760px){#menuScreen>.lobby-action-dock.lobby-action-dock-fixed{grid-template-columns:repeat(2,minmax(0,1fr))!important}.cc-entry-actions{grid-template-columns:1fr}.critter-codes-entry-panel{grid-template-columns:1fr}.critter-codes-entry-panel>.critter-codes-entry-button{grid-column:1;grid-row:auto}}@media(max-width:390px){#menuScreen>.lobby-action-dock.lobby-action-dock-fixed{grid-template-columns:1fr!important}}@media(prefers-reduced-motion:reduce){.critter-codes-entry-panel:before{display:none}.critter-codes-entry-button .cc-entry-dot,.cc-entry-status i,.fair-play-status i{box-shadow:none}}
     `;
     document.head.appendChild(style);
   }
@@ -112,6 +95,27 @@
     return rail;
   }
 
+  function syncSecurityUi() {
+    const status = document.getElementById('fairPlayLobbyStatus');
+    if (!status) return;
+    const security = window.CritterSecurityRuntime;
+    const text = status.querySelector('span');
+    if (!security) {
+      status.dataset.state = 'loading';
+      if (text) text.textContent = 'Loading Fair Play security…';
+      return;
+    }
+    try {
+      const remote = security.remote?.() || { bans: [], source: 'loading' };
+      const local = security.localBans?.() || [];
+      status.dataset.state = 'ready';
+      if (text) text.textContent = `Active • ${remote.bans?.length || 0} global restrictions • ${local.length} host bans • ${remote.source || 'local'} source`;
+    } catch (_) {
+      status.dataset.state = 'error';
+      if (text) text.textContent = 'Fair Play loaded, but its status could not be read.';
+    }
+  }
+
   function ensureFairPlayPanel(rail) {
     if (!rail) return;
     let panel = document.getElementById('fairPlayLobbyPanel');
@@ -155,7 +159,6 @@
       dock.appendChild(button);
     }
     if (rail && dock.previousElementSibling !== rail) rail.insertAdjacentElement('afterend', dock);
-    else if (!rail && dock.parentElement !== menu) menu.appendChild(dock);
   }
 
   function setMessage(message, tone = '') {
@@ -165,29 +168,8 @@
     node.className = `cc-entry-message ${tone}`.trim();
   }
 
-  function syncSecurityUi() {
-    const status = document.getElementById('fairPlayLobbyStatus');
-    if (!status) return;
-    const security = window.CritterSecurityRuntime;
-    const text = status.querySelector('span');
-    if (!security) {
-      status.dataset.state = 'loading';
-      if (text) text.textContent = 'Loading Fair Play security…';
-      return;
-    }
-    try {
-      const remote = security.remote?.() || { bans: [], source: 'loading' };
-      const local = security.localBans?.() || [];
-      status.dataset.state = 'ready';
-      if (text) text.textContent = `Active • ${remote.bans?.length || 0} global restrictions • ${local.length} host bans • ${remote.source || 'local'} source`;
-    } catch (error) {
-      status.dataset.state = 'error';
-      if (text) text.textContent = 'Fair Play loaded, but its status could not be read.';
-    }
-  }
-
   function syncUi() {
-    for (const button of document.querySelectorAll('.critter-codes-entry-button')) button.dataset.state = state.status;
+    document.querySelectorAll('.critter-codes-entry-button').forEach(button => button.dataset.state = state.status);
     const status = document.getElementById('critterCodesEntryStatus');
     if (status) {
       status.dataset.state = state.status;
@@ -267,16 +249,7 @@
       return;
     }
     const existing = document.getElementById('securityCenterBtn');
-    if (existing) {
-      existing.click();
-      return;
-    }
-    const status = document.getElementById('fairPlayLobbyStatus');
-    if (status) {
-      status.dataset.state = 'error';
-      const text = status.querySelector('span');
-      if (text) text.textContent = 'Fair Play security is still loading. Try again in a moment.';
-    }
+    if (existing) existing.click();
   }
 
   async function redeemFromEntry(event) {
@@ -296,9 +269,10 @@
     button.disabled = true;
     setMessage('Checking code…');
     try {
-      await window.CritterCodes.redeem(code);
+      const result = await window.CritterCodes.redeem(code);
       input.value = '';
-      setMessage('Code redeemed. Your rewards were added to this profile.', 'success');
+      const count = Array.isArray(result?.rewards) ? result.rewards.length : 0;
+      setMessage(count ? `Code redeemed. ${count} reward${count === 1 ? '' : 's'} added to this profile.` : 'Code redeemed. Your rewards were added to this profile.', 'success');
     } catch (error) {
       const messages = { invalid_code:'That Critter Code is not valid.', already_redeemed:'This profile already redeemed that code.', expired_code:'That Critter Code has expired.', disabled_code:'That Critter Code is disabled.', not_active:'That Critter Code is not active yet.', version_locked:'Update Critter Extraction before using this code.', profile_corrupt:'The active profile could not safely store rewards.', reward_definition_missing:'This reward bundle is temporarily unavailable.' };
       setMessage(messages[error?.message] || 'The code could not be redeemed. Try again.', 'error');
@@ -307,13 +281,15 @@
     }
   }
 
-  function load(path) {
-    return new Promise((ok, fail) => {
+  function loadScript(path, id = '') {
+    return new Promise((resolveLoad, reject) => {
+      if (id && document.getElementById(id)) return resolveLoad();
       const script = document.createElement('script');
+      if (id) script.id = id;
       script.async = false;
       script.src = resolve(path);
-      script.onload = () => ok();
-      script.onerror = () => fail(new Error(`Could not load Critter Codes payload fragment: ${path}`));
+      script.onload = () => resolveLoad();
+      script.onerror = () => reject(new Error(`Could not load Critter Codes file: ${path}`));
       document.head.appendChild(script);
     });
   }
@@ -322,46 +298,72 @@
     return typeof window.CritterCodes?.redeem === 'function';
   }
 
-  function waitForApi(timeoutMs = 15000) {
-    return new Promise((resolveReady, reject) => {
-      const started = performance.now();
-      const check = () => {
-        if (runtimeReady()) return resolveReady(window.CritterCodes);
-        if (performance.now() - started >= timeoutMs) return reject(new Error('Critter Codes runtime loaded, but its redeem API did not initialize.'));
-        setTimeout(check, 60);
-      };
-      check();
-    });
+  function patchRuntimeSource(source) {
+    let output = String(source || '');
+    const bridge = window.__CRITTER_CODES_API_BRIDGE__;
+    if (typeof bridge?.patchPackedRuntime === 'function') {
+      try { output = bridge.patchPackedRuntime(output); } catch (_) { }
+    }
+    if (!output.includes('__CRITTER_CODES_DIRECT_EXPORT_')) {
+      for (const name of ['CritterCodes', 'CritterRewardRuntime']) {
+        const declaration = new RegExp(`\\b(const|let|var)\\s+${name}\\s*=`, 'm');
+        if (declaration.test(output) && !new RegExp(`globalThis\\.${name}\\s*=`).test(output)) {
+          output = output.replace(declaration, `$1 ${name}=globalThis.${name}=`);
+        }
+      }
+      output += `\n;(() => {\n  try {\n    const api = typeof CritterCodes !== 'undefined' ? CritterCodes : globalThis.CritterCodes;\n    if (api && typeof api.redeem === 'function') globalThis.CritterCodes = api;\n    const rewards = typeof CritterRewardRuntime !== 'undefined' ? CritterRewardRuntime : globalThis.CritterRewardRuntime;\n    if (rewards) globalThis.CritterRewardRuntime = rewards;\n    globalThis.dispatchEvent(new CustomEvent('critter-codes-runtime-exported'));\n  } catch (error) {\n    globalThis.__CRITTER_CODES_RUNTIME_EXPORT_ERROR__ = error?.message || String(error);\n  }\n})();\n/* __CRITTER_CODES_DIRECT_EXPORT_${VERSION}__ */\n`;
+    }
+    return output;
   }
 
   async function executeRuntime(source) {
+    const executable = patchRuntimeSource(source);
     let capturedError = null;
     const capture = event => {
-      if (!capturedError && String(event?.filename || '').startsWith('blob:')) capturedError = event.error || new Error(event.message || 'Critter Codes runtime error.');
+      if (!capturedError && /critter-codes\.runtime\.js/i.test(String(event?.filename || ''))) capturedError = event.error || new Error(event.message || 'Critter Codes runtime error.');
     };
     window.addEventListener('error', capture, true);
-    const url = URL.createObjectURL(new Blob([`${source}\n//# sourceURL=critter-codes.runtime.js`], { type: 'text/javascript' }));
     try {
-      await new Promise((ok, fail) => {
-        const runtime = document.createElement('script');
-        runtime.dataset.critterCodesRuntime = VERSION;
-        runtime.src = url;
-        runtime.onload = () => ok();
-        runtime.onerror = () => fail(new Error('Critter Codes runtime script could not be executed.'));
-        document.head.appendChild(runtime);
-      });
+      const run = new Function(`${executable}\n//# sourceURL=critter-codes.runtime.js`);
+      run.call(window);
       await new Promise(resolveDelay => setTimeout(resolveDelay, 0));
+      window.__CRITTER_CODES_API_BRIDGE__?.refresh?.();
       if (capturedError && !runtimeReady()) throw capturedError;
     } finally {
       window.removeEventListener('error', capture, true);
-      URL.revokeObjectURL(url);
     }
   }
 
+  async function waitForApi(timeoutMs = 5000) {
+    const started = performance.now();
+    while (!runtimeReady()) {
+      window.__CRITTER_CODES_API_BRIDGE__?.refresh?.();
+      if (performance.now() - started >= timeoutMs) {
+        const diagnostic = window.__CRITTER_CODES_RUNTIME_EXPORT_ERROR__ || window.__CRITTER_CODES_API_BRIDGE__?.state?.().lastError;
+        throw new Error(diagnostic || 'Critter Codes runtime loaded, but its redeem API did not initialize.');
+      }
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 50));
+    }
+    return window.CritterCodes;
+  }
+
+  async function ensureRegistry() {
+    if (Array.isArray(window.__CRITTER_CODE_REGISTRY__?.e)) return;
+    await loadScript(`core/rewards/critter-codes.registry.js?v=2.0.0`, 'critter-codes-self-registry-loader');
+    if (!Array.isArray(window.__CRITTER_CODE_REGISTRY__?.e)) throw new Error('Critter Codes registry did not initialize.');
+  }
+
   async function bootRuntime() {
+    if (runtimeReady()) {
+      setState('ready', 'Critter Codes ready');
+      return;
+    }
     if (!globalThis.DecompressionStream) throw new Error('This browser cannot unpack the Critter Codes interface. Use a current Chrome, Edge, Firefox, or Safari version.');
+    await ensureRegistry();
     window.__CRITTER_CODE_PAYLOAD__ = [];
-    for (const path of paths) await load(path);
+    for (let part = 1; part <= PAYLOAD_PARTS; part += 1) {
+      await loadScript(`core/rewards/critter-codes.payload.${part}.js?v=${VERSION}`);
+    }
     const payload = window.__CRITTER_CODE_PAYLOAD__.join('');
     delete window.__CRITTER_CODE_PAYLOAD__;
     if (!payload) throw new Error('Critter Codes payload was empty.');
@@ -372,6 +374,7 @@
     await executeRuntime(source);
     await waitForApi();
     setState('ready', 'Critter Codes ready');
+    window.dispatchEvent(new CustomEvent('critter-codes-api-ready', { detail: { version: VERSION, directRuntimeExport: true } }));
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureEntryUi, { once: true });
