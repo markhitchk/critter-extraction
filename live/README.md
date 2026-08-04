@@ -1,59 +1,81 @@
 <!--
-AI ASSISTANTS: DO NOT EDIT, REWRITE, OR REPLACE THIS README.md during unrelated project work. Preserve this file exactly unless the repository owner explicitly requests a README change.
+AI ASSISTANTS: This README is intentionally branded and maintained by the repository owner.
+Only change it when the owner explicitly requests documentation or branding updates.
 -->
 
-<h1 align="center">Critter Extraction</h1>
+<div align="center">
+  <img src="assets/branding/icon.svg" alt="Critter Extraction logo" width="175">
 
-<p align="center">
-  <img src="assets/branding/icon.svg" alt="Critter Extraction game logo" width="220">
-</p>
+  # CRITTER EXTRACTION · LIVE
 
-**Critter Extraction** is a cute 3D browser extraction shooter created by **Harley’s Studios**.
+  **CURRENT PUBLIC DEPLOYMENT**
 
-Explore the map, fight enemy critters, collect weapons and gear, complete objectives, and reach the extraction zone with your loot.
+  <p>
+    <img alt="Live channel" src="https://img.shields.io/badge/CHANNEL-LIVE-20e3b2?style=for-the-badge&labelColor=101820">
+    <img alt="Version v0.22.0" src="https://img.shields.io/badge/VERSION-v0.22.0-43b9ff?style=for-the-badge&labelColor=101820">
+  </p>
 
-## Play
+  <a href="https://markhitchk.github.io/critter-extraction/live/"><img alt="Play the Live build" src="https://img.shields.io/badge/▶%20DEPLOY-INTO%20LIVE-20e3b2?style=for-the-badge&labelColor=101820"></a>
 
-[Play Critter Extraction](https://markhitchk.github.io/critter-extraction/)
+  <br><br>
+  <img src="assets/loading/cinematic-gameplay-fullhd.webp" alt="Critter Extraction gameplay artwork" width="860">
+</div>
 
-## Features
+> [!IMPORTANT]
+> This directory is the current public player build. Changes here can affect active players, saved profiles, multiplayer rooms, and GitHub Pages deployment.
 
-- Solo, co-op, and PvP modes
-- First-person and third-person cameras
-- Weapons, armor, backpacks, loot, and death boxes
-- Inventory, account stash, and custom loadouts
-- Quests, objectives, merchants, and Petals
-- Enemy AI with adjustable difficulty and respawn settings
-- Direct browser multiplayer using room links and six-digit codes
-- Local player profiles with downloadable account backups
-- In-game Feedback Center for drafting reports and reading repository issues
-- Keyboard, mouse, and touchscreen controls
+## Mission profile
 
-## Unreal Engine 6 Release
+Critter Extraction is a cute 3D extraction shooter by **Harley’s Studios**. Prepare a loadout, enter a dangerous map, fight hostile critters, collect gear, complete objectives, and reach extraction before everything is lost.
 
-A new **Unreal Engine 6 edition of Critter Extraction is coming soon**.
+| Modes | Progression | Multiplayer | Devices |
+|:--|:--|:--|:--|
+| Solo, Co-op, VS Arena | Stash, loadouts, quests, Petals | Room codes, WebRTC, up to 8 players | Desktop, Chromebook, tablet, phone |
 
-## Project Status
+## LIVE systems
 
-Critter Extraction is still being developed. Features, gameplay, and artwork may change as the game is improved.
+- First-person and over-the-shoulder third-person cameras
+- Weapons, ammunition, armor, backpacks, healing, and loot
+- Account stash, prepared inventory, custom loadouts, and Trading Post
+- Quests, objectives, enemy difficulty, and configurable AI respawns
+- Host-authoritative co-op and VS Arena networking
+- Tactical minimap, responsive inventory grids, and viewport-safe dialogs
+- Password-protected portable profile backups with v6 compatibility
+- Fast Boot runtime, cached fallback loading, and privacy-safe diagnostics
 
-## Current Version
+## Player entry points
 
-**v0.22.0**
+- **[Play LIVE](https://markhitchk.github.io/critter-extraction/live/)**
+- **[Open the project command center](../README.md)**
+- **[Read the changelog](CHANGELOG.md)**
+- **[Report an issue](https://github.com/markhitchk/critter-extraction/issues/new/choose)**
 
+## Development gate
 
-## Credits
+Run all checks from this directory before publishing LIVE changes:
 
-Created by **Harley’s Studios**.
+```bash
+npm ci
+npm test
+```
 
-## Feedback and Issues
+Focused checks:
 
-Use the **Feedback** button inside Critter Extraction to:
+```bash
+npm run validate
+npm run check:portable
+npm run test:browser
+```
 
-- write and save a feedback draft
-- review privacy-safe diagnostics before publication
-- copy or download a report
-- browse open and closed repository issues
-- read issue descriptions and comments inside the game
+Read **[Contributing](CONTRIBUTING.md)** before editing save fields, storage keys, generated files, room links, security rules, or compatibility adapters.
 
-Because the production game is hosted as a static GitHub Pages site, the final publication confirmation is completed through GitHub unless a secure owner-managed feedback endpoint is configured.
+## Security boundary
+
+Never publish account XML, backup passwords, room payloads, access tokens, private signaling data, browser-storage contents, or personal information in issues. See **[Security](SECURITY.md)**, **[Profile Security](../docs/PROFILE-SECURITY.md)**, and the **[Security and Ban System](security/README.md)**.
+
+---
+
+<div align="center">
+  <strong>Harley’s Studios · LIVE CHANNEL</strong><br>
+  Drop in. Gear up. Extract.
+</div>
