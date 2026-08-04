@@ -1,4 +1,4 @@
-/* Generated Fast Boot runtime 103e70696c92ae88. Do not edit directly. */
+/* Generated Fast Boot runtime 76fabd0fcdd5e5b4. Do not edit directly. */
 (() => {
 'use strict';
 
@@ -3077,6 +3077,27 @@ dialog#loadoutModal.modal[open]{position:fixed!important;inset:0!important;margi
     root.id = 'accountManagerRevamp';
     root.className = 'account-manager-layout';
 
+    const quickSection = document.createElement('section');
+    quickSection.className = 'account-manager-section account-quick-section';
+    quickSection.innerHTML = `
+      <div class="account-section-heading">
+        <div><span class="eyebrow">QUICK ACCESS</span><h3>Game tools</h3><p>The former top-bar controls now live with your profile tools.</p></div>
+      </div>
+      <div class="account-quick-actions" id="accountQuickActions"></div>`;
+
+    const quickActions = quickSection.querySelector('#accountQuickActions');
+    const controlsButton = document.querySelector('.top-actions [data-open="helpModal"]');
+    const settingsButton = document.querySelector('.top-actions [data-open="settingsModal"]');
+    const petalsButton = document.getElementById('topPetalsBtn');
+    const topbarTools = [controlsButton, settingsButton, petalsButton].filter(Boolean);
+    topbarTools.forEach(button => {
+      button.classList.add('account-quick-button');
+      button.addEventListener('click', () => {
+        if (modal.open && typeof modal.close === 'function') modal.close();
+      }, true);
+      quickActions.appendChild(button);
+    });
+
     const profilesSection = document.createElement('section');
     profilesSection.className = 'account-manager-section account-profiles-section';
     profilesSection.innerHTML = `
@@ -3115,7 +3136,7 @@ dialog#loadoutModal.modal[open]{position:fixed!important;inset:0!important;margi
     if (copyInviteButton) otherActions.appendChild(copyInviteButton);
     if (newAccountButton) otherActions.appendChild(newAccountButton);
 
-    root.append(profilesSection, securitySection, transferSection);
+    root.append(quickSection, profilesSection, securitySection, transferSection);
     if (oldNote) oldNote.insertAdjacentElement('afterend', root);
     else card.querySelector(':scope > header')?.insertAdjacentElement('afterend', root);
     if (oldFooter) oldFooter.remove();
@@ -3177,9 +3198,10 @@ dialog#loadoutModal.modal[open]{position:fixed!important;inset:0!important;margi
       const style = document.createElement('style');
       style.id = 'accountManagerRevampStyles';
       style.textContent = `
-body.critter-main-menu-active .topbar{justify-content:flex-end!important}
-body.critter-main-menu-active .topbar>.brand,body.critter-main-menu-active .top-actions>:not(#accountBtn){display:none!important}
+body.critter-main-menu-active .topbar{justify-content:space-between!important}
+body.critter-main-menu-active .topbar>.brand{display:flex!important;visibility:visible!important}
 body.critter-main-menu-active .top-actions{margin-left:auto!important}
+body.critter-main-menu-active .top-actions>:not(#accountBtn){display:none!important}
 body.critter-main-menu-active #accountBtn small{font-size:0}
 body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-size:9px}
 #accountsModal .account-manager-revamp{width:min(920px,calc(100vw - 18px))!important;max-height:calc(100dvh - 18px)!important;overflow:auto!important;padding:16px!important}
@@ -3189,6 +3211,10 @@ body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-siz
 .account-manager-section{border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.025);padding:12px;min-width:0}
 .account-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
 .account-section-heading h3{margin:2px 0 3px;font-size:16px}.account-section-heading p{margin:0;color:var(--muted);font-size:9px}
+.account-quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.account-quick-actions .account-quick-button{display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:100%!important;min-height:44px!important;margin:0!important;padding:9px 12px!important;border-radius:12px!important;font-size:10px!important}
+.account-quick-actions .petals-chip{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:none!important}
+.account-quick-actions .petals-chip strong{font-size:10px!important}
 .account-summary{display:grid;grid-template-columns:auto auto;align-items:baseline;gap:1px 5px;text-align:right;white-space:nowrap}.account-summary strong{font-size:20px}.account-summary span{font-size:8px;color:var(--muted);text-transform:uppercase}.account-summary b{grid-column:1/-1;font-size:9px;color:var(--cyan,#64e8ea)}
 .account-toolbar{display:grid;grid-template-columns:minmax(180px,1fr) auto auto;gap:8px;align-items:end;margin-bottom:10px}.account-search-field{display:grid;gap:4px}.account-search-field span{font-size:8px;color:var(--muted);text-transform:uppercase;font-weight:800}.account-search-field input{width:100%;min-width:0}
 #accountsModal .account-list{display:grid!important;gap:8px!important;max-height:280px!important;overflow:auto!important;padding-right:2px}
@@ -3198,7 +3224,7 @@ body.critter-main-menu-active #accountBtn small:after{content:'Profile';font-siz
 .account-password-section{padding-bottom:10px}.account-security-simple{margin:0!important;padding:10px!important;border-radius:13px!important;display:grid!important;grid-template-columns:minmax(180px,1fr) minmax(180px,.8fr) auto!important;align-items:end!important;gap:10px!important}
 .account-security-simple>div:first-child{align-self:center}.account-security-simple label{margin:0!important}.account-security-simple .account-backup-actions{display:flex!important;gap:5px!important;flex-wrap:wrap!important}.account-security-simple p{grid-column:1/-1!important;margin:0!important;font-size:8px!important;color:var(--muted)!important}
 .account-transfer-grid{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px}.account-transfer-grid article{display:grid;grid-template-columns:auto 1fr;gap:8px;align-content:start;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(0,0,0,.12)}.account-transfer-grid article>span{font-size:18px;color:var(--cyan,#64e8ea)}.account-transfer-grid strong{font-size:11px}.account-transfer-grid small{display:block;margin-top:3px;color:var(--muted);font-size:8px;line-height:1.35}.account-transfer-actions,.account-link-import{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.account-link-import .xml-profile-tools{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;background:none!important}.account-link-import label{min-width:0!important}.account-link-import input{width:100%!important;min-width:0!important}.account-transfer-actions button,.account-link-import button{min-height:36px!important;font-size:9px!important}
-@media(max-width:760px){.account-transfer-grid{grid-template-columns:1fr}.account-security-simple{grid-template-columns:1fr}.account-security-simple p{grid-column:1}.account-toolbar{grid-template-columns:1fr 1fr}.account-toolbar .account-search-field{grid-column:1/-1}#accountsModal .account-row{grid-template-columns:auto minmax(0,1fr)!important}#accountsModal .account-row>div:last-child{grid-column:1/-1;justify-content:flex-start!important}.account-section-heading{align-items:flex-start}.account-manager-intro{align-items:flex-start;flex-direction:column}}
+@media(max-width:760px){.account-quick-actions{grid-template-columns:1fr}.account-transfer-grid{grid-template-columns:1fr}.account-security-simple{grid-template-columns:1fr}.account-security-simple p{grid-column:1}.account-toolbar{grid-template-columns:1fr 1fr}.account-toolbar .account-search-field{grid-column:1/-1}#accountsModal .account-row{grid-template-columns:auto minmax(0,1fr)!important}#accountsModal .account-row>div:last-child{grid-column:1/-1;justify-content:flex-start!important}.account-section-heading{align-items:flex-start}.account-manager-intro{align-items:flex-start;flex-direction:column}}
 @media(max-height:700px){#accountsModal .account-manager-revamp{padding:12px!important}.account-manager-layout{gap:8px}.account-manager-section{padding:9px}#accountsModal .account-list{max-height:190px!important}.account-section-heading{margin-bottom:7px}.account-transfer-grid article{padding:8px}}
 `;
       document.head.appendChild(style);
