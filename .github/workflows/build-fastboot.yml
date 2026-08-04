@@ -1,0 +1,61 @@
+name: Build Fast Boot Runtime
+
+on:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+    paths:
+      - 'live/**'
+      - 'scripts/build-fastboot.mjs'
+      - 'scripts/optimize-live-index.mjs'
+      - '.github/workflows/build-fastboot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fastboot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build generated runtime
+        run: node scripts/build-fastboot.mjs
+
+      - name: Optimize live index
+        run: node scripts/optimize-live-index.mjs
+
+      - name: Validate generated JavaScript
+        run: |
+          node --check live/core/loader/game-loader.js
+          node --check live/core/loader/live-patches.bundle.js
+          node --check live/core/game/game-runtime.js
+          node --check live/core/boot/project-paths.js
+          git diff --check
+
+      - name: Commit generated Fast Boot files
+        run: |
+          if git diff --quiet; then
+            echo "Fast Boot outputs are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live/index.html live/core/config/build-info.js live/core/loader/live-patches.bundle.js live/core/game/game-runtime.js
+          git commit -m "Build generated Fast Boot runtime"
+          git push
