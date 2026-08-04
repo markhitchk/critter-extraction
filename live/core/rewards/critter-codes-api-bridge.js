@@ -1,15 +1,16 @@
-/* Critter Codes global API bridge v1.0.0.
-   The packed classic-script runtime exposes CritterCodes as a global lexical
-   binding in some browsers. Global lexical bindings are not properties of
-   window, so this bridge publishes the existing API for the production loader
-   and lobby UI without changing or exposing any valid reward codes. */
+/* Critter Codes global API bridge v1.1.0.
+   The packed runtime may declare CritterCodes inside its generated script
+   instead of assigning it to window. This bridge patches that exact runtime
+   script before execution so its real API becomes available to the loader,
+   the standalone redeem page, and the main-menu interface. */
 (() => {
   'use strict';
 
   if (window.__CRITTER_CODES_API_BRIDGE__) return;
 
-  const VERSION = '1.0.0';
-  const state = { status: 'waiting', attempts: 0, lastError: '' };
+  const VERSION = '1.1.0';
+  const state = { status: 'waiting', attempts: 0, lastError: '', runtimePatched: false };
+  const nativeAppend = HTMLHeadElement.prototype.appendChild;
   let timer = 0;
 
   function readLexicalApi() {
@@ -66,14 +67,71 @@
       timer = 0;
     }
     window.dispatchEvent(new CustomEvent('critter-codes-api-ready', {
-      detail: { version: VERSION, attempts: state.attempts }
+      detail: { version: VERSION, attempts: state.attempts, runtimePatched: state.runtimePatched }
     }));
     return true;
   }
 
+  function patchPackedRuntime(source) {
+    let output = String(source || '');
+    let changed = false;
+
+    const exposeBinding = name => {
+      const declaration = new RegExp(`\\b(const|let|var)\\s+${name}\\s*=`, 'm');
+      if (declaration.test(output)) {
+        output = output.replace(declaration, `$1 ${name}=window.${name}=`);
+        changed = true;
+      }
+    };
+
+    exposeBinding('CritterCodes');
+    exposeBinding('CritterRewardRuntime');
+
+    output += `\n;(() => {\n  try {\n    const api = typeof CritterCodes !== 'undefined' ? CritterCodes : globalThis.CritterCodes;\n    if (api && typeof api.redeem === 'function') globalThis.CritterCodes = api;\n    const rewardRuntime = typeof CritterRewardRuntime !== 'undefined' ? CritterRewardRuntime : globalThis.CritterRewardRuntime;\n    if (rewardRuntime) globalThis.CritterRewardRuntime = rewardRuntime;\n    globalThis.dispatchEvent(new CustomEvent('critter-codes-runtime-exported'));\n  } catch (error) {\n    globalThis.__CRITTER_CODES_RUNTIME_EXPORT_ERROR__ = error?.message || String(error);\n  }\n})();\n/* __CRITTER_CODES_API_EXPORT_${VERSION}__ changed:${changed} */\n`;
+
+    state.runtimePatched = true;
+    return output;
+  }
+
+  HTMLHeadElement.prototype.appendChild = function critterCodesApiBridgeAppend(node) {
+    const src = node?.tagName === 'SCRIPT' ? String(node.src || '') : '';
+    const isPackedRuntime = this === document.head &&
+      node?.dataset?.critterCodesRuntime &&
+      src.startsWith('blob:') &&
+      !node.dataset.critterCodesExportPatched;
+
+    if (!isPackedRuntime) return nativeAppend.call(this, node);
+
+    const originalUrl = src;
+    node.dataset.critterCodesExportPatched = 'loading';
+
+    fetch(originalUrl).then(response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.text();
+    }).then(source => {
+      const patchedUrl = URL.createObjectURL(new Blob([patchPackedRuntime(source)], { type: 'text/javascript' }));
+      node.src = patchedUrl;
+      node.dataset.critterCodesExportPatched = 'true';
+      node.addEventListener('load', () => {
+        URL.revokeObjectURL(patchedUrl);
+        queueMicrotask(publishApi);
+      }, { once: true });
+      node.addEventListener('error', () => URL.revokeObjectURL(patchedUrl), { once: true });
+      nativeAppend.call(document.head, node);
+    }).catch(error => {
+      state.lastError = error?.message || String(error || 'Could not patch packed Critter Codes runtime.');
+      node.src = originalUrl;
+      node.dataset.critterCodesExportPatched = 'fallback';
+      nativeAppend.call(document.head, node);
+    });
+
+    return node;
+  };
+
   window.__CRITTER_CODES_API_BRIDGE__ = Object.freeze({
     version: VERSION,
     refresh: publishApi,
+    patchPackedRuntime,
     state: () => ({ ...state })
   });
 
@@ -89,4 +147,5 @@
 
   document.addEventListener('DOMContentLoaded', publishApi, { once: true });
   window.addEventListener('load', publishApi, { once: true });
+  window.addEventListener('critter-codes-runtime-exported', publishApi);
 })();
