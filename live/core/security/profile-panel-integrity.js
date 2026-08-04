@@ -2,6 +2,7 @@
   'use strict';
 
   const NOTICE_HTML = '<strong>Saved only on this device.</strong><span>Your progress, stash, Petals, appearance, statistics, loadout, and settings are local. Create an encrypted backup before clearing browser data or moving devices.</span>';
+  const MAIN_MENU_DOCK_SELECTOR = '#menuScreen nav.lobby-action-dock';
 
   function closestCompactStorageBlock(node, card) {
     let target = node;
@@ -38,6 +39,15 @@
       });
   }
 
+  function suppressMainMenuQuickActions() {
+    document.querySelectorAll(MAIN_MENU_DOCK_SELECTOR).forEach(dock => {
+      if (!dock.hidden) dock.hidden = true;
+      if (dock.getAttribute('aria-hidden') !== 'true') dock.setAttribute('aria-hidden', 'true');
+      if (!dock.hasAttribute('inert')) dock.setAttribute('inert', '');
+      if (dock.classList.contains('dashboard-action-panel')) dock.classList.remove('dashboard-action-panel');
+    });
+  }
+
   function ensureLocalNotice(card, root) {
     let notice = card.querySelector('.profile-local-notice, .account-manager-intro');
     if (!notice) {
@@ -71,6 +81,64 @@
     if (notice.hidden !== shouldHide) notice.hidden = shouldHide;
   }
 
+  function ensureNotificationsSection(root) {
+    if (!root) return null;
+    let section = root.querySelector('.account-notifications-section');
+    if (!section) {
+      section = document.createElement('section');
+      section.className = 'account-manager-section account-notifications-section';
+      section.innerHTML = `
+        <div class="account-section-heading">
+          <div><span class="eyebrow">NOTIFICATIONS</span><h3>Account inbox</h3><p>Interrupted-drop recovery and Fair Play protection updates stay with the active profile.</p></div>
+          <span id="accountNotificationsSummary" class="account-notifications-summary">No unread notices</span>
+        </div>
+        <button class="secondary account-notifications-open" id="accountNotificationsOpenBtn" type="button">
+          <span aria-hidden="true">🔔</span><strong>Open notifications</strong><b id="accountNotificationsInlineBadge" hidden>0</b>
+        </button>`;
+    }
+
+    const profiles = root.querySelector('.account-profiles-section');
+    const quick = root.querySelector('.account-quick-section');
+    if (section.parentElement !== root) {
+      if (profiles) root.insertBefore(section, profiles);
+      else root.appendChild(section);
+    } else if (profiles && section.nextElementSibling !== profiles && section.previousElementSibling !== quick) {
+      root.insertBefore(section, profiles);
+    }
+
+    const openButton = section.querySelector('#accountNotificationsOpenBtn');
+    const summary = section.querySelector('#accountNotificationsSummary');
+    const inlineBadge = section.querySelector('#accountNotificationsInlineBadge');
+    const sourceButton = document.getElementById('recoveryNotificationsBtn');
+    const sourceBadge = document.getElementById('recoveryNotificationsBadge');
+    const unread = sourceBadge && !sourceBadge.hidden ? Math.max(0, Number.parseInt(sourceBadge.textContent, 10) || 0) : 0;
+
+    const summaryText = unread ? `${unread} unread notice${unread === 1 ? '' : 's'}` : 'No unread notices';
+    if (summary && summary.textContent !== summaryText) summary.textContent = summaryText;
+    if (inlineBadge) {
+      const shouldHide = unread < 1;
+      const badgeText = unread > 99 ? '99+' : String(unread);
+      if (inlineBadge.hidden !== shouldHide) inlineBadge.hidden = shouldHide;
+      if (inlineBadge.textContent !== badgeText) inlineBadge.textContent = badgeText;
+    }
+    if (openButton) {
+      const shouldDisable = !sourceButton && !window.__CRITTER_RECOVERY__?.open;
+      if (openButton.disabled !== shouldDisable) openButton.disabled = shouldDisable;
+      if (openButton.dataset.notificationsReady !== 'true') {
+        openButton.dataset.notificationsReady = 'true';
+        openButton.addEventListener('click', () => {
+          const accountsModal = document.getElementById('accountsModal');
+          if (accountsModal?.open && typeof accountsModal.close === 'function') accountsModal.close();
+          setTimeout(() => {
+            if (typeof window.__CRITTER_RECOVERY__?.open === 'function') window.__CRITTER_RECOVERY__.open();
+            else document.getElementById('recoveryNotificationsBtn')?.click();
+          }, 0);
+        });
+      }
+    }
+    return section;
+  }
+
   function ensureSecuritySection(root) {
     if (!root) return null;
     let section = root.querySelector('.account-password-section');
@@ -78,11 +146,17 @@
       section = document.createElement('section');
       section.className = 'account-manager-section account-password-section';
       section.innerHTML = '<div class="account-section-heading"><div><span class="eyebrow">SECURITY</span><h3>Protect new backups</h3><p>One password is reused for exports during this tab session.</p></div></div>';
-      const transfer = root.querySelector('.account-transfer-section');
-      if (transfer) transfer.insertAdjacentElement('beforebegin', section);
+    }
+
+    const profiles = root.querySelector('.account-profiles-section');
+    if (section.parentElement !== root) {
+      if (profiles) root.insertBefore(section, profiles);
       else root.appendChild(section);
+    } else if (profiles && section.nextElementSibling !== profiles) {
+      root.insertBefore(section, profiles);
     }
     if (section.hidden) section.hidden = false;
+    section.removeAttribute('aria-hidden');
     return section;
   }
 
@@ -191,6 +265,7 @@
     const created = !panel;
     if (!panel) panel = createSecurityPanel();
     if (panel.hidden) panel.hidden = false;
+    panel.removeAttribute('aria-hidden');
     panel.classList.add('account-security-simple');
     if (panel.parentElement !== section) section.appendChild(panel);
     if (created || panel.dataset.profileIntegrityCreated === 'true') wireSecurityPanel(panel);
@@ -201,21 +276,31 @@
     const style = document.createElement('style');
     style.id = 'profilePanelIntegrityStyles';
     style.textContent = `
-      body #menuScreen nav.lobby-action-dock{display:none!important}
+      html body #menuScreen nav.lobby-action-dock,
+      html body #menuScreen .dashboard > nav.lobby-action-dock.dashboard-action-panel{display:none!important;visibility:hidden!important;pointer-events:none!important}
       #accountsModal .profile-local-notice{display:flex!important;align-items:center;gap:8px;margin:8px 0 12px!important;padding:10px 12px!important}
       #accountsModal .profile-local-notice span{color:var(--muted);font-size:10px}
       #accountsModal .profile-missing-notice{display:grid;gap:3px;margin:0 0 10px;padding:11px 12px;border:1px solid rgba(255,211,111,.35);border-radius:12px;background:rgba(255,211,111,.07)}
       #accountsModal .profile-missing-notice[hidden]{display:none!important}
       #accountsModal .profile-missing-notice strong{font-size:11px;color:#ffe39a}
       #accountsModal .profile-missing-notice span{font-size:9px;color:var(--muted)}
+      #accountsModal .account-notifications-section,
+      #accountsModal .account-password-section{display:block!important;visibility:visible!important;opacity:1!important}
+      #accountsModal .account-notifications-summary{align-self:center;padding:6px 9px;border:1px solid rgba(103,240,239,.22);border-radius:999px;background:rgba(103,240,239,.07);color:var(--cyan,#67f0ef);font-size:9px;font-weight:850;white-space:nowrap}
+      #accountsModal .account-notifications-open{position:relative;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;min-height:42px!important}
+      #accountsModal .account-notifications-open>b{display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#ff5f72;color:#fff;font-size:9px;line-height:1}
+      #accountsModal .account-notifications-open>b[hidden]{display:none!important}
       #accountsModal #accountBackupSecurity{display:grid!important;visibility:visible!important;opacity:1!important}
       #accountsModal #accountBackupSecurity[hidden]{display:grid!important}
-      @media(max-width:760px){#accountsModal .profile-local-notice{align-items:flex-start;flex-direction:column}}
+      @media(max-width:760px){#accountsModal .profile-local-notice{align-items:flex-start;flex-direction:column}#accountsModal .account-notifications-summary{white-space:normal;text-align:right}}
     `;
     document.head.appendChild(style);
   }
 
   function repair() {
+    installStyles();
+    suppressMainMenuQuickActions();
+
     const modal = document.getElementById('accountsModal');
     const card = modal?.querySelector('.modal-card');
     if (!modal || !card) return false;
@@ -224,18 +309,19 @@
     const accountList = document.getElementById('accountList');
     removeStorageMeter(card);
     ensureLocalNotice(card, root);
-    ensureMissingProfileNotice(root, accountList);
+    ensureNotificationsSection(root);
     ensureSecurity(root);
-    installStyles();
+    ensureMissingProfileNotice(root, accountList);
     return true;
   }
 
   function start() {
     installStyles();
+    suppressMainMenuQuickActions();
     let attempts = 0;
     const bootRepair = () => {
       repair();
-      if (attempts++ < 120) setTimeout(bootRepair, 100);
+      if (attempts++ < 160) setTimeout(bootRepair, 100);
     };
     bootRepair();
 
@@ -248,10 +334,10 @@
         repair();
       });
     });
-    observer.observe(document.documentElement, { childList:true, subtree:true });
+    observer.observe(document.documentElement, { childList:true, subtree:true, characterData:true });
 
     document.addEventListener('click', event => {
-      if (event.target.closest('#accountBtn, #accountsBtn, .lobby-dock-button')) setTimeout(repair, 0);
+      if (event.target.closest('#accountBtn, #accountsBtn, .lobby-dock-button, #recoveryNotificationsBtn')) setTimeout(repair, 0);
     }, true);
     window.addEventListener('critter-profile-password-change', () => setTimeout(repair, 0));
   }
