@@ -10,7 +10,11 @@ const source = await readFile(bridgePath, 'utf8');
 new vm.Script(source, { filename: 'critter-codes-api-bridge.js' });
 
 let scheduled = null;
+class HTMLHeadElement {
+  appendChild(node) { return node; }
+}
 const document = {
+  head: new HTMLHeadElement(),
   querySelectorAll: () => [],
   getElementById: () => null,
   addEventListener: () => {}
@@ -18,6 +22,11 @@ const document = {
 const sandbox = {
   console,
   document,
+  HTMLHeadElement,
+  Blob,
+  URL,
+  fetch,
+  queueMicrotask,
   CustomEvent: class CustomEvent {
     constructor(type, init = {}) { this.type = type; this.detail = init.detail; }
   },
@@ -32,17 +41,21 @@ vm.createContext(sandbox);
 
 vm.runInContext(source, sandbox, { filename: 'critter-codes-api-bridge.js' });
 assert.equal(sandbox.CritterCodes, undefined, 'bridge must not invent an API before the runtime loads');
-assert.equal(typeof scheduled, 'function', 'bridge must continue checking for a late classic-script binding');
+assert.equal(typeof scheduled, 'function', 'bridge must continue checking while the runtime loads');
 
-vm.runInContext(`
-  const CritterCodes = Object.freeze({ redeem() { return 'redeemed'; } });
-  const CritterRewardRuntime = Object.freeze({ version: 'test' });
-`, sandbox, { filename: 'synthetic-critter-codes-runtime.js' });
+const packedRuntime = `
+const CritterCodes=Object.freeze({redeem(){return 'redeemed';}});
+const CritterRewardRuntime=Object.freeze({version:'test'});
+`;
+const patched = sandbox.__CRITTER_CODES_API_BRIDGE__.patchPackedRuntime(packedRuntime);
+assert.match(patched, /const CritterCodes=window\.CritterCodes=/, 'CritterCodes declaration was not exported');
+assert.match(patched, /const CritterRewardRuntime=window\.CritterRewardRuntime=/, 'reward runtime declaration was not exported');
+
+vm.runInContext(patched, sandbox, { filename: 'synthetic-packed-critter-codes-runtime.js' });
+assert.equal(typeof sandbox.CritterCodes?.redeem, 'function', 'packed runtime API was not published to window');
+assert.equal(sandbox.CritterCodes.redeem(), 'redeemed');
+assert.equal(sandbox.CritterRewardRuntime?.version, 'test');
 
 scheduled();
-assert.equal(typeof sandbox.CritterCodes?.redeem, 'function', 'global lexical CritterCodes API was not published to window');
-assert.equal(sandbox.CritterCodes.redeem(), 'redeemed');
-assert.equal(sandbox.CritterRewardRuntime?.version, 'test', 'reward runtime lexical binding was not published');
 assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().status, 'ready');
-
-console.log('Critter Codes global lexical API bridge test passed.');
+console.log('Critter Codes packed-runtime API export test passed.');
