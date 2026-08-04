@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-2';
+  const FASTBOOT_VERSION = '2026-08-03-fastboot-3';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -52,6 +52,7 @@
   addHint({ path: `core/loader/game-loader-base.js?v=${FASTBOOT_VERSION}`, as: 'script' });
   addHint({ path: 'core/game/game-core.js?v=2026-08-03-main-menu-fix-1', as: 'fetch', crossOrigin: 'anonymous', priority: 'high' });
   addHint({ path: 'core/rewards/critter-codes.registry.js?v=2.0.0', as: 'script' });
+  addHint({ path: 'core/rewards/critter-codes-api-bridge.js?v=1.0.0', as: 'script' });
   addHint({ path: 'core/rewards/critter-codes.js?v=2.0.2', as: 'script' });
   addHint({ path: 'assets/branding/HTG.png', as: 'image' });
 })();
@@ -150,19 +151,43 @@
 (() => {
   'use strict';
   if (document.getElementById('critter-codes-registry-loader')) return;
-  const registry = document.createElement('script');
-  registry.id = 'critter-codes-registry-loader';
-  registry.src = window.CritterPaths.resolve('core/rewards/critter-codes.registry.js?v=2.0.0');
-  registry.async = false;
-  registry.addEventListener('load', () => {
-    if (document.getElementById('critter-codes-loader')) return;
+
+  const loadSystem = () => {
+    if (document.getElementById('critter-codes-loader')) {
+      window.__CRITTER_CODES_API_BRIDGE__?.refresh?.();
+      return;
+    }
     const system = document.createElement('script');
     system.id = 'critter-codes-loader';
     system.src = window.CritterPaths.resolve('core/rewards/critter-codes.js?v=2.0.2');
     system.async = false;
+    system.addEventListener('load', () => window.__CRITTER_CODES_API_BRIDGE__?.refresh?.());
     system.addEventListener('error', () => console.warn('Critter Codes interface could not be loaded.'));
     document.head.appendChild(system);
-  });
+  };
+
+  const loadBridgeAndSystem = () => {
+    if (document.getElementById('critter-codes-api-bridge-loader')) {
+      loadSystem();
+      return;
+    }
+    const bridge = document.createElement('script');
+    bridge.id = 'critter-codes-api-bridge-loader';
+    bridge.src = window.CritterPaths.resolve('core/rewards/critter-codes-api-bridge.js?v=1.0.0');
+    bridge.async = false;
+    bridge.addEventListener('load', loadSystem, { once: true });
+    bridge.addEventListener('error', () => {
+      console.warn('Critter Codes API bridge could not be loaded.');
+      loadSystem();
+    }, { once: true });
+    document.head.appendChild(bridge);
+  };
+
+  const registry = document.createElement('script');
+  registry.id = 'critter-codes-registry-loader';
+  registry.src = window.CritterPaths.resolve('core/rewards/critter-codes.registry.js?v=2.0.0');
+  registry.async = false;
+  registry.addEventListener('load', loadBridgeAndSystem, { once: true });
   registry.addEventListener('error', () => console.warn('Critter Codes registry could not be loaded.'));
   document.head.appendChild(registry);
 })();
