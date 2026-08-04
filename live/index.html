@@ -9,6 +9,12 @@
   <link rel="icon" href="./assets/branding/icon.svg" type="image/svg+xml" sizes="any">
   <link rel="shortcut icon" href="./assets/branding/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./assets/branding/HTG.png">
+  <!-- Critter Extraction Fast Boot resource hints -->
+  <link rel="preload" href="./core/game/game-runtime.js?v=2026-08-03-fastboot-1" as="script" fetchpriority="high">
+  <link rel="preload" href="./core/loader/live-patches.bundle.js?v=2026-08-03-fastboot-1" as="script" fetchpriority="high">
+  <link rel="preload" href="./core/loader/game-loader-base.js?v=2026-08-03-fastboot-1" as="script">
+  <link rel="preload" href="./core/game/game-core.js?v=2026-08-03-main-menu-fix-1" as="fetch" crossorigin="anonymous" fetchpriority="high">
+  <link rel="preload" href="./assets/branding/HTG.png" as="image">
   <link rel="stylesheet" href="./styles.css?v=2026-08-03-main-menu-fix-1" data-required-boot-file="styles.css">
   <script>
 (function(){
@@ -428,7 +434,7 @@
 
   <script src="./core/rendering/model-library.js" data-required-boot-file="core/rendering/model-library.js"></script>
   <script src="./core/loader/game-loader.js?v=0.22.0" data-required-boot-file="core/loader/game-loader.js"></script>
-  <script src="./core/shared/github-issues.js"></script>
-  <script src="./core/ui/github-feedback.js"></script>
+  <script defer src="./core/shared/github-issues.js"></script>
+  <script defer src="./core/ui/github-feedback.js"></script>
 </body>
 </html>
