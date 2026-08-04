@@ -1,39 +1,64 @@
-# Critter Extraction Security and Ban System
+<div align="center">
+  <img src="../assets/branding/icon.svg" alt="Critter Extraction logo" width="105">
 
-This folder controls repository-wide multiplayer bans for Critter Extraction.
+  # SECURITY AND BAN SYSTEM
 
-The browser game is hosted as a static GitHub Pages application and multiplayer is peer-to-peer. That means there is no dedicated account server with access to IP addresses, hardware serial numbers, or authoritative cloud accounts. The security layer therefore uses several non-invasive identifiers together and has the host enforce every restriction.
+  **Host enforcement · repository-wide restrictions · privacy-respecting identity checks**
 
-## Identifiers
+  <img alt="Peer-to-peer security" src="https://img.shields.io/badge/MODEL-PEER%20TO%20PEER-43b9ff?style=flat-square&labelColor=101820">
+  <img alt="Host authoritative" src="https://img.shields.io/badge/AUTHORITY-HOST-20e3b2?style=flat-square&labelColor=101820">
+</div>
 
-Each local account receives a `securityId` such as `csp_...`. It is stored inside the account object, so it is included in downloaded XML profiles and normally follows the account to another browser.
+> [!IMPORTANT]
+> Critter Extraction is a static GitHub Pages game. Its security layer can reduce normal cheating and repeat ban evasion, but it cannot provide the same authority as an authenticated dedicated server.
 
-Each browser installation also receives a random install ID. Only its short hash is sent to another player. The security packet can contain:
+## Restriction scopes
 
-- `securityId`: strongest profile/XML identifier
-- `installHash`: identifies the current browser installation
-- `accountIdHash`: hash of the current local account ID
-- `username`: normalized lowercase username
-- `recruitCode`: account recruit code
-- `profileFingerprint`: combined fingerprint of the profile security ID, recruit code, and username
+| Scope | Meaning | Storage |
+|:--|:--|:--|
+| **Host-local** | Blocks a player only from rooms created by that host | Host browser storage |
+| **Repository-wide multiplayer** | Blocks matching identifiers from multiplayer across the published game | `security/bans.json` |
 
-A determined user can still modify a public browser game's JavaScript, clear browser storage, or edit an XML file. These identifiers are meant to stop normal ban evasion and repeat casual cheating; they are not equivalent to a dedicated authenticated game server.
+The player-facing notice must clearly identify which scope is active. A host-local restriction is not a global Critter Extraction ban.
 
-## Automatic cheating bans
+## Privacy-respecting identifiers
 
-The existing host-authoritative Fair Play system validates movement, firing, input sequences, message rates, loot, gear ownership, healing, drops, interaction distance, and extraction state.
+Each local account receives a persistent `securityId` such as `csp_...`. A browser installation also receives a random install ID; only a short hash is shared during multiplayer checks.
 
-When Fair Play removes a guest after repeated violations, the security layer automatically creates a host-local ban:
+A security packet can include:
 
-1. First removal: 24 hours
-2. Second removal: 7 days
-3. Third and later removals: permanent until manually removed
+- `securityId`
+- `installHash`
+- `accountIdHash`
+- normalized `username`
+- `recruitCode`
+- `profileFingerprint`
 
-Automatic bans remain in that host browser. They do not edit this repository automatically.
+The system does **not** collect IP addresses, MAC addresses, hardware serial numbers, contacts, files, or unrelated browsing data.
 
-## Add a repository-wide ban
+## Fair Play enforcement
 
-Edit `security/bans.json` and add an object to the `bans` array. Use one or more identifiers. Matching any supplied identifier blocks multiplayer.
+The host validates gameplay actions including:
+
+- movement and input shape
+- firing, reloads, ammunition, damage, and healing
+- interaction distance and message rate
+- loot, gear ownership, drops, and extraction state
+- respawn, scoring, and match-rule behavior
+
+Repeated validated violations can remove a guest and create a host-local restriction.
+
+### Automatic host-local escalation
+
+1. First qualifying removal: **24 hours**
+2. Second qualifying removal: **7 days**
+3. Third and later qualifying removals: **permanent until manually removed**
+
+Input-key representation differences such as the corrected `FP-INPUT-KEYS` case must not create strikes or automatic bans by themselves.
+
+## Add a repository-wide multiplayer ban
+
+Edit `security/bans.json` and add an enabled entry to the `bans` array. Use one or more identifiers. Matching any supplied identifier blocks multiplayer.
 
 ```json
 {
@@ -55,25 +80,46 @@ Edit `security/bans.json` and add an object to the `bans` array. Use one or more
 }
 ```
 
-Use an ISO 8601 date in `expiresAt` for a temporary ban. Use `null` for a permanent ban. Set `enabled` to `false` to keep an entry without enforcing it.
+Use an ISO 8601 date for a temporary `expiresAt`. Use `null` for a permanent entry. Set `enabled` to `false` to preserve a record without enforcing it.
 
-The strongest practical combination is usually `securityId` plus `installHash` plus `profileFingerprint`. A username-only ban is supported but is easy to evade by renaming the profile.
+The strongest practical combination is usually `securityId`, `installHash`, and `profileFingerprint`. Username-only restrictions are easier to evade.
 
 ## Security Center
 
-The game adds a **Security** button to the top menu. It provides:
+The in-game Security Center provides:
 
-- the current account's ban identifiers
+- current account identifiers
 - global ban-list status
-- manual host-local bans
-- local unban controls
+- manual host-local restrictions and unban controls
 - recent security events
-- a downloadable security report
+- downloadable sanitized security reports
+- identity JSON for a cooperating player or investigation
 
-Use **Copy Identity JSON** to collect identifiers from a player who is cooperating with an investigation. A host can also export a report after Fair Play removes someone.
+Security logs remain local unless the user explicitly downloads or shares a report.
 
-## Privacy and limitations
+## Operational checklist
 
-The system does not attempt invasive fingerprinting. It does not collect IP addresses, MAC addresses, hardware serial numbers, contacts, files, or unrelated browsing data. Security logs and host bans stay in local browser storage unless the user explicitly downloads a report.
+- [ ] Confirm whether the action is host-local or repository-wide.
+- [ ] Record a clear reason without unnecessary personal details.
+- [ ] Use the minimum identifiers needed for reliable matching.
+- [ ] Add an expiration date when a permanent restriction is not justified.
+- [ ] Keep profile XML, room payloads, tokens, and private connection data out of reports.
+- [ ] Verify that key-normalization or network delay did not create a false Fair Play result.
+- [ ] Provide an appeal path when appropriate.
 
-For truly hard-to-evade global bans, ranked play, or valuable item economies, move multiplayer authority and account authentication to an owner-controlled backend. Peer-to-peer browser enforcement can reduce cheating but cannot make an unmodified client mandatory.
+## Security boundary
+
+A determined player can clear storage, edit profile files, or run modified public JavaScript. Truly hard-to-evade global enforcement, ranked competition, or valuable account economies require owner-controlled authentication and authoritative server validation.
+
+## Related documents
+
+- **[Security and Player Privacy](../SECURITY.md)**
+- **[Multiplayer Architecture](../docs/architecture/MULTIPLAYER.md)**
+- **[Encrypted Profile Security](../../docs/PROFILE-SECURITY.md)**
+
+---
+
+<div align="center">
+  <strong>Harley’s Studios · Multiplayer Security</strong><br>
+  Enforce the match without invading the player.
+</div>
