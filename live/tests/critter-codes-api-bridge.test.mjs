@@ -10,14 +10,30 @@ const source = await readFile(bridgePath, 'utf8');
 new vm.Script(source, { filename: 'critter-codes-api-bridge.js' });
 
 let scheduled = null;
+const appendedNodes = [];
 class HTMLHeadElement {
-  appendChild(node) { return node; }
+  appendChild(node) {
+    appendedNodes.push(node);
+    return node;
+  }
 }
 const document = {
   head: new HTMLHeadElement(),
+  scripts: [],
+  baseURI: 'https://example.test/live/core/rewards/critter-codes-api-bridge.js',
   querySelectorAll: () => [],
   getElementById: () => null,
-  addEventListener: () => {}
+  addEventListener: () => {},
+  createElement(tagName) {
+    return {
+      tagName: String(tagName || '').toUpperCase(),
+      id: '',
+      src: '',
+      async: true,
+      dataset: {},
+      addEventListener() {}
+    };
+  }
 };
 const sandbox = {
   console,
@@ -42,8 +58,9 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'critter-codes-api-bridge.js' });
 assert.equal(sandbox.CritterCodes, undefined, 'bridge must not invent an API before the runtime loads');
 assert.equal(typeof scheduled, 'function', 'bridge must continue checking while the runtime loads');
-assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.version, '1.2.0');
+assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.version, '1.4.0');
 assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().blobPatchInstalled, true, 'runtime Blob patch must install before the loader starts');
+assert.equal(appendedNodes[0]?.id, 'critter-codes-insurance-loader', 'bridge must request the insurance helper');
 
 const packedRuntime = `
 const CritterCodes=Object.freeze({redeem(){return 'redeemed';}});
