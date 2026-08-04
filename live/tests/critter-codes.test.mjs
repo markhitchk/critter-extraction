@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process';
 const repo = path.resolve(new URL('../..', import.meta.url).pathname);
 const rewardsDir = path.join(repo,'live/core/rewards');
 const registryPath = path.join(rewardsDir,'critter-codes.registry.js');
+const loaderPath = path.join(rewardsDir,'critter-codes.js');
 const integrationPath = path.join(repo,'live/core/boot/project-paths.js');
 const generatorPath = path.join(repo,'tools/critter-codes/generate-registry.mjs');
 
@@ -26,6 +27,24 @@ for (const name of fragments) {
 }
 const source = gunzipSync(Buffer.from(packed,'base64')).toString('utf8');
 new vm.Script(source,{filename:'critter-codes.runtime.js'});
+
+const loader = await readFile(loaderPath,'utf8');
+new vm.Script(loader,{filename:'critter-codes.js'});
+for (const anchor of [
+  'critterCodesTopEntry',
+  'critterCodesDashboardEntry',
+  'critterCodesEntryModal',
+  '#menuScreen .dashboard',
+  '.top-actions',
+  'Open Critter Codes',
+  'Redeem Code',
+  'View Rewards',
+  'MutationObserver',
+  'prefers-reduced-motion',
+  '@media(max-width:760px)'
+]) assert.ok(loader.includes(anchor),`${anchor} visible entry UI is required`);
+assert.ok(loader.indexOf('ensureEntryUi()') < loader.indexOf('bootRuntime()'),'visible UI must initialize before the packed runtime');
+assert.ok(loader.includes("setState('error'"),'loader failures must remain visible to the player');
 
 const context = { window:{} };
 vm.createContext(context);
@@ -65,4 +84,4 @@ const generatedText = await readFile(generated,'utf8');
 assert.ok(!generatedText.includes('TEST CODE ALPHA'));
 assert.ok(generatedText.includes(createHash('sha256').update('TESTCODEALPHA').digest('hex')));
 
-console.log('Critter Codes production, registry, generator, assets, UI, integration, and error-state checks passed.');
+console.log('Critter Codes production, registry, generator, visible lobby UI, integration, and error-state checks passed.');
