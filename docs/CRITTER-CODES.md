@@ -40,6 +40,7 @@ PENGUIN-PARTY
 | `ARCTICADVENTURE` | Arctic Fox, Winter Armor, Frost Weapon Wrap |
 | `CAPYBARACHILL` | Capybara, Relaxed Emote, Orange Hat |
 | `AXOLOTLAQUA` | Axolotl, Aquatic Cosmetic Set, Bubble Trail |
+| `CUDDLEPARTY` | Two-tone Brown Otter playable critter |
 | `HARLEYSCLAN` | Cyan HTG Cosmetic Set, Clan Badge, Harley's Clan Nameplate |
 
 ## Redemption rules
@@ -54,7 +55,7 @@ PENGUIN-PARTY
 
 ## Public and private codes
 
-This file lists the ten public starter codes already announced for the game. Owner-only, testing, limited, or unreleased codes must not be added here. The production registry stores SHA-256 hashes and internal reward IDs rather than plaintext code strings.
+This file lists the public starter and event codes already announced for the game. Owner-only, testing, limited, or unreleased codes must not be added here. The production registry and reward extensions store SHA-256 hashes and internal reward IDs rather than plaintext code strings.
 
 ## Adding another public code
 
