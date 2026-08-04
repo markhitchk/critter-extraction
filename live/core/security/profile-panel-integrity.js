@@ -46,9 +46,10 @@
       if (root) root.insertAdjacentElement('beforebegin', notice);
       else card.querySelector(':scope > header')?.insertAdjacentElement('afterend', notice);
     }
-    notice.hidden = false;
-    notice.removeAttribute('aria-hidden');
-    notice.innerHTML = NOTICE_HTML;
+    notice.classList.add('profile-local-notice', 'account-manager-intro');
+    if (notice.hidden) notice.hidden = false;
+    if (notice.hasAttribute('aria-hidden')) notice.removeAttribute('aria-hidden');
+    if (notice.innerHTML !== NOTICE_HTML) notice.innerHTML = NOTICE_HTML;
     return notice;
   }
 
@@ -66,8 +67,8 @@
       notice.innerHTML = '<strong>No local profile found</strong><span>Create a new profile or import an encrypted backup to continue.</span>';
       accountList.insertAdjacentElement('beforebegin', notice);
     }
-    const hasProfile = !!accountList.querySelector('.account-row');
-    notice.hidden = hasProfile;
+    const shouldHide = !!accountList.querySelector('.account-row');
+    if (notice.hidden !== shouldHide) notice.hidden = shouldHide;
   }
 
   function ensureSecuritySection(root) {
@@ -81,7 +82,7 @@
       if (transfer) transfer.insertAdjacentElement('beforebegin', section);
       else root.appendChild(section);
     }
-    section.hidden = false;
+    if (section.hidden) section.hidden = false;
     return section;
   }
 
@@ -89,6 +90,7 @@
     const panel = document.createElement('section');
     panel.id = 'accountBackupSecurity';
     panel.className = 'account-backup-security account-security-simple';
+    panel.dataset.profileIntegrityCreated = 'true';
     panel.innerHTML = `
       <div>
         <span class="eyebrow">PROFILE SECURITY V7</span>
@@ -114,6 +116,7 @@
     const show = panel.querySelector('#showBackupPasswordBtn');
     const change = panel.querySelector('#changeBackupPasswordBtn');
     const clear = panel.querySelector('#forgetBackupPasswordBtn');
+    if (!input || !status || !show || !change || !clear) return;
 
     const refresh = () => {
       const api = window.CritterProfilePasswordUI;
@@ -185,11 +188,12 @@
     const section = ensureSecuritySection(root);
     if (!section) return;
     let panel = document.getElementById('accountBackupSecurity');
+    const created = !panel;
     if (!panel) panel = createSecurityPanel();
-    panel.hidden = false;
+    if (panel.hidden) panel.hidden = false;
     panel.classList.add('account-security-simple');
-    section.appendChild(panel);
-    wireSecurityPanel(panel);
+    if (panel.parentElement !== section) section.appendChild(panel);
+    if (created || panel.dataset.profileIntegrityCreated === 'true') wireSecurityPanel(panel);
   }
 
   function installStyles() {
@@ -233,7 +237,15 @@
     };
     bootRepair();
 
-    const observer = new MutationObserver(() => repair());
+    let queued = false;
+    const observer = new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      queueMicrotask(() => {
+        queued = false;
+        repair();
+      });
+    });
     observer.observe(document.documentElement, { childList:true, subtree:true });
 
     document.addEventListener('click', event => {
