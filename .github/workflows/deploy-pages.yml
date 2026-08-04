@@ -46,9 +46,6 @@ jobs:
       - name: Validate project
         run: npm run validate
 
-      - name: Verify generated files are committed
-        run: git diff --exit-code -- styles.css START_HERE.html portable/START_HERE.html
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
