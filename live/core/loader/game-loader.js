@@ -1,9 +1,12 @@
 (() => {
   'use strict';
 
-  const VERSION = '2026-08-03-direct-runtime-2';
+  if (window.__CRITTER_DIRECT_LOADER_ACTIVE__) return;
+  window.__CRITTER_DIRECT_LOADER_ACTIVE__ = true;
+
+  const VERSION = '2026-08-03-direct-runtime-3';
   const BUILD_ID = String(window.CritterBuildInfo?.buildId || VERSION).replace(/[^A-Za-z0-9._-]/g, '');
-  const SECURITY_VERSION = '1.0.5';
+  const SECURITY_VERSION = '1.0.6';
   const SECURITY_FILES = [
     'security-core.js',
     'security-core-hotfix.js',
@@ -12,16 +15,24 @@
   ];
   const RUNTIME = `./core/game/game-runtime.js?v=${BUILD_ID}`;
 
-  function report(stage, detail) {
-    try { window.__critterBootReport?.(stage, detail); } catch (_) { }
+  function report(stage, detail, progress) {
+    try {
+      if (Number.isFinite(progress)) window.__CRITTER_BOOT__?.setProgress?.(progress, detail);
+      window.__critterBootReport?.(stage, detail);
+    } catch (_) { }
   }
 
   function failureEntry(error, stage = 'direct-runtime') {
     return {
-      code: 'CE-BOOT-JS-001',
+      code: error?.code || 'CE-BOOT-JS-001',
+      severity: 'fatal',
       system: 'boot',
       stage,
       message: error?.message || String(error || 'Critter Extraction could not start.'),
+      nativeMessage: error?.message || '',
+      sourceRaw: error?.sourceRaw || '',
+      line: Number(error?.line || 0),
+      column: Number(error?.column || 0),
       stack: error?.stack || ''
     };
   }
@@ -34,9 +45,10 @@
 
     if (window.CritterErrorUI?.show) {
       try {
-        window.CritterErrorUI.show(window.CritterErrors?.capture
+        const reportEntry = window.CritterErrors?.capture
           ? window.CritterErrors.capture(entry)
-          : entry);
+          : entry;
+        window.CritterErrorUI.show(reportEntry);
         return;
       } catch (uiError) {
         console.error('Critter error screen failed', uiError);
@@ -51,13 +63,6 @@
     return window.CritterPaths?.resolve
       ? window.CritterPaths.resolve(relative)
       : `./${relative}`;
-  }
-
-  function existingScript(file) {
-    return [...document.scripts].find(script => {
-      try { return new URL(script.src, location.href).pathname.endsWith(`/core/security/${file}`); }
-      catch (_) { return false; }
-    });
   }
 
   function fileReady(file) {
@@ -75,40 +80,58 @@
       script.async = false;
       Object.assign(script.dataset, attributes);
       script.onload = () => resolve(script);
-      script.onerror = () => reject(new Error(`Could not load required ${label}: ${url}`));
+      script.onerror = () => {
+        const error = new Error(`Could not load required ${label}.`);
+        error.code = 'CE-BOOT-FILE-001';
+        error.sourceRaw = url;
+        reject(error);
+      };
       document.head.appendChild(script);
     });
   }
 
   async function loadSecurity() {
-    report('core-loading', 'Loading Fair Play and profile security…');
-    for (const file of SECURITY_FILES) {
-      if (fileReady(file)) continue;
-      const current = existingScript(file);
-      if (current) {
-        await new Promise((resolve, reject) => {
-          if (fileReady(file)) return resolve();
-          current.addEventListener('load', resolve, { once: true });
-          current.addEventListener('error', () => reject(new Error(`Could not load required security file: ${file}`)), { once: true });
-          setTimeout(() => fileReady(file) ? resolve() : reject(new Error(`Security file did not initialize: ${file}`)), 10000);
+    report('core-loading', 'Loading Fair Play and profile security…', 32);
+    for (let index = 0; index < SECURITY_FILES.length; index += 1) {
+      const file = SECURITY_FILES[index];
+      if (!fileReady(file)) {
+        await loadScript(securityUrl(file), `security file ${file}`, {
+          requiredBootFile: `core/security/${file}`,
+          critterSecurityFile: file
         });
-        continue;
       }
-      await loadScript(securityUrl(file), `security file ${file}`, {
-        requiredBootFile: `core/security/${file}`,
-        critterSecurityFile: file
-      });
-      if (!fileReady(file)) throw new Error(`Security file loaded but did not initialize: ${file}`);
+      if (!fileReady(file)) {
+        const error = new Error(`Security file loaded but did not initialize: ${file}`);
+        error.code = 'CE-BOOT-INIT-001';
+        error.sourceRaw = securityUrl(file);
+        throw error;
+      }
+      report('core-loading', `Security ready: ${file}`, 34 + ((index + 1) / SECURITY_FILES.length) * 16);
     }
   }
 
-  function waitForRuntime(timeoutMs = 15000) {
+  function runtimeReady() {
+    return !!window.__CRITTER_BOOT__?.ready ||
+      !!window.__CRITTER_DIAGNOSTICS__ ||
+      !!window.__CRITTER_DEBUG__;
+  }
+
+  function waitForRuntime(timeoutMs = 12000) {
     return new Promise((resolve, reject) => {
       const started = performance.now();
       const check = () => {
-        if (window.__CRITTER_DEBUG__ && typeof window.__CRITTER_DEBUG__ === 'object') return resolve();
-        if (window.__CRITTER_BOOT__?.failed) return reject(new Error(window.__CRITTER_BOOT__.detail || 'Game initialization failed.'));
-        if (performance.now() - started >= timeoutMs) return reject(new Error('The required game runtime loaded but did not initialize within 15 seconds.'));
+        if (window.__CRITTER_BOOT__?.ready) return resolve('boot-ready');
+        if (window.__CRITTER_BOOT__?.failed) {
+          return reject(new Error(window.__CRITTER_BOOT__.detail || 'Game initialization failed.'));
+        }
+        const elapsed = performance.now() - started;
+        if (runtimeReady() && elapsed >= 4200) return resolve('runtime-ready');
+        if (elapsed >= timeoutMs) {
+          const error = new Error('The prebuilt game runtime loaded but did not finish initialization within 12 seconds.');
+          error.code = 'CE-BOOT-TIMEOUT-001';
+          error.sourceRaw = RUNTIME;
+          return reject(error);
+        }
         setTimeout(check, 50);
       };
       check();
@@ -132,10 +155,12 @@
     mark('critter-direct-runtime-start');
     try {
       window.__CRITTER_PREBUILT_RUNTIME__ = false;
+      report('core-loading', 'Starting required game systems…', 26);
       await loadSecurity();
 
-      report('game-script-started', 'Loading the required prebuilt game runtime…');
+      report('game-script-started', 'Loading the required prebuilt game runtime…', 58);
       await loadScript(RUNTIME, 'prebuilt game runtime', { critterRuntime: 'direct' });
+      report('game-initialized', 'Runtime loaded. Finishing menu and profile setup…', 82);
       await waitForRuntime();
 
       window.__CRITTER_PREBUILT_RUNTIME__ = true;
@@ -145,7 +170,8 @@
         buildId: BUILD_ID,
         totalMs: measure('Critter Direct Runtime', 'critter-direct-runtime-start', 'critter-direct-runtime-end')
       });
-      report('ready', 'The direct prebuilt runtime and required security systems are ready.');
+      report('ready', 'The direct prebuilt runtime and required security systems are ready.', 100);
+      window.CritterErrorUI?.clear?.();
     } catch (error) {
       fail(error, 'direct-runtime');
     }
