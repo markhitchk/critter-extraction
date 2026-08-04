@@ -3,8 +3,8 @@
   window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859', channel: 'github-pages', generatedAt: '2026-08-04T01:17:41.349Z' });
 
   // Security must load before game-loader.js so it can add stable XML profile
-  // identifiers, repair old false bans, wrap PeerJS before multiplayer, and
-  // keep the profile notice and backup-security controls available.
+  // identifiers, track host-room connections, enforce bans, and build the
+  // consolidated Profiles & Security account center.
   const files = [
     'security-core.js',
     'security-core-hotfix.js',
@@ -13,8 +13,8 @@
     'profile-panel-integrity.js'
   ];
   const src = file => window.CritterPaths?.resolve
-    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.2`)
-    : `./core/security/${file}?v=1.0.2`;
+    ? window.CritterPaths.resolve(`core/security/${file}?v=1.0.3`)
+    : `./core/security/${file}?v=1.0.3`;
 
   if (document.readyState === 'loading') {
     for (const file of files) {
