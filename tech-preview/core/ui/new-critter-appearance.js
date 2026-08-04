@@ -1,0 +1,11 @@
+(() => {
+'use strict';if(window.__NEW_CRITTER_APPEARANCE_V1__)return;window.__NEW_CRITTER_APPEARANCE_V1__=true;
+const D={penguin:['Penguin','#26364b','#f4f7fb'],crow:['Crow','#202430','#515a70'],frog:['Frog','#71b85a','#d6ee8e'],arcticfox:['Arctic Fox','#eef5fb','#b9d4e8'],capybara:['Capybara','#ad7651','#6d4734'],axolotl:['Axolotl','#f1a9bd','#cf638f']};
+const S=new Set(['puppy','bunny','kitty','fox','panda','bear','raccoon','redpanda']);
+function account(){try{const d=JSON.parse(localStorage.getItem('critterExtractionInventory')||'null');return d?.accounts?.find(a=>a.id===d.activeId)||d?.accounts?.[0]||null}catch(_){return null}}
+function flat(v,s=new Set()){if(v==null)return'';if(typeof v!=='object')return String(v).toLowerCase();if(s.has(v))return'';s.add(v);return Object.entries(v).map(([k,x])=>k+' '+flat(x,s)).join(' ').toLowerCase()}
+function owns(id){return S.has(id)||flat(account()).includes(id)||flat(account()).includes(id.replace('arcticfox','arctic_fox'))}
+function refresh(){const q=document.getElementById('species');if(!q)return;for(const[id,d]of Object.entries(D)){let o=[...q.options].find(x=>x.value===id);if(!o){o=document.createElement('option');o.value=id;q.append(o)}o.disabled=!owns(id);o.textContent=owns(id)?d[0]:'🔒 '+d[0]+' — Critter Code'}const id=q.value,d=D[id];if(d&&owns(id)){const p=document.getElementById('critterPreviewAsset');if(p)p.src=(window.CritterPaths?.resolve?.('assets/characters/'+id+'.svg')||'./assets/characters/'+id+'.svg')}}
+function init(){const st=document.createElement('style');st.textContent='#characterRoster{max-height:44vh;overflow:auto} @media(max-width:760px){.expanded-customize{grid-template-columns:1fr!important}#characterRoster{max-height:38vh}}';document.head.append(st);document.getElementById('species')?.addEventListener('change',refresh);document.getElementById('customizeForm')?.addEventListener('submit',e=>{const q=document.getElementById('species');if(q&&!owns(q.value)){e.preventDefault();q.value='puppy';refresh()}},true);new MutationObserver(refresh).observe(document.body,{childList:true,subtree:true});addEventListener('storage',refresh);addEventListener('focus',refresh);addEventListener('critter-code-redeemed',refresh);refresh()}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init,{once:true}):init();
+})();
