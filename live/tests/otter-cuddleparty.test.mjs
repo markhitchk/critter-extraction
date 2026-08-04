@@ -17,7 +17,7 @@ new vm.Script(rewardExtension,{filename:'critter-codes-otter.js'});
 
 const hash = createHash('sha256').update('CUDDLEPARTY').digest('hex');
 assert.ok(rewardExtension.includes(hash),'the public code must be stored as a SHA-256 hash');
-assert.ok(!rewardExtension.includes("'CUDDLEPARTY'"),'the plaintext code must not be embedded in production JavaScript');
+assert.ok(!rewardExtension.includes('CUDDLEPARTY'),'the plaintext code must not be embedded in production JavaScript');
 assert.ok(appearance.includes("otter:{name:'Otter'"),'the Appearance menu registers Otter');
 assert.ok(runtimePatch.includes("otter:{name:'Otter',role:'Cuddle Diver'"),'the generated runtime registers Otter');
 assert.ok(rewardExtension.includes("REWARD_ID = 'critter_otter'"),'the reward extension grants critter_otter');
