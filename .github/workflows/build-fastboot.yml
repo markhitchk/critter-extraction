@@ -9,6 +9,7 @@ on:
       - 'live/**'
       - 'scripts/build-fastboot.mjs'
       - 'scripts/optimize-live-index.mjs'
+      - 'scripts/sanitize-fastboot-output.mjs'
       - '.github/workflows/build-fastboot.yml'
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
       - 'live/**'
       - 'scripts/build-fastboot.mjs'
       - 'scripts/optimize-live-index.mjs'
+      - 'scripts/sanitize-fastboot-output.mjs'
       - '.github/workflows/build-fastboot.yml'
   workflow_dispatch:
 
@@ -48,6 +50,9 @@ jobs:
 
       - name: Optimize live index
         run: node scripts/optimize-live-index.mjs
+
+      - name: Normalize generated output
+        run: node scripts/sanitize-fastboot-output.mjs
 
       - name: Validate generated JavaScript
         run: |
