@@ -37,4 +37,5 @@ jobs:
       - run: node --check live/core/rewards/critter-codes.registry.js
       - run: for file in live/core/rewards/critter-codes.payload.*.js; do node --check "$file"; done
       - run: node --check tools/critter-codes/generate-registry.mjs
+      - run: node live/tests/critter-codes-api-bridge.test.mjs
       - run: node live/tests/critter-codes.test.mjs
