@@ -56,10 +56,13 @@ jobs:
 
       - name: Validate generated JavaScript
         run: |
+          node --check scripts/optimize-live-index.mjs
           node --check live/core/loader/game-loader.js
           node --check live/core/loader/live-patches.bundle.js
           node --check live/core/game/game-runtime.js
           node --check live/core/boot/project-paths.js
+          node --check live/core/boot/boot-monitor.js
+          node --check live/core/security/profile-panel-integrity.js
           git diff --check
 
       - name: Commit generated Fast Boot files
