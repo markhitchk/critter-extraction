@@ -42,14 +42,20 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'critter-codes-api-bridge.js' });
 assert.equal(sandbox.CritterCodes, undefined, 'bridge must not invent an API before the runtime loads');
 assert.equal(typeof scheduled, 'function', 'bridge must continue checking while the runtime loads');
+assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.version, '1.2.0');
+assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().blobPatchInstalled, true, 'runtime Blob patch must install before the loader starts');
 
 const packedRuntime = `
 const CritterCodes=Object.freeze({redeem(){return 'redeemed';}});
 const CritterRewardRuntime=Object.freeze({version:'test'});
 `;
-const patched = sandbox.__CRITTER_CODES_API_BRIDGE__.patchPackedRuntime(packedRuntime);
-assert.match(patched, /const CritterCodes=window\.CritterCodes=/, 'CritterCodes declaration was not exported');
-assert.match(patched, /const CritterRewardRuntime=window\.CritterRewardRuntime=/, 'reward runtime declaration was not exported');
+const runtimeBlob = new sandbox.Blob([
+  `${packedRuntime}\n//# sourceURL=critter-codes.runtime.js`
+], { type: 'text/javascript' });
+const patched = await runtimeBlob.text();
+assert.match(patched, /const CritterCodes=globalThis\.CritterCodes=/, 'CritterCodes declaration was not exported');
+assert.match(patched, /const CritterRewardRuntime=globalThis\.CritterRewardRuntime=/, 'reward runtime declaration was not exported');
+assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().blobPatched, true, 'real loader Blob path was not patched');
 
 vm.runInContext(patched, sandbox, { filename: 'synthetic-packed-critter-codes-runtime.js' });
 assert.equal(typeof sandbox.CritterCodes?.redeem, 'function', 'packed runtime API was not published to window');
@@ -58,4 +64,4 @@ assert.equal(sandbox.CritterRewardRuntime?.version, 'test');
 
 scheduled();
 assert.equal(sandbox.__CRITTER_CODES_API_BRIDGE__.state().status, 'ready');
-console.log('Critter Codes packed-runtime API export test passed.');
+console.log('Critter Codes direct Blob runtime API export test passed.');
