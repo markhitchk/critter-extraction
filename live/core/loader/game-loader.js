@@ -30,7 +30,8 @@
     './core/loader/live-private-chat-censor-notice-fix.js',
     './core/loader/live-coop-pause-redesign-fix.js',
     './core/loader/live-empty-recovery-notice-fix.js',
-    './core/loader/live-loadout-modal-viewport-fix.js'
+    './core/loader/live-loadout-modal-viewport-fix.js',
+    './core/loader/live-account-manager-revamp-patch.js'
   ].map(url => `${url}?v=${BUILD_ID}`);
 
   const nativeFetch = window.fetch.bind(window);
@@ -70,7 +71,7 @@
     const matches = [...source.matchAll(regex)];
     if (!matches.length) {
       if (required) throw new Error(`LIVE patch missing: ${name}`);
-      console.warn(`Optional LIVE patch missing: ${name}`);
+      console.warn(`Optional LIVE patch ${matches.length ? 'ambiguous' : 'missing'}: ${name}`);
       return source;
     }
     return source.replace(regex, () => replacement);
