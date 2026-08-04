@@ -24,6 +24,23 @@
 
 (() => {
   'use strict';
+  const load = (id, path, done) => {
+    if (document.getElementById(id)) { done?.(); return; }
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = window.CritterPaths.resolve(path);
+    script.async = false;
+    if (done) script.addEventListener('load', done, { once:true });
+    script.addEventListener('error', () => console.warn(`Could not load ${path}.`), { once:true });
+    document.head.appendChild(script);
+  };
+  load('new-critter-runtime-patch-loader', 'core/ui/new-critter-runtime-patch.js?v=2026-08-03-1', () => {
+    load('new-critter-appearance-loader', 'core/ui/new-critter-appearance.js?v=2026-08-03-1');
+  });
+})();
+
+(() => {
+  'use strict';
   if (document.getElementById('critter-system-ui-loader')) return;
   const script = document.createElement('script');
   script.id = 'critter-system-ui-loader';
