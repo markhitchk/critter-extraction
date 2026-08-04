@@ -1,71 +1,157 @@
 (() => {
   'use strict';
+
   const state = window.__CRITTER_BOOT__;
-  if (!state) return;
-  let slowTimer = 0, fatalTimer = 0, fatalShown = false;
+  if (!state || window.__CRITTER_BOOT_MONITOR_ACTIVE__) return;
+  window.__CRITTER_BOOT_MONITOR_ACTIVE__ = true;
+
+  let slowTimer = 0;
+  let fatalTimer = 0;
+  let fatalShown = false;
+  let slowShown = false;
+
   const elapsed = () => state.detectedElapsedMs ? state.detectedElapsedMs() : 0;
-  const record = (stage, detail = '') => {
-    state.stage = stage; state.detail = String(detail || '');
-    state.history.push({ stage, detail: state.detail, elapsedMs: elapsed() });
-    if (state.history.length > 30) state.history.shift();
-  };
-  const syncBanUrl = () => {
-    if (!(window.__CRITTER_ACCOUNT_BLOCKED__ || window.__CRITTER_MULTIPLAYER_BLOCKED__)) return false;
-    const gate = window.CritterBanGate || {};
-    const username = String(gate.account?.username || gate.match?.identifiers?.usernames?.[0] || '').trim().toLowerCase();
-    if (!username) return false;
-    try {
-      const url = new URL(location.href);
-      const keys = [...url.searchParams.keys()];
-      if (url.searchParams.get('ban') === username && keys.length === 1) return true;
-      url.search = '';
-      url.searchParams.set('ban', username);
-      const previousState = history.state && typeof history.state === 'object' ? history.state : {};
-      history.replaceState({ ...previousState, critterBan: username }, '', `${url.pathname}${url.search}${url.hash}`);
-      return true;
-    } catch (_) {
-      return false;
+
+  function paint(stage, detail, progress) {
+    const status = document.getElementById('bootStatus');
+    const bar = document.getElementById('bootBar');
+    if (status && detail) status.textContent = detail;
+    if (bar && Number.isFinite(progress)) bar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    document.documentElement.dataset.critterBootStage = String(stage || 'unknown');
+  }
+
+  function record(stage, detail = '', progress) {
+    const next = typeof state.report === 'function'
+      ? state.report(stage, detail, Number.isFinite(progress) ? { progress } : {})
+      : null;
+    if (!next) {
+      state.stage = String(stage || 'unknown');
+      state.detail = String(detail || '');
+      if (Number.isFinite(progress)) state.progress = progress;
     }
-  };
-  const banUrlTimer = setInterval(() => {
-    if (syncBanUrl()) clearInterval(banUrlTimer);
-  }, 150);
-  const reportFatal = (input) => {
+    paint(state.stage, state.detail, state.progress);
+  }
+
+  function capture(input) {
+    return window.CritterErrors?.capture ? window.CritterErrors.capture(input) : input;
+  }
+
+  function reportFatal(input) {
     if (state.ready || fatalShown) return;
-    fatalShown = true; state.failed = true; clearTimeout(slowTimer); clearTimeout(fatalTimer);
-    const entry = window.CritterErrors && window.CritterErrors.capture ? window.CritterErrors.capture(input) : input;
-    state.errors.push(entry); record('failed', entry.message || 'Startup failed');
-    if (window.CritterErrorUI && window.CritterErrorUI.show) window.CritterErrorUI.show(entry);
-    else if (window.__CRITTER_EMERGENCY__) window.__CRITTER_EMERGENCY__(entry.message || 'Critter Extraction could not start.');
-  };
+    fatalShown = true;
+    clearTimeout(slowTimer);
+    clearTimeout(fatalTimer);
+    const entry = capture(input);
+    try { state.markFailed?.(entry); } catch (_) {
+      state.failed = true;
+      state.ready = false;
+      state.lastError = entry;
+    }
+    paint('failed', entry.message || 'Startup failed', state.progress || 78);
+    if (window.CritterErrorUI?.show) window.CritterErrorUI.show(entry);
+    else window.__CRITTER_EMERGENCY__?.(entry.message || 'Critter Extraction could not start.');
+  }
+
+  window.__CRITTER_SHOW_ERROR__ = reportFatal;
   window.__critterBootReport = (stage, detail) => {
-    record(String(stage || 'unknown'), detail);
-    if (stage === 'game-script-started') state.gameStarted = true;
-    if (stage === 'game-initialized') state.initialized = true;
-    if (stage === 'ready') { state.ready = true; state.failed = false; clearTimeout(slowTimer); clearTimeout(fatalTimer); }
-    if (stage === 'failure') reportFatal({ code: 'CE-BOOT-JS-001', system: 'boot', stage, message: detail || 'The game reported a startup failure.' });
+    const name = String(stage || 'unknown');
+    if (name === 'game-script-started') state.gameStarted = true;
+    if (name === 'game-initialized') state.initialized = true;
+    if (name === 'ready') {
+      state.ready = true;
+      state.failed = false;
+      clearTimeout(slowTimer);
+      clearTimeout(fatalTimer);
+      record('ready', detail || 'The menu and local game systems finished initializing.', 100);
+      window.CritterErrorUI?.clear?.();
+      return;
+    }
+    if (name === 'failure' || name === 'failed') {
+      reportFatal({
+        code: 'CE-BOOT-JS-001',
+        system: 'boot',
+        stage: name,
+        message: detail || 'The game reported a startup failure.'
+      });
+      return;
+    }
+    const progressByStage = {
+      'document-loading': 6,
+      'dom-ready': 20,
+      'core-loading': 38,
+      'game-script-started': 62,
+      'game-initialized': 84
+    };
+    record(name, detail, progressByStage[name]);
   };
-  addEventListener('error', (event) => {
+
+  addEventListener('error', event => {
     const target = event.target;
     if (target && target !== window) {
       const tag = String(target.tagName || '').toUpperCase();
       if (tag === 'SCRIPT' && target.dataset.optionalNetworkScript === 'true') return;
-      if (tag === 'SCRIPT' || tag === 'LINK' || tag === 'IMG') reportFatal({ code: tag === 'IMG' ? 'CE-ASSET-MISSING-001' : 'CE-BOOT-FILE-001', system: tag === 'IMG' ? 'asset' : 'boot', stage: 'required-file-load', message: 'A required file failed to load.', sourceRaw: target.src || target.href || '' });
+      if (tag === 'SCRIPT' || tag === 'LINK') {
+        reportFatal({
+          code: 'CE-BOOT-FILE-001',
+          system: 'boot',
+          stage: 'required-file-load',
+          message: `A required ${tag === 'SCRIPT' ? 'script' : 'stylesheet'} failed to load.`,
+          sourceRaw: target.src || target.href || ''
+        });
+      }
       return;
     }
-    reportFatal({ code: 'CE-BOOT-JS-001', system: 'boot', stage: 'game-script-parse', message: 'The game stopped during startup because of a JavaScript error.', nativeMessage: event.message || '', sourceRaw: event.filename || '', line: event.lineno || 0, column: event.colno || 0, stack: event.error && event.error.stack || '' });
+    reportFatal({
+      code: 'CE-BOOT-JS-001',
+      system: 'boot',
+      stage: 'game-script-parse',
+      message: event.message || 'The game stopped during startup because of a JavaScript error.',
+      nativeMessage: event.message || '',
+      sourceRaw: event.filename || '',
+      line: event.lineno || 0,
+      column: event.colno || 0,
+      stack: event.error?.stack || ''
+    });
   }, true);
-  addEventListener('unhandledrejection', (event) => {
+
+  addEventListener('unhandledrejection', event => {
     const reason = event.reason || {};
-    reportFatal({ code: 'CE-BOOT-JS-001', system: 'boot', stage: 'promise-rejection', message: reason.message || String(reason || 'Unhandled promise rejection'), stack: reason.stack || '' });
+    reportFatal({
+      code: 'CE-BOOT-PROMISE-001',
+      system: 'boot',
+      stage: 'promise-rejection',
+      message: reason.message || String(reason || 'Unhandled startup promise rejection'),
+      stack: reason.stack || ''
+    });
   });
-  addEventListener('DOMContentLoaded', () => {
-    record('dom-ready', 'Document loaded');
+
+  function armTimers() {
+    clearTimeout(slowTimer);
+    clearTimeout(fatalTimer);
     slowTimer = setTimeout(() => {
-      if (!state.ready && !state.failed && window.CritterErrorUI && window.CritterErrorUI.showSlow) window.CritterErrorUI.showSlow(state);
-    }, 20000);
+      if (state.ready || state.failed || slowShown) return;
+      slowShown = true;
+      record('slow', state.detail || 'Startup is taking longer than expected.', Math.max(72, state.progress || 0));
+      window.CritterErrorUI?.showSlow?.(state);
+    }, 10000);
     fatalTimer = setTimeout(() => {
-      if (!state.ready && !state.failed) reportFatal({ code: 'CE-BOOT-TIMEOUT-001', system: 'boot', stage: 'startup-timeout', message: 'The game did not finish initialization within 60 seconds.' });
-    }, 60000);
-  });
+      if (state.ready || state.failed) return;
+      reportFatal({
+        code: 'CE-BOOT-TIMEOUT-001',
+        system: 'boot',
+        stage: state.stage || 'startup-timeout',
+        message: `The game did not finish initialization within 25 seconds. Last stage: ${state.detail || state.stage || 'unknown'}.`
+      });
+    }, 25000);
+  }
+
+  if (document.readyState === 'loading') {
+    addEventListener('DOMContentLoaded', () => {
+      record('dom-ready', 'Document loaded. Starting required game files…', 20);
+      armTimers();
+    }, { once: true });
+  } else {
+    record('dom-ready', 'Document loaded. Starting required game files…', 20);
+    armTimers();
+  }
 })();
