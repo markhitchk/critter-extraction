@@ -1,20 +1,38 @@
 (() => {
   'use strict';
-  if (window.__CRITTER_PROFILE_MANAGER_V2__) return;
-  window.__CRITTER_PROFILE_MANAGER_V2__ = true;
 
+  if (window.__CRITTER_PROFILE_MANAGER_V2__) return;
+
+  const VERSION = '2.1.0';
   const NOTICE_HTML = '<strong>Stored on this device.</strong><span>Profiles, progress, Stash, Petals, and settings are local. Make an encrypted backup before clearing browser data or moving devices.</span>';
   const MAIN_MENU_DOCK_SELECTOR = '#menuScreen nav.lobby-action-dock';
   const TAB_NAMES = ['profiles', 'security', 'backups'];
 
+  let observer = null;
+  let repairTimer = 0;
+  let periodicTimer = 0;
+  let repairing = false;
+  let playerRenderSignature = '';
+
   const securityRuntime = () => window.CritterSecurityRuntime || null;
   const text = (value, limit = 160) => String(value ?? '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, limit);
 
+  function setText(node, value) {
+    if (!node) return;
+    const next = String(value ?? '');
+    if (node.textContent !== next) node.textContent = next;
+  }
+
+  function setHidden(node, hidden) {
+    if (!node || node.hidden === !!hidden) return;
+    node.hidden = !!hidden;
+  }
+
   function suppressMainMenuPanels() {
     document.querySelectorAll(MAIN_MENU_DOCK_SELECTOR).forEach(dock => {
-      dock.hidden = true;
-      dock.setAttribute('aria-hidden', 'true');
-      dock.setAttribute('inert', '');
+      if (!dock.hidden) dock.hidden = true;
+      if (dock.getAttribute('aria-hidden') !== 'true') dock.setAttribute('aria-hidden', 'true');
+      if (!dock.hasAttribute('inert')) dock.setAttribute('inert', '');
       dock.classList.remove('dashboard-action-panel');
     });
 
@@ -37,8 +55,8 @@
       .filter(node => /^(LOCAL STORAGE|BROWSER STORAGE)$/i.test(node.textContent.trim()))
       .forEach(node => {
         const parent = node.parentElement;
-        const parentCopy = String(parent?.textContent || '').replace(/\s+/g, ' ').trim();
-        if (parent && parent !== card && /browser storage/i.test(parentCopy) && parentCopy.length < 320) parent.remove();
+        const copy = String(parent?.textContent || '').replace(/\s+/g, ' ').trim();
+        if (parent && parent !== card && /browser storage/i.test(copy) && copy.length < 320) parent.remove();
         else node.remove();
       });
   }
@@ -52,7 +70,7 @@
       else card.querySelector(':scope > header')?.insertAdjacentElement('afterend', notice);
     }
     notice.className = 'account-note account-manager-intro profile-local-notice';
-    notice.hidden = false;
+    setHidden(notice, false);
     notice.removeAttribute('aria-hidden');
     if (notice.innerHTML !== NOTICE_HTML) notice.innerHTML = NOTICE_HTML;
     return notice;
@@ -82,10 +100,8 @@
   }
 
   function ensureHeader(card) {
-    const eyebrow = card.querySelector(':scope > header .eyebrow');
-    const title = card.querySelector(':scope > header h2');
-    if (eyebrow) eyebrow.textContent = 'ACCOUNT CENTER';
-    if (title) title.textContent = 'Profiles & Security';
+    setText(card.querySelector(':scope > header .eyebrow'), 'ACCOUNT CENTER');
+    setText(card.querySelector(':scope > header h2'), 'Profiles & Security');
   }
 
   function unreadNotificationCount() {
@@ -109,14 +125,15 @@
         </div>
         <button class="secondary account-notifications-open" id="accountNotificationsOpenBtn" type="button"><span aria-hidden="true">🔔</span><strong>Open notifications</strong><b id="accountNotificationsInlineBadge" hidden>0</b></button>`;
     }
+
     const unread = unreadNotificationCount();
-    const summary = section.querySelector('#accountNotificationsSummary');
+    setText(section.querySelector('#accountNotificationsSummary'), unread ? `${unread} unread` : 'No unread notices');
     const badge = section.querySelector('#accountNotificationsInlineBadge');
-    if (summary) summary.textContent = unread ? `${unread} unread` : 'No unread notices';
     if (badge) {
-      badge.hidden = unread < 1;
-      badge.textContent = unread > 99 ? '99+' : String(unread);
+      setHidden(badge, unread < 1);
+      setText(badge, unread > 99 ? '99+' : String(unread));
     }
+
     const button = section.querySelector('#accountNotificationsOpenBtn');
     if (button && button.dataset.ready !== 'true') {
       button.dataset.ready = 'true';
@@ -167,18 +184,16 @@
         </div>
         <p id="accountFairPlayDetail" class="account-fair-play-detail"></p>`;
     }
+
     const status = readFairPlayStatus();
-    section.dataset.state = status.state.toLowerCase().replace(/\s+/g, '-');
-    const set = (selector, value) => {
-      const node = section.querySelector(selector);
-      if (node) node.textContent = value;
-    };
-    set('#accountFairPlayState', status.state);
-    set('#accountFairPlayAuthority', status.authority);
-    set('#accountFairPlayVersion', `v${status.version}`);
-    set('#accountFairPlayBlocked', String(status.blocked));
-    set('#accountFairPlayStrikes', String(status.strikes));
-    set('#accountFairPlayDetail', status.events ? `${status.detail} ${status.events} recent event${status.events === 1 ? '' : 's'} recorded.` : status.detail);
+    const stateName = status.state.toLowerCase().replace(/\s+/g, '-');
+    if (section.dataset.state !== stateName) section.dataset.state = stateName;
+    setText(section.querySelector('#accountFairPlayState'), status.state);
+    setText(section.querySelector('#accountFairPlayAuthority'), status.authority);
+    setText(section.querySelector('#accountFairPlayVersion'), `v${status.version}`);
+    setText(section.querySelector('#accountFairPlayBlocked'), String(status.blocked));
+    setText(section.querySelector('#accountFairPlayStrikes'), String(status.strikes));
+    setText(section.querySelector('#accountFairPlayDetail'), status.events ? `${status.detail} ${status.events} recent event${status.events === 1 ? '' : 's'} recorded.` : status.detail);
     return section;
   }
 
@@ -195,10 +210,27 @@
   }
 
   function connectionRows() {
-    const S = securityRuntime();
-    if (!S?.connections) return [];
-    try { return S.connections({ direction:'host-inbound' }).filter(connection => connection.status !== 'closed'); }
+    const runtime = securityRuntime();
+    if (!runtime?.connections) return [];
+    try { return runtime.connections({ direction:'host-inbound' }).filter(connection => connection.status !== 'closed'); }
     catch (_) { return []; }
+  }
+
+  function securitySnapshot(players, bans) {
+    return JSON.stringify({
+      players: players.map(connection => ({
+        id: connection.id || '',
+        peerId: connection.peerId || '',
+        status: connection.status || '',
+        connectedAt: connection.connectedAt || 0,
+        name: connection.profile?.displayName || '',
+        username: connection.profile?.username || connection.identity?.username || '',
+        securityId: connection.identity?.securityId || '',
+        installHash: connection.identity?.installHash || '',
+        profileFingerprint: connection.identity?.profileFingerprint || ''
+      })),
+      bans: bans.map(ban => ({ id:ban.id || '', reason:ban.reason || '', expiresAt:ban.expiresAt || 0 }))
+    });
   }
 
   function ensurePlayerDetailsDialog() {
@@ -267,13 +299,13 @@
       const data = new FormData(form);
       const durationValue = String(data.get('duration') || '86400000');
       const durationMs = durationValue === 'permanent' ? null : Number(durationValue);
-      const S = securityRuntime();
-      const ban = S?.hostBanConnection?.(String(data.get('connectionId') || ''), {
+      const ban = securityRuntime()?.hostBanConnection?.(String(data.get('connectionId') || ''), {
         reason: text(data.get('reason'), 180) || 'Removed by the room host.',
         durationMs,
         disconnect: true
       });
       if (ban) dialog.close();
+      playerRenderSignature = '';
       window.dispatchEvent(new Event('critter-security-change'));
     });
     return dialog;
@@ -287,13 +319,19 @@
     if (!dialog.open) dialog.showModal?.();
   }
 
-  function renderSecurityPlayers(section) {
+  function renderSecurityPlayers(section, force = false) {
     const list = section.querySelector('#accountConnectedPlayersList');
     const count = section.querySelector('#accountConnectedPlayerCount');
-    const bans = section.querySelector('#accountHostBanList');
-    if (!list || !count || !bans) return;
+    const bansRoot = section.querySelector('#accountHostBanList');
+    if (!list || !count || !bansRoot) return;
+
     const players = connectionRows();
-    count.textContent = `${players.length} connected`;
+    const localBans = securityRuntime()?.localBans?.() || [];
+    const signature = securitySnapshot(players, localBans);
+    setText(count, `${players.length} connected`);
+    if (!force && signature === playerRenderSignature) return;
+    playerRenderSignature = signature;
+
     list.textContent = '';
     if (!players.length) {
       const empty = document.createElement('div');
@@ -301,6 +339,7 @@
       empty.innerHTML = '<strong>No connected players</strong><span>Host a multiplayer room to view player security data and apply host-local bans.</span>';
       list.append(empty);
     }
+
     for (const connection of players) {
       const row = document.createElement('article');
       row.className = 'account-security-player-row';
@@ -308,7 +347,7 @@
       const name = document.createElement('strong');
       const meta = document.createElement('small');
       name.textContent = connection.profile?.displayName || connection.identity?.username || 'Connected Critter';
-      meta.textContent = `${connection.profile?.username ? `@${connection.profile.username} • ` : ''}${connection.status.toUpperCase()} • ${connection.identity?.securityId ? 'verified identity' : 'identity pending'}`;
+      meta.textContent = `${connection.profile?.username ? `@${connection.profile.username} • ` : ''}${String(connection.status || 'unknown').toUpperCase()} • ${connection.identity?.securityId ? 'verified identity' : 'identity pending'}`;
       info.append(name, meta);
       const actions = document.createElement('div');
       const view = document.createElement('button');
@@ -327,30 +366,34 @@
       list.append(row);
     }
 
-    bans.textContent = '';
-    const localBans = securityRuntime()?.localBans?.() || [];
+    bansRoot.textContent = '';
     if (!localBans.length) {
       const empty = document.createElement('span');
       empty.className = 'account-host-ban-empty';
       empty.textContent = 'No active host bans.';
-      bans.append(empty);
+      bansRoot.append(empty);
     }
-    for (const ban of localBans.slice().reverse()) {
+
+    for (const savedBan of localBans.slice().reverse()) {
       const row = document.createElement('div');
       row.className = 'account-host-ban-row';
       const info = document.createElement('div');
       const title = document.createElement('strong');
       const detail = document.createElement('small');
-      title.textContent = ban.reason || 'Host ban';
-      detail.textContent = ban.expiresAt ? `Expires ${new Date(ban.expiresAt).toLocaleString()}` : 'Permanent';
+      title.textContent = savedBan.reason || 'Host ban';
+      detail.textContent = savedBan.expiresAt ? `Expires ${new Date(savedBan.expiresAt).toLocaleString()}` : 'Permanent';
       info.append(title, detail);
       const unban = document.createElement('button');
       unban.type = 'button';
       unban.className = 'ghost';
       unban.textContent = 'Unban';
-      unban.onclick = () => { securityRuntime()?.removeBan?.(ban.id); renderSecurityPlayers(section); };
+      unban.onclick = () => {
+        securityRuntime()?.removeBan?.(savedBan.id);
+        playerRenderSignature = '';
+        renderSecurityPlayers(section, true);
+      };
       row.append(info, unban);
-      bans.append(row);
+      bansRoot.append(row);
     }
   }
 
@@ -367,7 +410,9 @@
         <div class="account-security-actions"><button class="secondary" id="openFullSecurityCenterBtn" type="button">Open full Security Center</button><button class="ghost" id="refreshAccountSecurityBtn" type="button">Refresh</button></div>
         <div id="accountConnectedPlayersList" class="account-connected-players"></div>
         <details class="account-host-ban-fold"><summary><strong>Active host bans</strong><span>View or remove saved restrictions</span></summary><div id="accountHostBanList" class="account-host-ban-list"></div></details>`;
+      playerRenderSignature = '';
     }
+
     const open = section.querySelector('#openFullSecurityCenterBtn');
     if (open && open.dataset.ready !== 'true') {
       open.dataset.ready = 'true';
@@ -379,7 +424,10 @@
     const refresh = section.querySelector('#refreshAccountSecurityBtn');
     if (refresh && refresh.dataset.ready !== 'true') {
       refresh.dataset.ready = 'true';
-      refresh.addEventListener('click', () => renderSecurityPlayers(section));
+      refresh.addEventListener('click', () => {
+        playerRenderSignature = '';
+        renderSecurityPlayers(section, true);
+      });
     }
     if (open) open.disabled = !securityRuntime()?.openCenter;
     renderSecurityPlayers(section);
@@ -387,8 +435,7 @@
   }
 
   function ensureProfileToolbar(root) {
-    const section = root.querySelector('.account-profiles-section');
-    const toolbar = section?.querySelector('.account-toolbar');
+    const toolbar = root.querySelector('.account-profiles-section .account-toolbar');
     if (!toolbar || document.getElementById('newProfilePrimaryBtn')) return;
     const button = document.createElement('button');
     button.id = 'newProfilePrimaryBtn';
@@ -410,7 +457,7 @@
       notice.innerHTML = '<strong>No local profile found</strong><span>Create a profile or restore an encrypted backup to continue.</span>';
       accountList.insertAdjacentElement('beforebegin', notice);
     }
-    notice.hidden = !!accountList.querySelector('.account-row');
+    setHidden(notice, !!accountList.querySelector('.account-row'));
   }
 
   function ensureTabs(root) {
@@ -421,13 +468,14 @@
       tabs = document.createElement('nav');
       tabs.className = 'account-manager-tabs';
       tabs.setAttribute('aria-label', 'Account center sections');
-      tabs.innerHTML = '<button type="button" data-account-tab="profiles">Profiles</button><button type="button" data-account-tab="security">Security</button><button type="button" data-account-tab="backups">Backups & Transfer</button>';
+      tabs.setAttribute('role', 'tablist');
+      tabs.innerHTML = '<button type="button" role="tab" data-account-tab="profiles">Profiles</button><button type="button" role="tab" data-account-tab="security">Security</button><button type="button" role="tab" data-account-tab="backups">Backups & Transfer</button>';
       root.prepend(tabs);
     }
     if (!panels) {
       panels = document.createElement('div');
       panels.className = 'account-tab-panels';
-      panels.innerHTML = '<div class="account-tab-panel" data-account-panel="profiles"></div><div class="account-tab-panel" data-account-panel="security"></div><div class="account-tab-panel" data-account-panel="backups"></div>';
+      panels.innerHTML = '<div class="account-tab-panel" role="tabpanel" data-account-panel="profiles"></div><div class="account-tab-panel" role="tabpanel" data-account-panel="security"></div><div class="account-tab-panel" role="tabpanel" data-account-panel="backups"></div>';
       tabs.insertAdjacentElement('afterend', panels);
     }
 
@@ -440,25 +488,41 @@
     const securityManagement = ensureSecurityManagementSection(root);
     const password = ensureBackupPasswordSection(root);
     const transfer = root.querySelector('.account-transfer-section');
+
     if (profileSection && profileSection.parentElement !== profilePanel) profilePanel.append(profileSection);
-    for (const section of [notifications, fairPlay, securityManagement]) if (section && section.parentElement !== securityPanel) securityPanel.append(section);
-    for (const section of [password, transfer]) if (section && section.parentElement !== backupPanel) backupPanel.append(section);
+    for (const section of [notifications, fairPlay, securityManagement]) {
+      if (section && section.parentElement !== securityPanel) securityPanel.append(section);
+    }
+    for (const section of [password, transfer]) {
+      if (section && section.parentElement !== backupPanel) backupPanel.append(section);
+    }
 
     const activate = requested => {
       const active = TAB_NAMES.includes(requested) ? requested : 'profiles';
-      root.dataset.activeTab = active;
+      if (root.dataset.activeTab !== active) root.dataset.activeTab = active;
       tabs.querySelectorAll('[data-account-tab]').forEach(button => {
         const selected = button.dataset.accountTab === active;
         button.classList.toggle('active', selected);
         button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
       });
-      panels.querySelectorAll('[data-account-panel]').forEach(panel => { panel.hidden = panel.dataset.accountPanel !== active; });
+      panels.querySelectorAll('[data-account-panel]').forEach(panel => setHidden(panel, panel.dataset.accountPanel !== active));
     };
+
     if (tabs.dataset.ready !== 'true') {
       tabs.dataset.ready = 'true';
       tabs.addEventListener('click', event => {
         const button = event.target.closest('[data-account-tab]');
         if (button) activate(button.dataset.accountTab);
+      });
+      tabs.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        const buttons = [...tabs.querySelectorAll('[data-account-tab]')];
+        const current = Math.max(0, buttons.indexOf(document.activeElement));
+        const next = event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length;
+        event.preventDefault();
+        buttons[next].focus();
+        activate(buttons[next].dataset.accountTab);
       });
     }
     activate(root.dataset.activeTab || 'profiles');
@@ -524,39 +588,85 @@ html body #menuScreen nav.lobby-action-dock,html body #menuScreen .dashboard>nav
     return true;
   }
 
+  function observe() {
+    if (!observer || !document.body) return;
+    observer.observe(document.body, { childList:true, subtree:true });
+  }
+
+  function runRepair() {
+    repairTimer = 0;
+    if (repairing) return;
+    repairing = true;
+    observer?.disconnect();
+    try { repair(); }
+    catch (error) { console.error('Critter profile interface repair failed', error); }
+    finally {
+      repairing = false;
+      requestAnimationFrame(observe);
+    }
+  }
+
+  function scheduleRepair(delay = 0) {
+    if (repairTimer || repairing) return;
+    repairTimer = setTimeout(runRepair, Math.max(0, delay));
+  }
+
+  function mutationIsRelevant(mutation) {
+    const target = mutation.target?.nodeType === Node.ELEMENT_NODE ? mutation.target : mutation.target?.parentElement;
+    if (target?.closest?.('#accountsModal')) return true;
+    return [...mutation.addedNodes, ...mutation.removedNodes].some(node => {
+      if (node.nodeType !== Node.ELEMENT_NODE) return false;
+      return node.id === 'accountsModal' || node.id === 'accountManagerRevamp' || node.id === 'accountList' || !!node.querySelector?.('#accountsModal, #accountManagerRevamp, #accountList');
+    });
+  }
+
   function start() {
     installStyles();
     suppressMainMenuPanels();
+
+    observer = new MutationObserver(mutations => {
+      if (repairing || !mutations.some(mutationIsRelevant)) return;
+      scheduleRepair(0);
+    });
+    observe();
+
     let attempts = 0;
     const bootRepair = () => {
-      repair();
-      if (attempts++ < 180) setTimeout(bootRepair, 100);
+      scheduleRepair(0);
+      attempts += 1;
+      if (attempts < 80 && !document.getElementById('accountManagerRevamp')) setTimeout(bootRepair, 250);
     };
     bootRepair();
 
-    let queued = false;
-    const observer = new MutationObserver(() => {
-      if (queued) return;
-      queued = true;
-      queueMicrotask(() => { queued = false; repair(); });
-    });
-    observer.observe(document.documentElement, { childList:true, subtree:true });
-
-    const timer = setInterval(() => {
+    periodicTimer = setInterval(() => {
       const root = document.getElementById('accountManagerRevamp');
       if (!root) return;
       ensureFairPlaySection(root);
       const security = root.querySelector('.account-security-management-section');
       if (security) renderSecurityPlayers(security);
       suppressMainMenuPanels();
-    }, 1000);
-    window.addEventListener('pagehide', () => clearInterval(timer), { once:true });
-    window.addEventListener('critter-security-change', () => setTimeout(repair, 0));
-    window.addEventListener('critter-profile-password-change', () => setTimeout(repair, 0));
+    }, 1500);
+
+    window.addEventListener('critter-security-change', () => {
+      playerRenderSignature = '';
+      scheduleRepair(0);
+    });
+    window.addEventListener('critter-profile-password-change', () => scheduleRepair(0));
     document.addEventListener('click', event => {
-      if (event.target.closest('#accountBtn, #accountsBtn, #recoveryNotificationsBtn')) setTimeout(repair, 0);
+      if (event.target.closest('#accountBtn, #accountsBtn, #recoveryNotificationsBtn')) scheduleRepair(0);
     }, true);
+
+    window.addEventListener('pagehide', () => {
+      observer?.disconnect();
+      clearTimeout(repairTimer);
+      clearInterval(periodicTimer);
+    }, { once:true });
   }
+
+  window.__CRITTER_PROFILE_MANAGER_V2__ = Object.freeze({
+    version: VERSION,
+    repair: () => scheduleRepair(0)
+  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
   else start();
