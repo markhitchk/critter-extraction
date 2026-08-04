@@ -1,8 +1,8 @@
-/* Harley's Studios — Appearance scrolling and Critter Code locks v4. */
+/* Harley's Studios — Appearance scrolling and Critter Code locks v5. */
 (() => {
   'use strict';
-  if (window.__NEW_CRITTER_APPEARANCE_V4__) return;
-  window.__NEW_CRITTER_APPEARANCE_V4__ = true;
+  if (window.__NEW_CRITTER_APPEARANCE_V5__) return;
+  window.__NEW_CRITTER_APPEARANCE_V5__ = true;
 
   const STORAGE_KEY = 'critterExtractionInventory';
   const STARTERS = new Set(['puppy','bunny','kitty','fox','panda','bear']);
@@ -198,7 +198,11 @@
       const style = document.createElement('style');
       style.id = 'newCritterAppearanceStyles';
       style.textContent = `
-        #customizeModal .customize-controls{min-height:0;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:8px}
+        #customizeModal{overflow:hidden}
+        #customizeModal .customize-card{overflow:hidden!important}
+        #customizeModal .customize-grid{min-height:0!important;align-items:stretch!important;overflow:hidden!important}
+        #customizeModal .critter-preview{min-height:0;height:100%}
+        #customizeModal .customize-controls{min-width:0;min-height:0;height:100%;max-height:100%;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:2px 10px 22px 2px}
         #characterRoster{max-height:none!important;overflow:visible!important;align-content:start;padding-right:0}
         #customizeModal .character-choice{position:relative}
         #customizeModal .character-choice.reward-locked{opacity:.62;cursor:not-allowed;border-color:rgba(255,211,111,.3);background:linear-gradient(180deg,rgba(255,211,111,.08),rgba(15,18,36,.96))}
@@ -208,7 +212,17 @@
         .critter-preview{background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--critter-accent-color,#64e8ea) 28%,transparent),transparent 58%),linear-gradient(145deg,color-mix(in srgb,var(--critter-body-color,#26364b) 18%,#11182a),#0a1020)!important}
         .customize-controls input[type="color"],.customize-controls select{pointer-events:auto!important;opacity:1!important;filter:none!important}
         .customize-controls input[type="color"]{min-height:46px;cursor:pointer}
-        @media(max-width:760px){.expanded-customize{grid-template-columns:1fr!important}.critter-preview{min-height:210px}#customizeModal .customize-controls{overflow:visible!important;padding-right:0}}
+        @media(max-width:760px){
+          #customizeModal .customize-card{width:calc(100vw - 6px)!important;height:calc(100dvh - 6px)!important;max-height:calc(100dvh - 6px)!important;overflow:hidden!important}
+          #customizeModal .customize-grid{grid-template-columns:1fr!important;grid-template-rows:minmax(150px,28dvh) minmax(0,1fr)!important;align-items:stretch!important;overflow:hidden!important;padding:10px 0!important}
+          #customizeModal .critter-preview{height:auto!important;min-height:150px!important;max-height:28dvh!important}
+          #customizeModal .customize-controls{height:100%!important;max-height:100%!important;overflow-y:auto!important;padding:0 8px 22px 0!important}
+        }
+        @media(max-width:420px),(max-height:560px){
+          #customizeModal .customize-grid{grid-template-rows:minmax(120px,22dvh) minmax(0,1fr)!important}
+          #customizeModal .critter-preview{min-height:120px!important;max-height:22dvh!important}
+          #customizeModal .character-roster{grid-template-columns:repeat(2,minmax(90px,1fr))!important}
+        }
       `;
       document.head.appendChild(style);
     }
