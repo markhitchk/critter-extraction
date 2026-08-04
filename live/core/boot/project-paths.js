@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-4';
+  const FASTBOOT_VERSION = '2026-08-03-fastboot-5';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -52,7 +52,7 @@
   addHint({ path: `core/loader/game-loader-base.js?v=${FASTBOOT_VERSION}`, as: 'script' });
   addHint({ path: 'core/game/game-core.js?v=2026-08-03-main-menu-fix-1', as: 'fetch', crossOrigin: 'anonymous', priority: 'high' });
   addHint({ path: 'core/rewards/critter-codes.registry.js?v=2.0.0', as: 'script' });
-  addHint({ path: 'core/rewards/critter-codes-api-bridge.js?v=1.1.0', as: 'script' });
+  addHint({ path: 'core/rewards/critter-codes-api-bridge.js?v=1.2.0', as: 'script' });
   addHint({ path: 'core/rewards/critter-codes.js?v=2.0.2', as: 'script' });
   addHint({ path: 'assets/branding/HTG.png', as: 'image' });
 })();
@@ -173,7 +173,7 @@
     }
     const bridge = document.createElement('script');
     bridge.id = 'critter-codes-api-bridge-loader';
-    bridge.src = window.CritterPaths.resolve('core/rewards/critter-codes-api-bridge.js?v=1.1.0');
+    bridge.src = window.CritterPaths.resolve('core/rewards/critter-codes-api-bridge.js?v=1.2.0');
     bridge.async = false;
     bridge.addEventListener('load', loadSystem, { once: true });
     bridge.addEventListener('error', () => {

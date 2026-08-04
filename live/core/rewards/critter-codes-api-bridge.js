@@ -1,16 +1,24 @@
-/* Critter Codes global API bridge v1.1.0.
+/* Critter Codes global API bridge v1.2.0.
    The packed runtime may declare CritterCodes inside its generated script
    instead of assigning it to window. This bridge patches that exact runtime
-   script before execution so its real API becomes available to the loader,
-   the standalone redeem page, and the main-menu interface. */
+   source before its blob URL is created, with the script-append interceptor
+   retained as a fallback for older loaders. */
 (() => {
   'use strict';
 
   if (window.__CRITTER_CODES_API_BRIDGE__) return;
 
-  const VERSION = '1.1.0';
-  const state = { status: 'waiting', attempts: 0, lastError: '', runtimePatched: false };
+  const VERSION = '1.2.0';
+  const NativeBlob = window.Blob;
   const nativeAppend = HTMLHeadElement.prototype.appendChild;
+  const state = {
+    status: 'waiting',
+    attempts: 0,
+    lastError: '',
+    runtimePatched: false,
+    blobPatchInstalled: false,
+    blobPatched: false
+  };
   let timer = 0;
 
   function readLexicalApi() {
@@ -67,19 +75,25 @@
       timer = 0;
     }
     window.dispatchEvent(new CustomEvent('critter-codes-api-ready', {
-      detail: { version: VERSION, attempts: state.attempts, runtimePatched: state.runtimePatched }
+      detail: {
+        version: VERSION,
+        attempts: state.attempts,
+        runtimePatched: state.runtimePatched,
+        blobPatched: state.blobPatched
+      }
     }));
     return true;
   }
 
   function patchPackedRuntime(source) {
     let output = String(source || '');
-    let changed = false;
+    if (output.includes('__CRITTER_CODES_API_EXPORT_')) return output;
 
+    let changed = false;
     const exposeBinding = name => {
       const declaration = new RegExp(`\\b(const|let|var)\\s+${name}\\s*=`, 'm');
       if (declaration.test(output)) {
-        output = output.replace(declaration, `$1 ${name}=window.${name}=`);
+        output = output.replace(declaration, `$1 ${name}=globalThis.${name}=`);
         changed = true;
       }
     };
@@ -93,12 +107,44 @@
     return output;
   }
 
+  function installBlobPatch() {
+    if (typeof NativeBlob !== 'function' || window.Blob?.__CRITTER_CODES_PATCHED_BLOB__) return;
+
+    function CritterCodesPatchedBlob(parts = [], options = {}) {
+      let nextParts = parts;
+      try {
+        const type = String(options?.type || '').toLowerCase();
+        if (type.includes('javascript') && Array.isArray(parts) && parts.every(part => typeof part === 'string')) {
+          const source = parts.join('');
+          const isRuntime = source.includes('sourceURL=critter-codes.runtime.js') ||
+            (source.includes('CritterCodes') && source.includes('CritterRewardRuntime') && source.includes('redeem'));
+          if (isRuntime && !source.includes('__CRITTER_CODES_API_EXPORT_')) {
+            nextParts = [patchPackedRuntime(source)];
+            state.blobPatched = true;
+          }
+        }
+      } catch (error) {
+        state.lastError = error?.message || String(error || 'Could not patch Critter Codes runtime blob.');
+      }
+      return new NativeBlob(nextParts, options);
+    }
+
+    Object.setPrototypeOf(CritterCodesPatchedBlob, NativeBlob);
+    CritterCodesPatchedBlob.prototype = NativeBlob.prototype;
+    Object.defineProperty(CritterCodesPatchedBlob, '__CRITTER_CODES_PATCHED_BLOB__', { value: true });
+    window.Blob = CritterCodesPatchedBlob;
+    state.blobPatchInstalled = true;
+  }
+
+  installBlobPatch();
+
   HTMLHeadElement.prototype.appendChild = function critterCodesApiBridgeAppend(node) {
     const src = node?.tagName === 'SCRIPT' ? String(node.src || '') : '';
     const isPackedRuntime = this === document.head &&
       node?.dataset?.critterCodesRuntime &&
       src.startsWith('blob:') &&
-      !node.dataset.critterCodesExportPatched;
+      !node.dataset.critterCodesExportPatched &&
+      !state.blobPatched;
 
     if (!isPackedRuntime) return nativeAppend.call(this, node);
 
@@ -109,7 +155,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.text();
     }).then(source => {
-      const patchedUrl = URL.createObjectURL(new Blob([patchPackedRuntime(source)], { type: 'text/javascript' }));
+      const patchedUrl = URL.createObjectURL(new NativeBlob([patchPackedRuntime(source)], { type: 'text/javascript' }));
       node.src = patchedUrl;
       node.dataset.critterCodesExportPatched = 'true';
       node.addEventListener('load', () => {
