@@ -12,7 +12,7 @@
     "check:links": "node tools/check-links.mjs",
     "check:assets": "node tools/check-assets.mjs",
     "check:portable": "node tools/verify-portable-parity.mjs",
-    "check:models": "node tests/issue-62-live-runtime.test.mjs && node tests/model-runtime-gate.test.mjs",
+    "check:models": "node tests/issue-62-live-runtime.test.mjs && node tests/model-runtime-gate.test.mjs && node tests/renderer-leaf-mesh.test.mjs",
     "validate:pages": "node tools/validate-pages.mjs",
     "validate": "npm run check:js && npm run check:inline && npm run check:errors && npm run check:links && npm run check:assets && npm run check:portable && npm run check:release && npm run check:models && npm run validate:pages",
     "test:browser": "playwright test --config=tests/browser/playwright.config.js",
