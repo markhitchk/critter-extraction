@@ -3,70 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Critter Extraction Model Catalog Tests</title>
+  <title>Critter Extraction All-39 Model Tests</title>
   <style>
     body{margin:0;padding:24px;background:#0b1020;color:#eef8ff;font:16px/1.5 system-ui,sans-serif}
-    main{max-width:900px;margin:auto;padding:24px;border:1px solid #64e8ea;border-radius:18px;background:#11182b}
+    main{max-width:980px;margin:auto;padding:24px;border:1px solid #64e8ea;border-radius:18px;background:#11182b}
     h1{margin-top:0}.pass{color:#8ff0af}.fail{color:#ff9b9b}li{margin:.4rem 0}code{color:#ffd36f}
+    #previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:20px}#previews figure{margin:0;padding:7px;border:1px solid #2c385d;border-radius:12px;background:#0a0f20}#previews img{display:block;width:100%;aspect-ratio:1/1;object-fit:contain}#previews figcaption{text-align:center;font-size:11px;font-weight:800}
   </style>
 </head>
 <body>
   <main>
-    <h1>Issue #62 Model Catalog Tests</h1>
+    <h1>Issue #62 — All 39 Critter Models</h1>
     <p id="summary">Running…</p>
     <ol id="results"></ol>
+    <div id="previews" aria-label="All critter previews"></div>
   </main>
   <script src="../core/rendering/model-library.js"></script>
+  <script src="../core/rendering/species-models.js"></script>
+  <script src="../core/rendering/model-runtime.js"></script>
   <script>
     (() => {
       'use strict';
-      const output = document.getElementById('results');
-      const summary = document.getElementById('summary');
-      let passed = 0;
-      let failed = 0;
-
-      function test(name, assertion) {
-        const item = document.createElement('li');
-        try {
-          if (!assertion()) throw new Error('Assertion returned false.');
-          item.className = 'pass';
-          item.textContent = `PASS — ${name}`;
-          passed += 1;
-        } catch (error) {
-          item.className = 'fail';
-          item.textContent = `FAIL — ${name}: ${error.message}`;
-          failed += 1;
-          console.error(name, error);
-        }
+      const output=document.getElementById('results');
+      const summary=document.getElementById('summary');
+      const previews=document.getElementById('previews');
+      let passed=0,failed=0;
+      function test(name,assertion){
+        const item=document.createElement('li');
+        try{if(!assertion())throw new Error('Assertion returned false.');item.className='pass';item.textContent=`PASS — ${name}`;passed+=1;}
+        catch(error){item.className='fail';item.textContent=`FAIL — ${name}: ${error.message}`;failed+=1;console.error(name,error);}
         output.appendChild(item);
       }
-
-      const catalog = window.HARLEYS_GAME_ASSETS;
-      test('catalog loads', () => Boolean(catalog));
-      test('catalog validation passes', () => catalog.validateCatalog().ok);
-      test('39 unique critter definitions exist', () => catalog.speciesOrder.length === 39 && new Set(catalog.speciesOrder).size === 39);
-      test('15 existing critters remain available', () => catalog.availableSpecies.length === 15);
-      test('24 issue #62 critters remain planned until assets and runtime models exist', () => catalog.plannedSpecies.length === 24);
-      test('invalid saved species safely falls back to Puppy', () => catalog.sanitizeSpeciesId('missing-critter') === 'puppy');
-      test('planned species cannot become active accidentally', () => catalog.sanitizeSpeciesId('wolf') === 'puppy');
-      test('planned species can be inspected by development tools', () => catalog.sanitizeSpeciesId('wolf', { allowPlanned: true }) === 'wolf');
-      test('all available critters have selection assets', () => catalog.availableSpecies.every(id => Boolean(catalog.species[id].selectionAsset)));
-      test('all critters have model profiles and required anchors', () => catalog.speciesOrder.every(id => {
-        const entry = catalog.species[id];
-        return entry.model.head && entry.model.ears && entry.model.tail && entry.model.firstPersonLimb &&
-          entry.anchors.accessory && entry.anchors.weaponRight && entry.anchors.weaponLeft &&
-          entry.anchors.backpack && entry.anchors.vest;
-      }));
-      test('all species share the same fair combat rig', () => catalog.combatRig.fairness === 'shared-across-all-species');
-      test('legacy enemy, map, landmark, character-part, weapon, and combat keys remain available', () =>
-        Array.isArray(catalog.enemyRoster) && Array.isArray(catalog.mapAssetPacks) &&
-        Array.isArray(catalog.sharedLandmarks) && Array.isArray(catalog.characterParts) &&
-        Array.isArray(catalog.weaponModels) && Array.isArray(catalog.combatRig.zones));
-      test('catalog data is immutable', () => Object.isFrozen(catalog) && Object.isFrozen(catalog.species) && Object.isFrozen(catalog.species.puppy));
-
-      summary.className = failed ? 'fail' : 'pass';
-      summary.textContent = `${passed} passed, ${failed} failed.`;
-      document.title = failed ? `FAIL — ${document.title}` : `PASS — ${document.title}`;
+      const catalog=window.HARLEYS_GAME_ASSETS;
+      const models=window.CritterSpeciesModels;
+      const runtime=window.CritterModelRuntime;
+      test('catalog loads',()=>Boolean(catalog));
+      test('catalog validation passes',()=>catalog.validateCatalog().ok);
+      test('39 unique critter definitions exist',()=>catalog.speciesOrder.length===39&&new Set(catalog.speciesOrder).size===39);
+      test('all 39 critters are gameplay-ready',()=>catalog.gameplaySpecies.length===39&&catalog.availableSpecies.length===39);
+      test('no critter remains planned or placeholder-only',()=>catalog.plannedSpecies.length===0);
+      test('all 39 procedural model recipes validate',()=>models.validateModels().ok&&models.validateModels().count===39);
+      test('all 39 enter the live runtime',()=>runtime.liveRuntimeIds.length===39);
+      test('enemy AI roster supports all 39',()=>catalog.enemyRoster.length===39&&catalog.enemyRoster.every(enemy=>catalog.species[enemy.species]));
+      test('invalid saved species safely falls back to Puppy',()=>catalog.sanitizeSpeciesId('missing-critter')==='puppy');
+      test('Wolf, Tiger, and Snow Leopard are active',()=>['wolf','tiger','snowleopard'].every(id=>catalog.sanitizeSpeciesId(id)===id));
+      test('all critters have previews',()=>catalog.speciesOrder.every(id=>runtime.previewAsset(id)));
+      test('all critters have model profiles and anchors',()=>catalog.speciesOrder.every(id=>{const entry=catalog.species[id];return entry.model.head&&entry.model.ears&&entry.model.tail&&entry.model.firstPersonLimb&&entry.anchors.accessory&&entry.anchors.weaponRight&&entry.anchors.weaponLeft&&entry.anchors.backpack&&entry.anchors.vest;}));
+      test('all species share fair hitboxes',()=>catalog.combatRig.fairness==='shared-across-all-species');
+      test('browser performance settings remain enabled',()=>catalog.performanceBudget.allowInstancing&&catalog.performanceBudget.allowDistanceCulling&&runtime.qualityBudget('low').targetFps===30);
+      test('catalog data is immutable',()=>Object.isFrozen(catalog)&&Object.isFrozen(catalog.species)&&Object.isFrozen(catalog.species.puppy));
+      catalog.speciesOrder.forEach(id=>{const entry=catalog.species[id],figure=document.createElement('figure'),image=document.createElement('img'),caption=document.createElement('figcaption');image.src=runtime.previewAsset(id);image.alt=`${entry.name} preview`;caption.textContent=entry.name;figure.append(image,caption);previews.appendChild(figure);});
+      summary.className=failed?'fail':'pass';summary.textContent=`${passed} passed, ${failed} failed. ${catalog.speciesOrder.length} critters rendered below.`;document.title=failed?`FAIL — ${document.title}`:`PASS — ${document.title}`;
     })();
   </script>
 </body>
