@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-04-all-assets-own-models-3';
+  const FASTBOOT_VERSION = '2026-08-04-appearance-viewport-4';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -145,7 +145,7 @@
 
 (() => {
   'use strict';
-  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-all-assets-own-models-3');
+  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-appearance-viewport-4');
   const load = (id, path, onload) => {
     if (document.getElementById(id)) { onload?.(); return; }
     const script = document.createElement('script');
