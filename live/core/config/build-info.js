@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859-model-gate-1', channel: 'github-pages', generatedAt: '2026-08-05T03:38:00.000Z' });
+  window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859', channel: 'github-pages', generatedAt: '2026-08-05T03:50:19.284Z' });
   const BUILD_ID = window.CritterBuildInfo.buildId;
 
   if (window.__CRITTER_MODEL_RUNTIME_GATE__) return;
