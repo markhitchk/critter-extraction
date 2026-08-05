@@ -13,7 +13,6 @@ const runtimeSource = read('core/rendering/model-runtime.js');
 const patchSource = read('core/ui/new-critter-runtime-patch.js');
 const rosterSource = read('core/ui/issue-62-live-roster.js');
 
-// Parse every new/updated browser file before attempting runtime checks.
 for (const [name, source] of [
   ['model-library.js', catalogSource],
   ['model-runtime.js', runtimeSource],
@@ -57,7 +56,7 @@ assert.equal(catalog.availableSpecies.length, 15, '15 existing critters are regi
 assert.equal(catalog.plannedSpecies.length, 24, '24 new critters remain gated until complete');
 assert.equal(runtime.liveRuntimeIds.length, 15, 'all 15 existing critters enter the live runtime');
 assert.deepEqual(
-  [...runtime.rewardRuntimeIds],
+  Array.from(runtime.rewardRuntimeIds),
   ['penguin', 'crow', 'frog', 'arcticfox', 'capybara', 'axolotl', 'otter'],
   'the seven previously Appearance-only critters are runtime-integrated'
 );
@@ -80,7 +79,7 @@ for (const id of catalog.plannedSpecies) {
 assert.match(patchSource, /__ISSUE_62_LIVE_SPECIES_RUNTIME_V3__/, 'runtime patch is versioned and idempotent');
 assert.match(patchSource, /model-runtime\.js/, 'runtime patch loads the model bridge');
 assert.match(patchSource, /issue-62-live-roster\.js/, 'runtime patch loads the live roster controller');
-assert.match(rosterSource, /15 live critters|liveRuntimeIds\.length/, 'roster reports the live collection');
+assert.match(rosterSource, /liveRuntimeIds\.length/, 'roster reports the live collection');
 assert.doesNotMatch(rosterSource, /testing\//, 'live integration does not load testing files');
 assert.doesNotMatch(rosterSource, /tech-preview\//, 'live integration does not load tech-preview files');
 
