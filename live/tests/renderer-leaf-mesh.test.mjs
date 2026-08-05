@@ -47,7 +47,7 @@ class Renderer {
   }
 }
 class SoftwareRenderer {
-  end(){const c=this.ctx;for(const o of this.commands){const w=20,h=30,alpha=1;if(o.mesh==='crystal'){c.fill();}else{c.fill();}}}
+  end(){const c=this.ctx;for(const o of this.commands){const w=20,h=30,alpha=1;if(o.mesh==='wedge'){c.fill();}else if(o.mesh==='crystal'){c.fill();}else{c.fill();}}}
 }
 globalThis.RendererForTest=Renderer;
 globalThis.SoftwareRendererForTest=SoftwareRenderer;
