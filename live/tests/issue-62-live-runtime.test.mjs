@@ -14,14 +14,12 @@ const runtimeSource = read('core/rendering/model-runtime.js');
 const patchSource = read('core/ui/new-critter-runtime-patch.js');
 const appearanceSource = read('core/ui/new-critter-appearance.js');
 const rosterSource = read('core/ui/issue-62-live-roster.js');
+const copySource = read('core/ui/issue-62-live-copy.js');
 
 for (const [name, source] of [
-  ['model-library.js',catalogSource],
-  ['species-models.js',modelsSource],
-  ['model-runtime.js',runtimeSource],
-  ['new-critter-runtime-patch.js',patchSource],
-  ['new-critter-appearance.js',appearanceSource],
-  ['issue-62-live-roster.js',rosterSource]
+  ['model-library.js',catalogSource],['species-models.js',modelsSource],['model-runtime.js',runtimeSource],
+  ['new-critter-runtime-patch.js',patchSource],['new-critter-appearance.js',appearanceSource],
+  ['issue-62-live-roster.js',rosterSource],['issue-62-live-copy.js',copySource]
 ]) assert.doesNotThrow(() => new vm.Script(source,{ filename:name }),`${name} must parse`);
 
 const storage = new Map();
@@ -83,10 +81,12 @@ assert.equal(runtime.qualityBudget('high').targetFps,60,'high quality retains it
 
 const appendSource = runtime.runtimeSpeciesAppendSource();
 for (const id of runtime.additionalRuntimeIds) assert.ok(appendSource.includes(`${id}:{`),`${id} is injected into the generated runtime`);
-assert.match(patchSource,/__ISSUE_62_ALL_39_RUNTIME_V4__/,'runtime patch is versioned and idempotent');
+assert.match(patchSource,/__ISSUE_62_ALL_39_RUNTIME_V5__/,'runtime patch is versioned and idempotent');
 assert.match(patchSource,/drawThirdPerson/,'third-person model hook is installed');
 assert.match(patchSource,/drawFirstPerson/,'first-person model hook is installed');
 assert.match(patchSource,/species-models\.js/,'model recipes load before gameplay');
+assert.match(patchSource,/delayedRuntime/,'gameplay waits for required model systems');
+assert.match(patchSource,/issue-62-live-copy\.js/,'visible game copy is updated');
 assert.match(appearanceSource,/liveRuntimeIds/,'Appearance populates all live species');
 assert.match(rosterSource,/39 playable procedural 3D models/,'roster announces all 39 models');
 assert.doesNotMatch(rosterSource,/testing\//,'live integration does not load testing files');
