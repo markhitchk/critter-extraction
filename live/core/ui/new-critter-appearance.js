@@ -1,8 +1,8 @@
 /* Harley's Studios — all-39 Appearance, ownership, preview, and save bridge. */
 (() => {
   'use strict';
-  if (window.__NEW_CRITTER_APPEARANCE_V7__) return;
-  window.__NEW_CRITTER_APPEARANCE_V7__ = true;
+  if (window.__NEW_CRITTER_APPEARANCE_V8__) return;
+  window.__NEW_CRITTER_APPEARANCE_V8__ = true;
 
   const STORAGE_KEY = 'critterExtractionInventory';
   const REWARDS = Object.freeze({
@@ -237,7 +237,7 @@
     style.textContent = `
       #customizeModal{overflow:visible}
       #customizeModal .customize-card{display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;width:min(1220px,calc(100vw - 20px))!important;height:min(92dvh,780px)!important;max-height:calc(100dvh - 16px)!important;overflow:hidden!important}
-      #customizeModal .customize-grid{grid-template-columns:minmax(220px,280px) minmax(0,1fr)!important;min-width:0;min-height:0!important;height:100%!important;align-items:stretch!important;overflow:hidden!important;padding:10px 0!important}
+      #customizeModal .customize-grid{grid-template-columns:minmax(220px,280px) minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important;min-width:0;min-height:0!important;height:100%!important;align-items:stretch!important;overflow:hidden!important;padding:10px 0!important}
       #customizeModal .critter-preview{width:100%;min-width:0;min-height:0!important;height:100%!important;max-height:100%!important}
       #customizeModal .critter-preview img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
       #customizeModal .customize-controls{min-width:0;min-height:0!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:2px 10px 24px 2px}
@@ -249,7 +249,7 @@
       #customizeModal .critter-code-lock[hidden]{display:none}
       .critter-preview{background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--critter-accent-color,#64e8ea) 28%,transparent),transparent 58%),linear-gradient(145deg,color-mix(in srgb,var(--critter-body-color,#26364b) 18%,#11182a),#0a1020)!important}
       @media(max-width:760px){#customizeModal .customize-card{width:calc(100vw - 6px)!important;height:calc(100dvh - 6px)!important;max-height:calc(100dvh - 6px)!important}#customizeModal .customize-grid{grid-template-columns:1fr!important;grid-template-rows:minmax(140px,25dvh) minmax(0,1fr)!important}#customizeModal .critter-preview{height:auto!important;min-height:140px!important;max-height:25dvh!important}#customizeModal .customize-controls{padding:0 7px 24px 0!important}}
-      @media(max-width:420px),(max-height:560px){#customizeModal .customize-grid{grid-template-rows:minmax(110px,20dvh) minmax(0,1fr)!important}#customizeModal .critter-preview{min-height:110px!important;max-height:20dvh!important}#customizeModal .character-roster{grid-template-columns:repeat(2,minmax(90px,1fr))!important}}
+      @media(max-width:420px){#customizeModal .customize-grid{grid-template-rows:minmax(110px,20dvh) minmax(0,1fr)!important}#customizeModal .critter-preview{min-height:110px!important;max-height:20dvh!important}#customizeModal .character-roster{grid-template-columns:repeat(2,minmax(90px,1fr))!important}}
     `;
     document.head.appendChild(style);
   }
