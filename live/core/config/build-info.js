@@ -17,8 +17,8 @@
   if (!window.__CRITTER_RENDERER_MESH_FALLBACK__) {
     const NativeBlob = window.Blob;
     const meshReport = { attempted: 0, applied: 0, lastError: '' };
-    const MESH_LOOKUP = "const mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`];";
-    const SAFE_MESH_LOOKUP = "const mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`]||this.meshes.wedge||this.meshes.cube;";
+    const MESH_LOOKUP = "mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`];";
+    const SAFE_MESH_LOOKUP = "mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`]||this.meshes.wedge||this.meshes.cube;";
 
     function patchRendererSource(source) {
       const text = String(source || '');
