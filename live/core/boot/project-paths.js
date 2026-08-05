@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-04-issue62-complete-models-2';
+  const FASTBOOT_VERSION = '2026-08-04-all-assets-own-models-3';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -47,6 +47,8 @@
   window.CritterPaths = Object.freeze({ projectRoot, resolve, relative });
   window.__CRITTER_FASTBOOT_VERSION__ = FASTBOOT_VERSION;
 
+  addHint({ path: `core/rendering/complete-asset-models.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
+  addHint({ path: `core/ui/all-asset-runtime-patch.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/ui/new-critter-runtime-patch.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/ui/new-critter-appearance.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/ui/appearance-short-desktop-fix.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
@@ -107,6 +109,7 @@
     output = once(output, 'reward nameplates',
       "node.querySelector('.world-label-name').textContent=p.profile?.displayName||p.id;",
       "node.querySelector('.world-label-name').textContent=window.CritterRewardRuntime?.displayName?.(p.profile)||p.profile?.displayName||p.id;");
+    output = window.CritterAllAssetRuntimePatch?.patchSource?.(output) || output;
     output += `\n/* __CRITTER_CODES_RUNTIME_PATCH__ ${JSON.stringify(report.applied)} */\n`;
     return output;
   }
@@ -142,7 +145,7 @@
 
 (() => {
   'use strict';
-  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue62-complete-models-2');
+  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-all-assets-own-models-3');
   const load = (id, path, onload) => {
     if (document.getElementById(id)) { onload?.(); return; }
     const script = document.createElement('script');
@@ -154,9 +157,13 @@
     script.addEventListener('error', () => console.warn(`Could not load ${path}.`), { once:true });
     document.head.appendChild(script);
   };
-  load('new-critter-runtime-patch-loader', `core/ui/new-critter-runtime-patch.js?v=${uiVersion}`, () => {
-    load('new-critter-appearance-loader', `core/ui/new-critter-appearance.js?v=${uiVersion}`, () => {
-      load('appearance-short-desktop-fix-loader', `core/ui/appearance-short-desktop-fix.js?v=${uiVersion}`);
+  load('complete-asset-models-loader', `core/rendering/complete-asset-models.js?v=${uiVersion}`, () => {
+    load('all-asset-runtime-patch-loader', `core/ui/all-asset-runtime-patch.js?v=${uiVersion}`, () => {
+      load('new-critter-runtime-patch-loader', `core/ui/new-critter-runtime-patch.js?v=${uiVersion}`, () => {
+        load('new-critter-appearance-loader', `core/ui/new-critter-appearance.js?v=${uiVersion}`, () => {
+          load('appearance-short-desktop-fix-loader', `core/ui/appearance-short-desktop-fix.js?v=${uiVersion}`);
+        });
+      });
     });
   });
 })();
