@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-04-issue63-short-desktop-3';
+  const FASTBOOT_VERSION = '2026-08-04-issue62-distinct-models-1';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -142,7 +142,7 @@
 
 (() => {
   'use strict';
-  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue63-short-desktop-3');
+  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue62-distinct-models-1');
   const load = (id, path, onload) => {
     if (document.getElementById(id)) { onload?.(); return; }
     const script = document.createElement('script');
