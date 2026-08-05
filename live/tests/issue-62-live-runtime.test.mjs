@@ -1,0 +1,95 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const liveRoot = path.resolve(here, '..');
+const read = relative => fs.readFileSync(path.join(liveRoot, relative), 'utf8');
+
+const catalogSource = read('core/rendering/model-library.js');
+const modelsSource = read('core/rendering/species-models.js');
+const runtimeSource = read('core/rendering/model-runtime.js');
+const patchSource = read('core/ui/new-critter-runtime-patch.js');
+const appearanceSource = read('core/ui/new-critter-appearance.js');
+const rosterSource = read('core/ui/issue-62-live-roster.js');
+const copySource = read('core/ui/issue-62-live-copy.js');
+
+for (const [name, source] of [
+  ['model-library.js',catalogSource],['species-models.js',modelsSource],['model-runtime.js',runtimeSource],
+  ['new-critter-runtime-patch.js',patchSource],['new-critter-appearance.js',appearanceSource],
+  ['issue-62-live-roster.js',rosterSource],['issue-62-live-copy.js',copySource]
+]) assert.doesNotThrow(() => new vm.Script(source,{ filename:name }),`${name} must parse`);
+
+const storage = new Map();
+const windowObject = {};
+const context = vm.createContext({
+  console,
+  window:windowObject,
+  navigator:{ deviceMemory:8, hardwareConcurrency:8 },
+  matchMedia:() => ({ matches:false }),
+  localStorage:{
+    getItem:key => storage.get(key) ?? null,
+    setItem:(key,value) => storage.set(key,String(value)),
+    removeItem:key => storage.delete(key)
+  },
+  CustomEvent:class CustomEvent {
+    constructor(type,options={}) { this.type=type; this.detail=options.detail; }
+  },
+  encodeURIComponent
+});
+windowObject.dispatchEvent = () => true;
+
+vm.runInContext(catalogSource,context,{ filename:'model-library.js' });
+vm.runInContext(modelsSource,context,{ filename:'species-models.js' });
+vm.runInContext(runtimeSource,context,{ filename:'model-runtime.js' });
+
+const catalog = windowObject.HARLEYS_GAME_ASSETS;
+const models = windowObject.CritterSpeciesModels;
+const runtime = windowObject.CritterModelRuntime;
+
+assert.ok(catalog,'catalog initializes');
+assert.ok(models,'procedural model recipes initialize');
+assert.ok(runtime,'live model runtime initializes');
+assert.equal(catalog.speciesOrder.length,39,'catalog contains all 39 issue #62 critters');
+assert.equal(catalog.availableSpecies.length,39,'all 39 critters are playable');
+assert.equal(catalog.gameplaySpecies.length,39,'all 39 critters are gameplay species');
+assert.equal(catalog.plannedSpecies.length,0,'no critter remains a placeholder');
+assert.equal(catalog.enemyRoster.length,39,'enemy AI can use every modeled species');
+assert.equal(runtime.liveRuntimeIds.length,39,'all 39 critters enter the generated live runtime');
+assert.equal(runtime.additionalRuntimeIds.length,31,'31 species are injected beyond the original eight');
+assert.equal(models.validateModels().count,39,'all 39 procedural recipes validate');
+assert.equal(models.validateModels().ok,true,'all procedural recipes are complete');
+
+for (const id of catalog.speciesOrder) {
+  const entry = runtime.runtimeDefinition(id);
+  assert.equal(runtime.sanitizeLiveSpecies(id),id,`${id} remains playable`);
+  assert.ok(entry.model.head,`${id} has a head recipe`);
+  assert.ok(entry.model.ears,`${id} has an ear or horn recipe`);
+  assert.ok(entry.model.tail,`${id} has a tail recipe`);
+  assert.ok(entry.firstPersonLimb,`${id} has first-person limbs`);
+  assert.equal(models.previewDataUri(id).startsWith('data:image/svg+xml'),true,`${id} has a generated preview`);
+  assert.equal(runtime.anchor(id,'accessory').position.length,3,`${id} has an accessory anchor`);
+}
+
+assert.equal(runtime.sanitizeLiveSpecies('snow-leopard'),'snowleopard','normalized Snow Leopard is playable');
+assert.equal(runtime.sanitizeLiveSpecies('not-a-critter'),'puppy','unknown saves safely fall back to Puppy');
+assert.equal(runtime.sanitizeNetworkAppearance({ species:'tiger' }).species,'tiger','multiplayer preserves a modeled species');
+assert.equal(runtime.qualityBudget('low').allowInstancing,true,'low quality keeps instancing enabled');
+assert.equal(runtime.qualityBudget('high').targetFps,60,'high quality retains its target budget');
+
+const appendSource = runtime.runtimeSpeciesAppendSource();
+for (const id of runtime.additionalRuntimeIds) assert.ok(appendSource.includes(`${id}:{`),`${id} is injected into the generated runtime`);
+assert.match(patchSource,/__ISSUE_62_ALL_39_RUNTIME_V5__/,'runtime patch is versioned and idempotent');
+assert.match(patchSource,/drawThirdPerson/,'third-person model hook is installed');
+assert.match(patchSource,/drawFirstPerson/,'first-person model hook is installed');
+assert.match(patchSource,/species-models\.js/,'model recipes load before gameplay');
+assert.match(patchSource,/delayedRuntime/,'gameplay waits for required model systems');
+assert.match(patchSource,/issue-62-live-copy\.js/,'visible game copy is updated');
+assert.match(appearanceSource,/liveRuntimeIds/,'Appearance populates all live species');
+assert.match(rosterSource,/39 playable procedural 3D models/,'roster announces all 39 models');
+assert.doesNotMatch(rosterSource,/testing\//,'live integration does not load testing files');
+assert.doesNotMatch(rosterSource,/tech-preview\//,'live integration does not load tech-preview files');
+
+console.log('Issue #62 all-39 model tests passed.');
