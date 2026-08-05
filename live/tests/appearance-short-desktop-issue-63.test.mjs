@@ -4,12 +4,30 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const repo = path.resolve(new URL('../..', import.meta.url).pathname);
+const appearance = await readFile(path.join(repo, 'live/core/ui/new-critter-appearance.js'), 'utf8');
 const fix = await readFile(path.join(repo, 'live/core/ui/appearance-short-desktop-fix.js'), 'utf8');
 const loader = await readFile(path.join(repo, 'live/core/boot/project-paths.js'), 'utf8');
 
+new vm.Script(appearance, { filename: 'new-critter-appearance.js' });
 new vm.Script(fix, { filename: 'appearance-short-desktop-fix.js' });
 new vm.Script(loader, { filename: 'project-paths.js' });
 
+assert.ok(
+  appearance.includes('__NEW_CRITTER_APPEARANCE_V8__'),
+  'the corrected Appearance integration must be installed'
+);
+assert.ok(
+  appearance.includes('grid-template-rows:minmax(0,1fr)!important'),
+  'desktop Appearance must explicitly use one content row'
+);
+assert.ok(
+  !appearance.includes('@media(max-width:420px),(max-height:560px)'),
+  'short desktop height must not activate the two-row mobile layout'
+);
+assert.ok(
+  appearance.includes('@media(max-width:420px)'),
+  'the compact two-row rule must remain limited to narrow phones'
+);
 assert.ok(
   fix.includes('__CRITTER_APPEARANCE_VIEWPORT_FIX_V2__'),
   'the current Appearance viewport correction must be installed'
@@ -54,6 +72,10 @@ assert.ok(
   'the scroll pane must be keyboard-focusable and named for assistive technology'
 );
 assert.ok(
+  loader.includes("const FASTBOOT_VERSION = '2026-08-04-appearance-viewport-4'"),
+  'the live loader must bust cached copies of the broken Appearance scripts'
+);
+assert.ok(
   loader.includes('appearance-short-desktop-fix.js?v=${uiVersion}'),
   'the viewport correction must remain in the live loader'
 );
@@ -63,4 +85,4 @@ assert.ok(
   'the viewport correction must load after the Appearance integration styles'
 );
 
-console.log('Issue #63 Appearance viewport and scrolling checks passed.');
+console.log('Issue #63 Appearance viewport, cache, and scrolling checks passed.');
