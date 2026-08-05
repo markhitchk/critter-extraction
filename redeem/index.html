@@ -7,18 +7,28 @@
   <title>Opening Critter Codes…</title>
   <script>
     (() => {
-      const target = new URL('../live/redeem/', location.href);
-      target.search = location.search;
-      target.hash = location.hash;
-      location.replace(target.href);
+      const current = new URL(location.href);
+      const cleanPath = current.pathname
+        .replace(/\/index\.html?$/i, '')
+        .replace(/\/+$/, '');
+      const projectRoot = cleanPath
+        .replace(/\/(?:live\/)?redeem$/i, '/')
+        .replace(/\/+$/, '/');
+      const target = new URL(projectRoot + 'live/redeem/', current.origin);
+
+      target.search = current.search;
+      target.hash = current.hash;
+
+      window.__CRITTER_REDEEM_TARGET__ = target.href;
+      if (target.href !== current.href) location.replace(target.href);
     })();
   </script>
 </head>
 <body>
   <p>Opening the <a id="redeemLink" href="../live/redeem/">Critter Codes terminal</a>…</p>
   <script>
-    const link=document.getElementById('redeemLink');
-    link.href='../live/redeem/'+location.search+location.hash;
+    const link = document.getElementById('redeemLink');
+    if (window.__CRITTER_REDEEM_TARGET__) link.href = window.__CRITTER_REDEEM_TARGET__;
   </script>
 </body>
 </html>
