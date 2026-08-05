@@ -4,6 +4,63 @@
   window.CritterBuildInfo = Object.freeze({ buildId: '3391f2959d123859', channel: 'github-pages', generatedAt: '2026-08-05T03:50:19.284Z' });
   const BUILD_ID = window.CritterBuildInfo.buildId;
 
+  /*
+   * Complete critter/item models can introduce a decorative mesh name before
+   * the generated WebGL renderer has a matching GPU mesh. The old lookup then
+   * dereferenced undefined (for example the new "leaf" detail), aborting the
+   * frame after terrain was drawn. That left enemies active and able to shoot
+   * while critters, pickups, chests, and the first-person weapon disappeared.
+   *
+   * Patch generated runtime blobs so unknown procedural meshes safely use the
+   * wedge/cube mesh instead of stopping the entire dynamic render pass.
+   */
+  if (!window.__CRITTER_RENDERER_MESH_FALLBACK__) {
+    const NativeBlob = window.Blob;
+    const meshReport = { attempted: 0, applied: 0, lastError: '' };
+    const MESH_LOOKUP = "const mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`];";
+    const SAFE_MESH_LOOKUP = "const mesh=this.meshes[fixed?meshName:`${meshName}_${profile.key}`]||this.meshes.wedge||this.meshes.cube;";
+
+    function patchRendererSource(source) {
+      const text = String(source || '');
+      if (!text.includes('class Renderer')) return text;
+      meshReport.attempted += 1;
+      if (text.includes(SAFE_MESH_LOOKUP)) return text;
+      if (!text.includes(MESH_LOOKUP)) {
+        meshReport.lastError = 'Generated WebGL mesh lookup was not found.';
+        return text;
+      }
+      meshReport.applied += 1;
+      meshReport.lastError = '';
+      return `${text.replace(MESH_LOOKUP, SAFE_MESH_LOOKUP)}\n/* __CRITTER_RENDERER_MESH_FALLBACK__ */\n`;
+    }
+
+    if (typeof NativeBlob === 'function') {
+      function RendererSafeBlob(parts = [], options = {}) {
+        let next = parts;
+        try {
+          const type = String(options?.type || '').toLowerCase();
+          if (type.includes('javascript') && Array.isArray(parts) && parts.every(part => typeof part === 'string')) {
+            next = [patchRendererSource(parts.join(''))];
+          }
+        } catch (error) {
+          meshReport.lastError = error?.message || String(error);
+          console.error('[Critter Extraction] Renderer mesh fallback could not patch a runtime blob.', error);
+        }
+        return new NativeBlob(next, options);
+      }
+      Object.setPrototypeOf(RendererSafeBlob, NativeBlob);
+      RendererSafeBlob.prototype = NativeBlob.prototype;
+      Object.defineProperty(RendererSafeBlob, '__CRITTER_RENDERER_MESH_FALLBACK__', { value: true });
+      window.Blob = RendererSafeBlob;
+    }
+
+    window.__CRITTER_RENDERER_MESH_FALLBACK__ = Object.freeze({
+      buildId: BUILD_ID,
+      patchSource: patchRendererSource,
+      report: meshReport
+    });
+  }
+
   if (window.__CRITTER_MODEL_RUNTIME_GATE__) return;
 
   const previousAppend = HTMLHeadElement.prototype.appendChild;
