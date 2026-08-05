@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071116">
+  <title>Separate Model File Test — Critter Extraction</title>
+  <style>
+    :root{color-scheme:dark;--bg:#071116;--panel:#0e1b22;--panel2:#13262e;--line:#1c4953;--cyan:#63f2ef;--text:#e9fbfb;--muted:#91aeb3;--ok:#75e39d;--bad:#ff7d93;--warn:#ffd36f}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 0,#12323b 0,transparent 34rem),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,select,input{font:inherit}.shell{width:min(1500px,100%);margin:auto;padding:24px}.hero,.panel{border:1px solid var(--line);background:linear-gradient(145deg,rgba(19,38,46,.96),rgba(8,21,27,.96));box-shadow:0 18px 55px rgba(0,0,0,.32);border-radius:22px}.hero{display:flex;gap:24px;align-items:center;padding:24px;margin-bottom:18px}.hero img{width:82px;height:82px;object-fit:contain}.hero h1{margin:2px 0 6px;font-size:clamp(25px,4vw,44px)}.hero p{margin:0;color:var(--muted);max-width:900px}.eyebrow{font:700 12px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;color:var(--cyan)}
+    .toolbar{display:grid;grid-template-columns:auto minmax(180px,1fr) 190px auto;gap:10px;padding:15px;margin-bottom:18px}.toolbar button,.toolbar select,.toolbar input{min-height:44px;border-radius:12px;border:1px solid var(--line);background:#08171d;color:var(--text);padding:9px 13px}.toolbar button{cursor:pointer;font-weight:800;background:var(--cyan);color:#062024;border-color:transparent}.toolbar button.secondary{background:#10252c;color:var(--text);border-color:var(--line)}
+    .summary{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px;margin-bottom:18px}.metric{padding:16px}.metric strong{display:block;font-size:28px}.metric span{color:var(--muted)}.metric.ok strong{color:var(--ok)}.metric.bad strong{color:var(--bad)}.metric.warn strong{color:var(--warn)}
+    .notice{padding:15px 17px;margin-bottom:18px;color:var(--muted)}.notice strong{color:var(--warn)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}.card{padding:15px;border:1px solid var(--line);background:rgba(9,24,30,.92);border-radius:16px;min-width:0}.card.pass{border-color:rgba(117,227,157,.55)}.card.fail{border-color:rgba(255,125,147,.55)}.card.pending{border-color:rgba(255,211,111,.45)}.card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.card h2{font-size:16px;margin:0;overflow-wrap:anywhere}.badge{border-radius:999px;padding:3px 8px;font:800 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;background:#1d3339;color:var(--muted)}.pass .badge{background:rgba(117,227,157,.14);color:var(--ok)}.fail .badge{background:rgba(255,125,147,.14);color:var(--bad)}.pending .badge{background:rgba(255,211,111,.13);color:var(--warn)}.path{display:block;margin:10px 0 8px;padding:8px;border-radius:9px;background:#050d11;color:#a9e8e8;font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.detail{margin:0;color:var(--muted);font-size:13px}.category{color:var(--cyan);text-transform:uppercase;font:800 11px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.08em}
+    .empty{grid-column:1/-1;padding:36px;text-align:center;color:var(--muted)}footer{padding:22px 2px;color:var(--muted);font-size:13px}
+    @media(max-width:820px){.hero{align-items:flex-start}.hero img{width:58px;height:58px}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.summary{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:520px){.shell{padding:12px}.hero{padding:17px}.hero img{display:none}.toolbar{grid-template-columns:1fr}.toolbar input{grid-column:auto}.summary{grid-template-columns:1fr 1fr}.metric strong{font-size:23px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <img src="./assets/branding/HTG.png" alt="Harley’s Studios logo">
+      <div><div class="eyebrow">HARLEY’S STUDIOS • DEVELOPMENT TOOL</div><h1>Separate Model File Test</h1><p>This page does not accept a model merely because it exists inside a large bundled registry. Every asset must load from its own physical <code>.model.js</code> file and register the exact category and model ID expected by the manifest.</p></div>
+    </section>
+
+    <section class="panel toolbar" aria-label="Test controls">
+      <button id="runBtn" type="button">Run all file tests</button>
+      <input id="search" type="search" placeholder="Filter by model ID or path" autocomplete="off">
+      <select id="category" aria-label="Category"><option value="all">All categories</option></select>
+      <button id="downloadBtn" class="secondary" type="button">Download report</button>
+    </section>
+
+    <section class="summary" aria-label="Test summary">
+      <article class="panel metric"><strong id="totalCount">0</strong><span>Expected files</span></article>
+      <article class="panel metric ok"><strong id="passCount">0</strong><span>Passed</span></article>
+      <article class="panel metric bad"><strong id="failCount">0</strong><span>Failed</span></article>
+      <article class="panel metric warn"><strong id="pendingCount">0</strong><span>Not tested</span></article>
+      <article class="panel metric"><strong id="categoryCount">0</strong><span>Categories</span></article>
+    </section>
+
+    <section class="panel notice"><strong>Required standalone contract:</strong> each file must call <code>CritterStandaloneModels.register({category,id,sourceFile,recipe})</code>. The page verifies the physical request, source-file identity, registration key, and non-empty recipe.</section>
+    <section id="grid" class="grid" aria-live="polite"></section>
+    <footer>Suggested route after deployment: <code>/critter-extraction/live/model-file-test.html</code>. This test page is isolated and does not change saved accounts or start gameplay.</footer>
+  </main>
+
+  <script>
+  (()=>{
+    'use strict';
+    const critters=['puppy','bunny','kitty','fox','panda','bear','raccoon','redpanda','penguin','crow','frog','arcticfox','capybara','axolotl','otter','wolf','deer','koala','hedgehog','squirrel','bat','owl','mouse','hamster','ferret','duck','seal','polarbear','sloth','chameleon','beaver','goat','possum','lemur','alpaca','meerkat','platypus','tiger','snowleopard'];
+    const weapons=['pea_popper','acorn_sprayer','honey_carbine','carrot_scatter','moonbeam'];
+    const maps=['pine-valley','amber-junction','moonberry-marsh','clover-highlands','frostflower-ridge','redwood-run'];
+    const groups={
+      critters:critters.map(id=>({id,path:`assets/models/critters/${id}.model.js`})),
+      weapons:weapons.map(id=>({id,path:`assets/models/weapons/${id}.model.js`})),
+      trees:maps.flatMap(map=>['a','b'].map(variant=>({id:`${map}-tree-${variant}`,path:`assets/models/environment/trees/${map}-tree-${variant}.model.js`}))),
+      rocks:maps.map(id=>({id:`${id}-rock`,path:`assets/models/environment/rocks/${id}-rock.model.js`})),
+      cover:['train','freight','container','cratewall','boulder'].map(id=>({id,path:`assets/models/cover/${id}.model.js`})),
+      landmarks:['pine-camp','amber-silo','marsh-dock','clover-windmill','frost-crystal','redwood-gate'].map(id=>({id,path:`assets/models/landmarks/${id}.model.js`})),
+      decorations:['pine-marker','hay-bale','marsh-reeds','wildflowers','ice-shard','redwood-stump'].map(id=>({id,path:`assets/models/decorations/${id}.model.js`})),
+      props:['camp-crate','decorative-pine','cliff','loot-chest','deathbox','pickup'].map(id=>({id,path:`assets/models/props/${id}.model.js`}))
+    };
+    const entries=Object.entries(groups).flatMap(([category,items])=>items.map(item=>({...item,category,key:`${category}:${item.id}`,status:'pending',detail:'Not tested yet.'})));
+    const registrations=new Map(),loadedScripts=new Map();
+    const registry={
+      register(definition){
+        if(!definition||typeof definition!=='object')throw new TypeError('Model registration must be an object.');
+        const category=String(definition.category||''),id=String(definition.id||''),sourceFile=String(definition.sourceFile||''),recipe=definition.recipe;
+        if(!category||!id)throw new Error('Model registration requires category and id.');
+        const key=`${category}:${id}`;
+        if(registrations.has(key))throw new Error(`Duplicate model registration: ${key}`);
+        registrations.set(key,Object.freeze({category,id,sourceFile,recipe}));
+      },
+      get(category,id){return registrations.get(`${category}:${id}`)||null;},
+      clear(){registrations.clear();}
+    };
+    Object.defineProperty(window,'CritterStandaloneModels',{value:Object.freeze(registry),configurable:false,writable:false});
+
+    const $=selector=>document.querySelector(selector),grid=$('#grid'),search=$('#search'),category=$('#category');
+    Object.keys(groups).forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=`${name[0].toUpperCase()+name.slice(1)} (${groups[name].length})`;category.append(option);});
+
+    function escapeHtml(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));}
+    function visibleEntries(){const q=search.value.trim().toLowerCase(),cat=category.value;return entries.filter(entry=>(cat==='all'||entry.category===cat)&&(!q||`${entry.category} ${entry.id} ${entry.path}`.toLowerCase().includes(q)));}
+    function updateSummary(){const passed=entries.filter(x=>x.status==='pass').length,failed=entries.filter(x=>x.status==='fail').length,pending=entries.length-passed-failed;$('#totalCount').textContent=entries.length;$('#passCount').textContent=passed;$('#failCount').textContent=failed;$('#pendingCount').textContent=pending;$('#categoryCount').textContent=Object.keys(groups).length;}
+    function render(){const visible=visibleEntries();grid.innerHTML=visible.length?visible.map(entry=>`<article class="card ${entry.status}"><div class="card-head"><div><div class="category">${escapeHtml(entry.category)}</div><h2>${escapeHtml(entry.id)}</h2></div><span class="badge">${entry.status.toUpperCase()}</span></div><code class="path">${escapeHtml(entry.path)}</code><p class="detail">${escapeHtml(entry.detail)}</p></article>`).join(''):'<div class="panel empty">No model files match this filter.</div>';updateSummary();}
+    function removeOldScript(path){const previous=loadedScripts.get(path);if(previous){previous.remove();loadedScripts.delete(path);}}
+    function loadScript(path){return new Promise((resolve,reject)=>{removeOldScript(path);const script=document.createElement('script'),timeout=setTimeout(()=>{script.remove();reject(new Error('Script load timed out.'));},8000);script.src=`./${path}?model-file-test=${Date.now()}`;script.async=true;script.dataset.modelTestPath=path;script.onload=()=>{clearTimeout(timeout);loadedScripts.set(path,script);resolve();};script.onerror=()=>{clearTimeout(timeout);script.remove();reject(new Error('Physical model file was not found or could not execute.'));};document.head.append(script);});}
+    async function testEntry(entry){entry.status='pending';entry.detail='Loading physical model file…';render();registrations.delete(entry.key);
+      try{
+        const response=await fetch(`./${entry.path}?physical-check=${Date.now()}`,{cache:'no-store'});
+        if(!response.ok)throw new Error(`HTTP ${response.status}: standalone file missing.`);
+        const source=await response.text();
+        if(!source.trim())throw new Error('Standalone file is empty.');
+        if(!source.includes('CritterStandaloneModels')||!source.includes('register'))throw new Error('File does not use the standalone model registration contract.');
+        await loadScript(entry.path);
+        const model=registry.get(entry.category,entry.id);
+        if(!model)throw new Error(`File did not register ${entry.key}.`);
+        const normalizedExpected=entry.path.replace(/^\.\//,'');
+        const normalizedActual=model.sourceFile.replace(/^\.\//,'');
+        if(normalizedActual!==normalizedExpected)throw new Error(`sourceFile mismatch: ${model.sourceFile||'(empty)'}`);
+        if(!model.recipe||typeof model.recipe!=='object'||!Object.keys(model.recipe).length)throw new Error('Model recipe is missing or empty.');
+        entry.status='pass';entry.detail=`Loaded and registered ${entry.key} from its own file.`;
+      }catch(error){entry.status='fail';entry.detail=error?.message||String(error);}render();
+    }
+    async function runAll(){const button=$('#runBtn');button.disabled=true;button.textContent='Testing model files…';registry.clear();entries.forEach(entry=>{entry.status='pending';entry.detail='Queued for physical-file test.';});render();for(const entry of entries)await testEntry(entry);button.disabled=false;button.textContent='Run all file tests';}
+    function downloadReport(){const report={generatedAt:new Date().toISOString(),page:location.href,expected:entries.length,passed:entries.filter(x=>x.status==='pass').length,failed:entries.filter(x=>x.status==='fail').length,models:entries.map(({category,id,path,status,detail})=>({category,id,path,status,detail}))};const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='critter-model-file-test-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    $('#runBtn').addEventListener('click',runAll);$('#downloadBtn').addEventListener('click',downloadReport);search.addEventListener('input',render);category.addEventListener('change',render);render();
+  })();
+  </script>
+</body>
+</html>
