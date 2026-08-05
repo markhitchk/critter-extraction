@@ -75,6 +75,6 @@ const blobSource = blob.parts.join('');
 assert.match(blobSource, /leaf:this\.makeMesh\(makeLeafData\(\)\)/);
 assert.match(blobSource, /o\.mesh==='leaf'/);
 assert.equal(leafSupport.report.applied >= 1, true);
-assert.deepEqual(leafSupport.report.missing, []);
+assert.equal(leafSupport.report.missing.length, 0);
 
 console.log('Native WebGL and Canvas leaf mesh regression passed.');
