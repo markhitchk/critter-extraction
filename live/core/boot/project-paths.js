@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-04-issue63-cache-bust-2';
+  const FASTBOOT_VERSION = '2026-08-04-issue63-short-desktop-3';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -49,6 +49,7 @@
 
   addHint({ path: `core/ui/new-critter-runtime-patch.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/ui/new-critter-appearance.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
+  addHint({ path: `core/ui/appearance-short-desktop-fix.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/game/game-runtime.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/loader/live-patches.bundle.js?v=${FASTBOOT_VERSION}`, as: 'script', priority: 'high' });
   addHint({ path: `core/loader/game-loader-base.js?v=${FASTBOOT_VERSION}`, as: 'script' });
@@ -141,7 +142,7 @@
 
 (() => {
   'use strict';
-  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue63-cache-bust-2');
+  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue63-short-desktop-3');
   const load = (id, path, onload) => {
     if (document.getElementById(id)) { onload?.(); return; }
     const script = document.createElement('script');
@@ -154,7 +155,9 @@
     document.head.appendChild(script);
   };
   load('new-critter-runtime-patch-loader', `core/ui/new-critter-runtime-patch.js?v=${uiVersion}`, () => {
-    load('new-critter-appearance-loader', `core/ui/new-critter-appearance.js?v=${uiVersion}`);
+    load('new-critter-appearance-loader', `core/ui/new-critter-appearance.js?v=${uiVersion}`, () => {
+      load('appearance-short-desktop-fix-loader', `core/ui/appearance-short-desktop-fix.js?v=${uiVersion}`);
+    });
   });
 })();
 
