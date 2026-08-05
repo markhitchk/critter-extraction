@@ -55,6 +55,7 @@ await new Promise(resolve => setTimeout(resolve, 60));
 assert.equal(appended.length, 1, 'game runtime is appended after all model systems validate');
 assert.equal(appended[0], runtimeNode);
 assert.equal(runtimeNode.dataset.modelRuntimeGate, 'ready');
-assert.equal(windowObject.CritterBuildInfo.buildId, '3391f2959d123859-model-gate-1');
+assert.match(windowObject.CritterBuildInfo.buildId, /^[A-Za-z0-9._-]+$/, 'generated build ID remains valid');
+assert.equal(windowObject.__CRITTER_MODEL_RUNTIME_GATE__.buildId, windowObject.CritterBuildInfo.buildId, 'model gate follows the generated build ID');
 
 console.log('Model runtime boot gate test passed.');
