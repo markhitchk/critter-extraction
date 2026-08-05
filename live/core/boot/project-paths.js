@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const FASTBOOT_VERSION = '2026-08-03-fastboot-8-insured-codes';
+  const FASTBOOT_VERSION = '2026-08-04-issue63-cache-bust-2';
 
   function scriptBase() {
     const current = document.currentScript && document.currentScript.src;
@@ -141,18 +141,20 @@
 
 (() => {
   'use strict';
+  const uiVersion = encodeURIComponent(window.__CRITTER_FASTBOOT_VERSION__ || '2026-08-04-issue63-cache-bust-2');
   const load = (id, path, onload) => {
     if (document.getElementById(id)) { onload?.(); return; }
     const script = document.createElement('script');
     script.id = id;
     script.src = window.CritterPaths.resolve(path);
     script.async = false;
+    if ('fetchPriority' in script) script.fetchPriority = 'high';
     if (onload) script.addEventListener('load', onload, { once:true });
     script.addEventListener('error', () => console.warn(`Could not load ${path}.`), { once:true });
     document.head.appendChild(script);
   };
-  load('new-critter-runtime-patch-loader', 'core/ui/new-critter-runtime-patch.js?v=2026-08-03-1', () => {
-    load('new-critter-appearance-loader', 'core/ui/new-critter-appearance.js?v=2026-08-03-1');
+  load('new-critter-runtime-patch-loader', `core/ui/new-critter-runtime-patch.js?v=${uiVersion}`, () => {
+    load('new-critter-appearance-loader', `core/ui/new-critter-appearance.js?v=${uiVersion}`);
   });
 })();
 
