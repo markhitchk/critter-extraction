@@ -6,7 +6,7 @@
     PROJECT_NAME: 'Critter Extraction'
   });
 
-  const uiAssetVersion = '0.22.0-6';
+  const uiAssetVersion = '0.22.0-mobile-ui-1';
 
   const loadStyle = (id, href) => {
     if (document.getElementById(id)) return;
@@ -25,6 +25,9 @@
     script.async = false;
     document.head.appendChild(script);
   };
+
+  loadStyle('critterResponsiveStyles', './core/styles/responsive.css');
+  loadScript('critterMobileViewportScript', './core/ui/mobile-viewport.js');
 
   loadStyle('settingsAccountsRevampStyles', './core/ui/settings-accounts-revamp.css');
   loadScript('settingsAccountsRevampScript', './core/ui/settings-accounts-revamp.js');
