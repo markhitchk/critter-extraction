@@ -6,7 +6,7 @@
     PROJECT_NAME: 'Critter Extraction'
   });
 
-  const uiAssetVersion = '0.22.0-mobile-ui-1';
+  const uiAssetVersion = '0.22.0-mobile-perf-2';
 
   const loadStyle = (id, href) => {
     if (document.getElementById(id)) return;
@@ -28,6 +28,8 @@
 
   loadStyle('critterResponsiveStyles', './core/styles/responsive.css');
   loadScript('critterMobileViewportScript', './core/ui/mobile-viewport.js');
+  loadStyle('critterLowEndPerformanceStyles', './core/performance/low-end-performance.css');
+  loadScript('critterLowEndPerformanceScript', './core/performance/low-end-performance.js');
 
   loadStyle('settingsAccountsRevampStyles', './core/ui/settings-accounts-revamp.css');
   loadScript('settingsAccountsRevampScript', './core/ui/settings-accounts-revamp.js');
@@ -38,9 +40,6 @@
   loadScript('critterBanScreenScript', './core/ui/ban-screen.js');
   loadScript('critterBanScreenViewportScript', './core/ui/ban-screen-viewport.js');
 
-  // Keep the safe screen-space graphics polish, but do not patch the game
-  // core at runtime. The previous graphics observer could repeatedly mutate
-  // its own settings label and starve the boot process on real browsers.
   loadStyle('critterGraphicsEnhancementsStyles', './core/rendering/graphics-enhancements.css');
   window.__CRITTER_GRAPHICS_READY__ = Promise.resolve(null);
 })();
