@@ -1,1 +1,193 @@
-/* responsive styles are reserved for gradual extraction from base.css. */
+/* Critter Extraction — responsive phone/tablet UI layer. */
+:root {
+  --ce-vw: 100vw;
+  --ce-vh: 100dvh;
+  --ce-safe-top: env(safe-area-inset-top, 0px);
+  --ce-safe-right: env(safe-area-inset-right, 0px);
+  --ce-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ce-safe-left: env(safe-area-inset-left, 0px);
+  --ce-ui-scale: 1;
+}
+
+html, body { width: 100%; max-width: 100%; }
+html.touch-capable, html.touch-capable body { overscroll-behavior: none; }
+.touch-capable button, .touch-capable [role="button"] { -webkit-tap-highlight-color: transparent; }
+.touch-capable button { min-height: 44px; }
+.touch-capable input, .touch-capable select, .touch-capable textarea { font-size: max(16px, 1em); }
+.device-phone input, .device-phone select, .device-phone textarea { font-size: 16px; }
+
+.device-phone .topbar {
+  height: 62px;
+  padding: var(--ce-safe-top) max(12px, var(--ce-safe-right)) 0 max(12px, var(--ce-safe-left));
+}
+.device-phone .brand small,
+.device-phone .top-actions > .ghost,
+.device-phone .account-chip > span:last-child { display: none; }
+.device-phone .top-actions { gap: 6px; }
+.device-phone .account-chip { padding: 5px 8px; }
+.device-tablet .topbar {
+  padding-left: max(16px, var(--ce-safe-left));
+  padding-right: max(16px, var(--ce-safe-right));
+}
+.device-phone.gameplay-active .topbar,
+.device-tablet.touch-ui-active.gameplay-active .topbar { display: none; }
+.device-phone.gameplay-active #gameScreen,
+.device-tablet.touch-ui-active.gameplay-active #gameScreen { padding: 0; }
+
+.device-phone .screen {
+  width: 100%;
+  padding: 14px max(12px, var(--ce-safe-right)) calc(30px + var(--ce-safe-bottom)) max(12px, var(--ce-safe-left));
+}
+.device-phone .hero { display: flex; flex-direction: column; min-height: 0; border-radius: 20px; }
+.device-phone .hero-copy { padding: 28px 20px 24px; }
+.device-phone .hero h1 { font-size: clamp(36px, 11vw, 50px); }
+.device-phone .hero p { font-size: 14px; line-height: 1.55; }
+.device-phone .hero-scene { min-height: 220px; }
+.device-phone .play-row { display: grid; grid-template-columns: 1fr; gap: 9px; }
+.device-phone .play-row > * { width: 100%; }
+.device-phone .dashboard { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.device-tablet .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.device-tablet .dashboard > :first-child { grid-column: 1 / -1; }
+
+.device-phone.gameplay-active .game-shell,
+.device-tablet.touch-ui-active.gameplay-active .game-shell {
+  width: var(--ce-vw);
+  height: var(--ce-vh);
+  min-height: 0;
+  max-height: var(--ce-vh);
+  overflow: hidden;
+}
+.device-phone.gameplay-active .game-shell canvas,
+.device-tablet.touch-ui-active.gameplay-active .game-shell canvas { width: 100%; height: 100%; }
+
+.touch-ui-active.gameplay-active .squad-hud {
+  left: calc(var(--ce-safe-left) + 10px);
+  top: calc(var(--ce-safe-top) + 10px);
+  width: min(230px, 36vw);
+  transform: scale(calc(.86 * var(--ce-ui-scale)));
+  transform-origin: top left;
+}
+.device-phone.touch-ui-active .squad-hud {
+  width: min(185px, 42vw);
+  transform: scale(calc(.76 * var(--ce-ui-scale)));
+}
+.device-phone.touch-ui-active .squad-members { max-height: 64px; overflow: hidden; }
+
+.touch-ui-active.gameplay-active .cinematic-center {
+  top: calc(var(--ce-safe-top) + 8px);
+  max-width: min(520px, calc(100vw - 320px));
+  transform: translateX(-50%) scale(calc(.9 * var(--ce-ui-scale)));
+  transform-origin: top center;
+}
+.device-phone.touch-ui-active .cinematic-center {
+  max-width: 46vw;
+  transform: translateX(-50%) scale(calc(.7 * var(--ce-ui-scale)));
+}
+.device-phone.touch-ui-active .objective-copy span,
+.device-phone.touch-ui-active #objectiveDetail { display: none; }
+
+.touch-ui-active.gameplay-active .minimap-hud {
+  right: calc(var(--ce-safe-right) + 10px);
+  top: calc(var(--ce-safe-top) + 62px);
+  transform: scale(calc(.84 * var(--ce-ui-scale)));
+  transform-origin: top right;
+}
+.device-phone.touch-ui-active .minimap-hud {
+  right: calc(var(--ce-safe-right) + 7px);
+  top: calc(var(--ce-safe-top) + 58px);
+  transform: scale(calc(.64 * var(--ce-ui-scale)));
+}
+.device-phone.touch-ui-active .mission-list { display: none; }
+
+.touch-ui-active.gameplay-active .vitals-hud {
+  left: 50%;
+  bottom: calc(var(--ce-safe-bottom) + 14px);
+  transform: translateX(-50%) scale(calc(.88 * var(--ce-ui-scale)));
+  transform-origin: bottom center;
+}
+.device-phone.touch-ui-active .vitals-hud {
+  bottom: calc(var(--ce-safe-bottom) + 8px);
+  transform: translateX(-50%) scale(calc(.76 * var(--ce-ui-scale)));
+}
+
+.touch-ui-active.gameplay-active .quickbar { bottom: calc(var(--ce-safe-bottom) + 54px); }
+.device-phone.touch-ui-active .quickbar {
+  bottom: calc(var(--ce-safe-bottom) + 44px);
+  transform: translateX(-50%) scale(.72);
+  transform-origin: bottom center;
+}
+.touch-ui-active.gameplay-active .interaction {
+  bottom: calc(var(--ce-safe-bottom) + 116px);
+  max-width: calc(100vw - var(--ce-safe-left) - var(--ce-safe-right) - 260px);
+}
+.device-phone.touch-ui-active .interaction {
+  bottom: calc(var(--ce-safe-bottom) + 100px);
+  max-width: 48vw;
+  padding: 8px 11px;
+}
+.device-phone .toast { top: calc(var(--ce-safe-top) + 76px); max-width: 76vw; text-align: center; }
+
+.device-phone.orientation-landscape.touch-ui-active .squad-hud {
+  top: calc(var(--ce-safe-top) + 7px);
+  left: calc(var(--ce-safe-left) + 8px);
+}
+.device-phone.orientation-landscape.touch-ui-active .cinematic-center { top: calc(var(--ce-safe-top) + 5px); }
+.device-phone.orientation-landscape.touch-ui-active .minimap-hud { top: calc(var(--ce-safe-top) + 53px); }
+.device-phone.orientation-landscape.touch-ui-active .vitals-hud { bottom: calc(var(--ce-safe-bottom) + 5px); }
+.device-phone.orientation-landscape.screen-short .squad-members,
+.device-phone.orientation-landscape.screen-short .camera-tag,
+.device-phone.orientation-landscape.screen-short .minimap-title { display: none; }
+
+.device-phone.orientation-portrait.touch-ui-active .squad-hud {
+  width: 150px;
+  transform: scale(calc(.72 * var(--ce-ui-scale)));
+}
+.device-phone.orientation-portrait.touch-ui-active .cinematic-center {
+  top: calc(var(--ce-safe-top) + 58px);
+  max-width: 58vw;
+  transform: translateX(-50%) scale(calc(.64 * var(--ce-ui-scale)));
+}
+.device-phone.orientation-portrait.touch-ui-active .minimap-hud {
+  top: calc(var(--ce-safe-top) + 108px);
+  transform: scale(calc(.58 * var(--ce-ui-scale)));
+}
+
+.device-phone .modal { width: 100vw; max-width: 100vw; margin: auto; }
+.device-phone .modal-card,
+.device-phone .modal-card.wide {
+  width: calc(100vw - var(--ce-safe-left) - var(--ce-safe-right) - 16px);
+  max-width: none;
+  max-height: calc(var(--ce-vh) - var(--ce-safe-top) - var(--ce-safe-bottom) - 16px);
+  padding: 15px;
+  border-radius: 18px;
+}
+.device-phone .profile-editor,
+.device-phone .customize-grid,
+.device-phone .settings-grid,
+.device-phone .form-grid,
+.device-phone .help-grid { grid-template-columns: 1fr; }
+.device-phone .form-grid .span-2 { grid-column: auto; }
+.device-phone .inventory-layout,
+.device-phone .merchant-layout { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.device-phone .inventory-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.keyboard-open .modal-card { max-height: calc(var(--ce-vh) - 8px); }
+.keyboard-open.gameplay-active #touchControls { opacity: .18; }
+.viewport-xxs .hero h1 { font-size: 34px; }
+.viewport-xxs .inventory-summary { grid-template-columns: 1fr; }
+
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+}
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settings-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .dashboard, .form-grid, .help-grid { grid-template-columns: 1fr; }
+  .form-grid .span-2 { grid-column: auto; }
+}
