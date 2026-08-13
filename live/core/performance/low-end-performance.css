@@ -1,0 +1,93 @@
+/* Critter Extraction — low-end phone/tablet performance reductions. */
+html.performance-low-end {
+  scroll-behavior: auto;
+}
+
+html.performance-low-end body,
+html.performance-low-end #app {
+  text-rendering: optimizeSpeed;
+}
+
+html.performance-low-end :where(
+  .panel,
+  .modal-card,
+  .hud,
+  .topbar,
+  .studio-loading-card,
+  .network-card,
+  .account-chip,
+  .petals-chip
+) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+html.performance-low-end :where(
+  .panel,
+  .modal-card,
+  .hud,
+  .studio-loading-card,
+  .hero,
+  .account-chip,
+  .petals-chip,
+  button
+) {
+  box-shadow: none !important;
+}
+
+html.performance-low-end :where(
+  .studio-loading-bg,
+  .loading-track b,
+  .hero-scene,
+  .hero-scene img,
+  .critter-preview,
+  .avatar,
+  .hud,
+  .panel,
+  .modal-card,
+  button
+) {
+  animation: none !important;
+  transition-duration: 0.08s !important;
+  transition-delay: 0s !important;
+}
+
+html.performance-low-end :where(.studio-loading-bg, .drop-loading-bg) {
+  transform: none !important;
+  filter: none !important;
+}
+
+html.performance-low-end :where(.hero-scene img, .studio-logo, .critter-preview img) {
+  filter: none !important;
+}
+
+html.performance-low-end #gameCanvas {
+  image-rendering: auto;
+  contain: strict;
+}
+
+html.performance-low-end .world-labels,
+html.performance-low-end .minimap-map,
+html.performance-low-end .crosshair,
+html.performance-low-end .hitmarker {
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+html.performance-low-end #menuScreen .dashboard > .panel {
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
+}
+
+html.performance-low-end .adaptive-performance-note {
+  border-left: 3px solid currentColor;
+  padding-left: 9px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.performance-low-end :where(.studio-loading-bg, .loading-track b, .hero-scene, .critter-preview, .hud, .panel, .modal-card, button) {
+    animation: none !important;
+    transition: none !important;
+  }
+}
