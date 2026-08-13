@@ -64,7 +64,7 @@ html.performance-low-end :where(.hero-scene img, .studio-logo, .critter-preview 
 
 html.performance-low-end #gameCanvas {
   image-rendering: auto;
-  contain: strict;
+  contain: paint;
 }
 
 html.performance-low-end .world-labels,
