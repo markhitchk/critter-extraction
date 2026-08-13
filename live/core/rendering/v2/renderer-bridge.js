@@ -7,7 +7,7 @@
   const backends = new Map();
   let activeName = 'legacy';
   let preferredName = 'legacy';
-  let fallbackName = 'legacy';
+  const fallbackName = 'legacy';
   let lastError = null;
 
   function validBackend(backend) {
@@ -30,8 +30,7 @@
   }
 
   function setPreferred(name) {
-    const key = String(name || 'legacy').trim().toLowerCase();
-    preferredName = key;
+    preferredName = String(name || 'legacy').trim().toLowerCase();
     return preferredName;
   }
 
@@ -66,11 +65,12 @@
       backend.render(state, frame);
       return true;
     } catch (error) {
+      const failedName = activeName;
       lastError = error;
-      console.warn(`[Renderer V2] ${activeName} failed; returning to ${fallbackName}.`, error);
+      console.warn(`[Renderer V2] ${failedName} failed; returning to ${fallbackName}.`, error);
       try { backend.onError?.(error); } catch (_) {}
       activeName = fallbackName;
-      window.dispatchEvent(new CustomEvent('critter:renderer-backend-failed', { detail:{ name:activeName, error:String(error?.message || error) } }));
+      window.dispatchEvent(new CustomEvent('critter:renderer-backend-failed', { detail:{ name:failedName, fallback:fallbackName, error:String(error?.message || error) } }));
       return false;
     }
   }
