@@ -52,10 +52,23 @@ jobs:
         working-directory: android
         run: gradle :app:assembleDebug --stacktrace
 
+      - name: Verify APK signature and bundled assets
+        shell: bash
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          unzip -l "$APK" | grep -q 'assets/characters/puppy.svg'
+          unzip -l "$APK" | grep -q 'assets/weapons/pea_popper.svg'
+          unzip -l "$APK" | grep -q 'assets/items/medkit.svg'
+          sha256sum "$APK" | tee android/app/build/outputs/apk/debug/SHA256SUMS.txt
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Critter-Extraction-v0.23.1-Android14-compat-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Critter-Extraction-v0.24.0-Android14-native-mobile-debug
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
