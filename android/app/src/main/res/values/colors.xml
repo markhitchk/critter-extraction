@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="critter_bg">#071117</color>
+    <color name="critter_panel">#0D1D24</color>
+    <color name="critter_cyan">#59D7FF</color>
+    <color name="critter_green">#57E389</color>
+    <color name="critter_gold">#FFD166</color>
+    <color name="critter_white">#F2FBFF</color>
+</resources>
