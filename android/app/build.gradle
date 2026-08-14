@@ -1,5 +1,18 @@
+import java.util.Base64
+
 plugins {
     id 'com.android.application'
+}
+
+// Public DEVELOPMENT signing key only. This keeps test APK signatures stable across
+// GitHub Actions runs so Android can install newer mobile-alpha builds as updates.
+// Production releases must use a private release key stored outside this repository.
+def encodedDevKey = file("${rootDir}/dev-signing/critter-dev.keystore.b64")
+def generatedSigningDir = file("${buildDir}/generated-signing")
+def generatedDevKey = file("${generatedSigningDir}/critter-dev.keystore")
+if (encodedDevKey.exists() && !generatedDevKey.exists()) {
+    generatedSigningDir.mkdirs()
+    generatedDevKey.bytes = Base64.getDecoder().decode(encodedDevKey.text.trim())
 }
 
 android {
@@ -7,21 +20,27 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        // Compatibility package intentionally differs from the first native-alpha APK so
-        // Android can install this build cleanly even if the earlier CI debug signature
-        // is still present on the phone.
         applicationId = 'com.harleystudios.critterextraction.mobile'
         minSdk = 34
         targetSdk = 36
-        versionCode = 231
-        versionName = '0.23.1-native-compat'
+        versionCode = 240
+        versionName = '0.24.0-native-mobile-alpha'
     }
 
     sourceSets {
         main {
-            // Bundle the existing Critter Extraction asset library into the APK.
-            // The native runtime never executes the site's HTML or JavaScript.
+            // Bundle the existing Critter Extraction art library directly in the APK.
+            // SVGs are parsed by AndroidSVG at runtime; no WebView/browser is involved.
             assets.srcDirs = ['src/main/assets', '../../live/assets']
+        }
+    }
+
+    signingConfigs {
+        debugStable {
+            storeFile generatedDevKey
+            storePassword 'critterdev2026'
+            keyAlias 'critterdev'
+            keyPassword 'critterdev2026'
         }
     }
 
@@ -29,6 +48,7 @@ android {
         debug {
             applicationIdSuffix = '.debug'
             versionNameSuffix = '-debug'
+            signingConfig = signingConfigs.debugStable
         }
         release {
             minifyEnabled = false
@@ -40,4 +60,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+dependencies {
+    // SVG rendering only; assets remain local and the app has no INTERNET permission.
+    implementation 'com.caverock:androidsvg:1.3'
 }
