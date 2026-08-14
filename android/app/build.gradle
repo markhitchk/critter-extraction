@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.harleystudios.critterextraction'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.harleystudios.critterextraction'
+        minSdk = 34
+        targetSdk = 36
+        versionCode = 230
+        versionName = '0.23.0-native-alpha'
+    }
+
+    sourceSets {
+        main {
+            // Bundle the existing Critter Extraction asset library into the APK.
+            // The native runtime never executes the site's HTML or JavaScript.
+            assets.srcDirs = ['src/main/assets', '../../live/assets']
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix = '.debug'
+            versionNameSuffix = '-debug'
+        }
+        release {
+            minifyEnabled = false
+            shrinkResources = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

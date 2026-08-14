@@ -1,0 +1,11 @@
+{
+  "name": "Critter Extraction",
+  "platform": "Native Android",
+  "version": "0.23.0-native-alpha",
+  "minimumAndroid": "Android 14 / API 34",
+  "targetSdk": 36,
+  "webRuntime": false,
+  "webView": false,
+  "offlineGameplay": true,
+  "studio": "Harley's Studios"
+}
