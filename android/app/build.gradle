@@ -1,68 +1,29 @@
 import java.util.Base64
 
-plugins {
-    id 'com.android.application'
-}
+plugins { id 'com.android.application' }
 
-// Public DEVELOPMENT signing key only. This keeps test APK signatures stable across
-// GitHub Actions runs so Android can install newer mobile-alpha builds as updates.
-// Production releases must use a private release key stored outside this repository.
 def encodedDevKey = file("${rootDir}/dev-signing/critter-dev.keystore.b64")
 def generatedSigningDir = file("${buildDir}/generated-signing")
 def generatedDevKey = file("${generatedSigningDir}/critter-dev.keystore")
-if (encodedDevKey.exists() && !generatedDevKey.exists()) {
-    generatedSigningDir.mkdirs()
-    generatedDevKey.bytes = Base64.getDecoder().decode(encodedDevKey.text.trim())
-}
+if (encodedDevKey.exists() && !generatedDevKey.exists()) { generatedSigningDir.mkdirs(); generatedDevKey.bytes = Base64.getDecoder().decode(encodedDevKey.text.trim()) }
 
 android {
     namespace 'com.harleystudios.critterextraction'
     compileSdk = 36
-
     defaultConfig {
         applicationId = 'com.harleystudios.critterextraction.mobile'
         minSdk = 34
         targetSdk = 36
-        versionCode = 240
-        versionName = '0.24.0-native-mobile-alpha'
+        versionCode = 300
+        versionName = '0.30.0-native-3d-alpha'
     }
-
-    sourceSets {
-        main {
-            // Bundle the existing Critter Extraction art library directly in the APK.
-            // SVGs are parsed by AndroidSVG at runtime; no WebView/browser is involved.
-            assets.srcDirs = ['src/main/assets', '../../live/assets']
-        }
-    }
-
-    signingConfigs {
-        debugStable {
-            storeFile generatedDevKey
-            storePassword 'critterdev2026'
-            keyAlias 'critterdev'
-            keyPassword 'critterdev2026'
-        }
-    }
-
+    sourceSets { main { assets.srcDirs = ['src/main/assets', '../../live/assets'] } }
+    signingConfigs { debugStable { storeFile generatedDevKey; storePassword 'critterdev2026'; keyAlias 'critterdev'; keyPassword 'critterdev2026' } }
     buildTypes {
-        debug {
-            applicationIdSuffix = '.debug'
-            versionNameSuffix = '-debug'
-            signingConfig = signingConfigs.debugStable
-        }
-        release {
-            minifyEnabled = false
-            shrinkResources = false
-        }
+        debug { applicationIdSuffix = '.debug'; versionNameSuffix = '-debug'; signingConfig = signingConfigs.debugStable }
+        release { minifyEnabled = false; shrinkResources = false }
     }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 
-dependencies {
-    // SVG rendering only; assets remain local and the app has no INTERNET permission.
-    implementation 'com.caverock:androidsvg:1.3'
-}
+dependencies { implementation 'com.caverock:androidsvg:1.3' }

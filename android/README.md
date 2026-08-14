@@ -1,69 +1,26 @@
-# Critter Extraction — Native Android Mobile Alpha
+# Critter Extraction — Native Android 3D
 
-This directory is the true native Android 14+ edition of **Critter Extraction**.
+This is the Android 14+ native 3D edition of Critter Extraction.
 
-## v0.24.0 native mobile alpha
-
-- Minimum Android: Android 14 / API 34
-- Compile/target SDK: API 36
-- Runtime: Android `Activity` + native `Canvas` game loop
+- Android 14 / API 34 minimum
+- API 36 target
 - Java 17
-- Touch-first landscape controls
-- Adaptive launcher/round icon
-- Android native splash branding
-- No `INTERNET` permission
-- No `WebView`
-- No HTML/JavaScript runtime
-- Offline local saves and gameplay
-- Stable **development-only** APK signing for update installs between test versions
+- OpenGL ES 3.0 renderer
+- No WebView, HTML page, JavaScript engine, or INTERNET permission
+- Source art/game identity pulled from this repository
+- Stable development signing for test updates
 
-## Native asset system
+## 3D systems
 
-The Android build packages the existing `live/assets` tree directly into the APK. `AssetLibrary.java` enumerates and renders the shared art locally using AndroidSVG, which means the mobile game can use the actual Critter Extraction SVG artwork without a browser.
+The v0.30 stage ports the repository's canonical `live/core/rendering/model-library.js` and `species-models.js` concepts into native Java/OpenGL. All 39 critters are represented through shared low-poly meshes plus per-species colors, ears, tails, limbs, roles, and equipment. The renderer includes a perspective follow camera, first-person camera toggle, twin-stick mobile movement/aim, auto-fire, five weapon profiles, enemies, damage, loot, extraction, medkits, dash, 3D trees/rocks/crates, depth testing, directional lighting and distance fog.
 
-Current native loadout support includes:
-
-- 13 selectable critter definitions backed by `characters/*.svg`
-- 5 selectable weapons backed by `weapons/*.svg`
-- 6 selectable armor sets backed by `items/armor_*.svg`
-- Crystal loot and medkit item art
-- HTG branding/loading assets
-- Dynamic discovery of packaged character/item/weapon/branding/loading files
-
-The rest of the shared asset tree remains bundled and discoverable by the native asset library as the app grows.
-
-## Playable native systems
-
-- Twin-stick movement and aim/fire
-- Mobile touch controls and haptics
-- Weapon-specific fire rate, damage, projectile speed, spread and piercing
-- Armor-specific damage reduction, movement modifiers and bonuses
-- Native enemy combat and spawning
-- Loot collection and extraction hold objective
-- Dash and medkits
-- Persistent loadout, petals, run count and best extraction
-- Pause/resume and Android lifecycle handling
-- Immersive fullscreen
-- Optional controller buttons
-- Startup error screen instead of unexplained instant-close failures
-
-## Signing note
-
-Debug/mobile-alpha APKs use the public development key stored as base64 under `android/dev-signing/`. This is intentional so GitHub Actions builds have the same signature and can update each other on a phone. **Never use this development key for a production/Play Store release.** Production must use a private signing key kept outside the repository.
+The existing SVG/item/weapon/branding/loading asset folders continue to be packaged in the APK for native UI and future texture/material work.
 
 ## Build
-
-With JDK 17, Android SDK 36 and Gradle 9.5 installed:
 
 ```bash
 cd android
 gradle :app:assembleDebug
 ```
 
-Installable APK output:
-
-```text
-android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-The repository workflow **Native Android APK** builds, verifies the APK signature, confirms representative bundled assets, creates a SHA-256 checksum, and uploads the installable artifact.
+APK: `android/app/build/outputs/apk/debug/app-debug.apk`

@@ -1,0 +1,13 @@
+{
+  "sourceOfTruth": "GitHub repository markhitchk/critter-extraction",
+  "nativePortUses": [
+    "live/core/rendering/model-library.js",
+    "live/core/rendering/species-models.js",
+    "live/assets/characters",
+    "live/assets/weapons",
+    "live/assets/items",
+    "live/assets/branding",
+    "live/assets/loading"
+  ],
+  "notes": "The native app ports the repository's 39-species procedural model recipes to OpenGL ES and packages the shared art library. No browser runtime is used."
+}
