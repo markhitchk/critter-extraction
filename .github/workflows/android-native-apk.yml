@@ -3,17 +3,17 @@ name: Native Android APK
 on:
   workflow_dispatch:
   push:
-    paths: ['android/**','live/assets/**','live/core/rendering/**','.github/workflows/android-native-apk.yml']
+    paths: ['android/**','live/assets/**','live/core/rendering/**','live/core/game/**','.github/workflows/android-native-apk.yml']
   pull_request:
-    paths: ['android/**','live/assets/**','live/core/rendering/**','.github/workflows/android-native-apk.yml']
+    paths: ['android/**','live/assets/**','live/core/rendering/**','live/core/game/**','.github/workflows/android-native-apk.yml']
 
 permissions: { contents: read }
 
 jobs:
   build-apk:
-    name: Android 14+ Live-Faithful Native 3D APK
+    name: Android 14+ Native Parity 3D APK
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,25 +32,38 @@ jobs:
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
-      - name: Build installable live-faithful native 3D debug APK
+      - name: Build installable native parity debug APK
         working-directory: android
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify APK and live-faithful native payload
+      - name: Verify APK, native systems and canonical assets
         shell: bash
         run: |
+          set -euo pipefail
           APK=android/app/build/outputs/apk/debug/app-debug.apk
           test -f "$APK"
           unzip -l "$APK" | grep -q 'assets/characters/puppy.svg'
+          unzip -l "$APK" | grep -q 'assets/characters/redpanda.svg'
+          unzip -l "$APK" | grep -q 'assets/weapons/pea_popper.svg'
+          unzip -l "$APK" | grep -q 'assets/weapons/moonbeam.svg'
+          unzip -l "$APK" | grep -q 'assets/items/moonberry.svg'
           unzip -l "$APK" | grep -q 'assets/loading/cinematic-gameplay-fullhd.webp'
           unzip -l "$APK" | grep -q 'assets/branding/HTG.png'
+          unzip -l "$APK" | grep -q 'assets/branding/icon.svg'
           unzip -l "$APK" | grep -q 'assets/native/source-map.json'
+          unzip -l "$APK" | grep -q 'critter_logo'
           unzip -l "$APK" | grep -q 'classes.dex'
+          AAPT="$(find "${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}/build-tools" -type f -name aapt | sort | tail -n1)"
+          "$AAPT" dump permissions "$APK" | grep -q 'android.permission.INTERNET'
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='400'"
           APKSIGNER="$(find "${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}/build-tools" -type f -name apksigner | sort | tail -n1)"
           "$APKSIGNER" verify --verbose "$APK"
+          sha256sum "$APK" > android/app/build/outputs/apk/debug/SHA256SUMS.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Critter-Extraction-v0.31.1-Android14-live-faithful-native-3D-ui-fix-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Critter-Extraction-v0.40.0-Android14-native-parity-3D-debug
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
