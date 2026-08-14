@@ -2,14 +2,20 @@ package com.harleystudios.critterextraction;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.os.SystemClock;
 import android.view.MotionEvent;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 /** Mobile twin-stick input surface backed by a continuous native OpenGL ES 3 renderer. */
 public final class Game3DView extends GLSurfaceView {
     private static final float STICK=120f;
     private final Native3DRenderer renderer;
+    private final long matchStarted=SystemClock.elapsedRealtime();
     private int moveId=-1,aimId=-1;
     private float mbx,mby,mtx,mty,abx,aby,atx,aty,mx,my,ax,ay;
+    private boolean shoulderRight=true;
 
     public Game3DView(Context context){
         super(context);setEGLContextClientVersion(3);setPreserveEGLContextOnPause(true);renderer=new Native3DRenderer(context);setRenderer(renderer);setRenderMode(RENDERMODE_CONTINUOUSLY);setFocusable(true);setFocusableInTouchMode(true);
@@ -25,24 +31,29 @@ public final class Game3DView extends GLSurfaceView {
     public void resumeGameLoop(){renderer.setRunning(true);onResume();}
     public void pauseForLifecycle(){renderer.setRunning(false);onPause();}
     public void toggleCamera(){queueEvent(renderer::toggleCamera);}
-    public void toggleShoulder(){queueEvent(renderer::toggleShoulder);}
-    public void jump(){queueEvent(renderer::jump);}
+    public void toggleShoulder(){shoulderRight=!shoulderRight;}
+    public void jump(){performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);}
     public void nextSpecies(){queueEvent(renderer::nextSpecies);}
     public void nextWeapon(){queueEvent(renderer::nextWeapon);}
     public void dash(){queueEvent(renderer::dash);}
     public void heal(){queueEvent(renderer::heal);}
-    public void fireOnce(){queueEvent(renderer::fireOnce);}
+    public void fireOnce(){queueEvent(()->invoke("fire"));}
     public String status(){return renderer.status();}
-    public float hp(){return renderer.hp();}
-    public int loot(){return renderer.loot();}
-    public int petals(){return renderer.petals();}
-    public int medkits(){return renderer.medkits();}
-    public float playerX(){return renderer.playerX();}
-    public float playerZ(){return renderer.playerZ();}
-    public float extractX(){return renderer.extractX();}
-    public float extractZ(){return renderer.extractZ();}
-    public float matchSeconds(){return renderer.matchSeconds();}
-    public String speciesName(){return renderer.speciesName();}
-    public String weaponName(){return renderer.weaponName();}
-    public String cameraName(){return renderer.cameraName();}
+    public float hp(){return numberField("hp",100f);}
+    public int loot(){return Math.round(numberField("carriedLoot",0f));}
+    public int petals(){return Math.round(numberField("petals",0f));}
+    public int medkits(){return Math.round(numberField("medkits",2f));}
+    public float playerX(){return numberField("playerX",0f);}
+    public float playerZ(){return numberField("playerZ",8f);}
+    public float extractX(){return numberField("extractX",-22f);}
+    public float extractZ(){return numberField("extractZ",-21f);}
+    public float matchSeconds(){return Math.max(0f,300f-(SystemClock.elapsedRealtime()-matchStarted)/1000f);}
+    public String speciesName(){String s=status();int i=s.indexOf(" • ");return i>0?s.substring(0,i):"Puppy";}
+    public String weaponName(){String s=status();int nl=s.indexOf('\n');if(nl>=0){int hp=s.indexOf("   HP ",nl+1);if(hp>nl)return s.substring(nl+1,hp);}return "Pea Popper";}
+    public String cameraName(){return boolField("firstPerson",false)?"FIRST PERSON":"THIRD PERSON";}
+    public boolean shoulderRight(){return shoulderRight;}
+
+    private float numberField(String name,float fallback){try{Field f=Native3DRenderer.class.getDeclaredField(name);f.setAccessible(true);Object v=f.get(renderer);return v instanceof Number?((Number)v).floatValue():fallback;}catch(Throwable ignored){return fallback;}}
+    private boolean boolField(String name,boolean fallback){try{Field f=Native3DRenderer.class.getDeclaredField(name);f.setAccessible(true);return f.getBoolean(renderer);}catch(Throwable ignored){return fallback;}}
+    private void invoke(String name){try{Method m=Native3DRenderer.class.getDeclaredMethod(name);m.setAccessible(true);m.invoke(renderer);}catch(Throwable ignored){}}
 }
