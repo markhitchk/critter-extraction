@@ -1,11 +1,35 @@
 {
   "name": "Critter Extraction",
   "platform": "Native Android",
-  "version": "0.23.0-native-alpha",
+  "edition": "Mobile Alpha",
+  "version": "0.24.0-native-mobile-alpha",
+  "versionCode": 240,
   "minimumAndroid": "Android 14 / API 34",
   "targetSdk": 36,
+  "compileSdk": 36,
+  "applicationId": "com.harleystudios.critterextraction.mobile.debug",
+  "orientation": "sensorLandscape",
   "webRuntime": false,
   "webView": false,
+  "internetPermission": false,
   "offlineGameplay": true,
-  "studio": "Harley's Studios"
+  "stableDevelopmentSigning": true,
+  "studio": "Harley's Studios",
+  "assetRoots": ["characters", "items", "weapons", "branding", "loading"],
+  "features": [
+    "native Canvas gameplay",
+    "twin-stick touch controls",
+    "native SVG art rendering",
+    "critter loadout",
+    "weapon loadout",
+    "armor loadout",
+    "enemy combat",
+    "loot extraction",
+    "dash",
+    "medkits",
+    "haptics",
+    "persistent local progression",
+    "controller buttons",
+    "Android lifecycle pause/resume"
+  ]
 }
