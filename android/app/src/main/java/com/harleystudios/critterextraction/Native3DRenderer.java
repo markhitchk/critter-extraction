@@ -98,7 +98,8 @@ public final class Native3DRenderer implements GLSurfaceView.Renderer {
     }
 
     @Override
-    public void onSurfaceCreated(javax.microedition.khronos.egl.EGLConfig config) {
+    public void onSurfaceCreated(javax.microedition.khronos.opengles.GL10 gl,
+                                 javax.microedition.khronos.egl.EGLConfig config) {
         GLES30.glClearColor(.018f, .045f, .055f, 1f);
         GLES30.glEnable(GLES30.GL_DEPTH_TEST);
         GLES30.glEnable(GLES30.GL_BLEND);
