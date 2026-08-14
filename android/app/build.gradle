@@ -14,8 +14,8 @@ android {
         applicationId = 'com.harleystudios.critterextraction.mobile'
         minSdk = 34
         targetSdk = 36
-        versionCode = 300
-        versionName = '0.30.0-native-3d-alpha'
+        versionCode = 310
+        versionName = '0.31.0-native-live-faithful-alpha'
     }
     sourceSets { main { assets.srcDirs = ['src/main/assets', '../../live/assets'] } }
     signingConfigs { debugStable { storeFile generatedDevKey; storePassword 'critterdev2026'; keyAlias 'critterdev'; keyPassword 'critterdev2026' } }
