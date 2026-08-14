@@ -54,7 +54,6 @@ public final class LiveMenuView extends View {
     private float bootProgress;
     private final long bootStart = System.currentTimeMillis();
 
-    // Transform used to map touch coordinates back into the 1536x720 design.
     private float menuScale = 1f;
     private float menuOffsetX;
     private float menuOffsetY;
@@ -141,9 +140,7 @@ public final class LiveMenuView extends View {
         c.restore();
     }
 
-    /** Pixel-aligned layout for the user's 1536x720 landscape reference. */
     private void drawMenuReference(Canvas c) {
-        // Top bar. Keep the title block independent from the action buttons.
         round(c, new RectF(0, 0, DESIGN_W, 118), 0xee0e0f1f, 0);
         if (logo != null) c.drawBitmap(logo, null, new RectF(64, 10, 150, 100), p);
         text(c, "Critter Extraction", 195, 51, 36, TEXT, Paint.Align.LEFT, true);
@@ -154,7 +151,6 @@ public final class LiveMenuView extends View {
         chip(c, "🌸 0 Petals", 1175, 25, 200, 68, true);
         chip(c, "New Critter", 1390, 25, 128, 68, false);
 
-        // Hero: all copy and actions stay above y=425; cards begin at y=444.
         RectF heroCard = new RectF(72, 145, 1464, 425);
         panel(c, heroCard, 0xf226284c, 24, 0x22ffffff);
 
@@ -184,7 +180,6 @@ public final class LiveMenuView extends View {
         gradientButton(c, new RectF(350, btnY, 606, btnY + btnH), "Host Multiplayer", PURPLE, 0xff5d57b5, false);
         gradientButton(c, new RectF(621, btnY, 845, btnY + btnH), "Join Multiplayer", PURPLE, 0xff5d57b5, false);
 
-        // Dashboard cards. Fixed 256px height prevents the bottom controls from being cut off.
         float cardsTop = 444, cardsBottom = 704, gap = 14;
         float margin = 72;
         float cardW = (DESIGN_W - margin * 2 - gap * 2) / 3f;
@@ -195,7 +190,6 @@ public final class LiveMenuView extends View {
         panel(c, career, 0xf226284c, 20, 0x22ffffff);
         panel(c, loadout, 0xf226284c, 20, 0x22ffffff);
 
-        // Active account.
         text(c, "ACTIVE ACCOUNT", profile.left + 24, profile.top + 34, 15, MINT, Paint.Align.LEFT, true);
         text(c, "New Critter", profile.left + 24, profile.top + 75, 34, TEXT, Paint.Align.LEFT, true);
         if (critter != null) c.drawBitmap(critter, null, new RectF(profile.left + 24, profile.top + 91, profile.left + 116, profile.top + 183), p);
@@ -207,7 +201,6 @@ public final class LiveMenuView extends View {
         c.drawRoundRect(new RectF(profile.left + 24, profile.bottom - 31, profile.left + 165, profile.bottom - 20), 6, 6, p);
         p.setShader(null);
 
-        // Career.
         text(c, "CAREER", career.left + 24, career.top + 34, 15, MINT, Paint.Align.LEFT, true);
         text(c, "Extraction Record", career.left + 24, career.top + 75, 34, TEXT, Paint.Align.LEFT, true);
         float statW = (career.width() - 66) / 2f;
@@ -216,7 +209,6 @@ public final class LiveMenuView extends View {
         stat(c, career.left + 24, career.top + 168, statW, "0", "CRITTERS");
         stat(c, career.left + 42 + statW, career.top + 168, statW, "0", "DROPS");
 
-        // Selected loadout.
         text(c, "SELECTED LOADOUT", loadout.left + 24, loadout.top + 34, 15, MINT, Paint.Align.LEFT, true);
         text(c, "Meadow Scout", loadout.left + 24, loadout.top + 75, 34, TEXT, Paint.Align.LEFT, true);
         weaponRect.set(loadout.left + 22, loadout.top + 94, loadout.right - 22, loadout.top + 168);
