@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Native match simulation that follows the current /live extraction rules. */
 public final class NativeMatch {
@@ -14,12 +15,14 @@ public final class NativeMatch {
     private static final float GRAVITY=17.5f;
     public final NativeProfileStore store;
     public final Random random;
+    public final long seed;
     public final ArrayList<Enemy> enemies=new ArrayList<>();
     public final ArrayList<Bullet> bullets=new ArrayList<>();
     public final ArrayList<Pickup> pickups=new ArrayList<>();
     public final ArrayList<Chest> chests=new ArrayList<>();
     public final ArrayList<NativeProfileStore.Stack> backpack=new ArrayList<>();
     public final ArrayList<NativeProfileStore.Stack> extractedLoot=new ArrayList<>();
+    public final ConcurrentHashMap<String,RemotePlayer> remotePlayers=new ConcurrentHashMap<>();
 
     public volatile float playerX=0f,playerY=0f,playerZ=8f,hp=100f,shield=0f,maxShield=50f;
     public volatile float aimX=0f,aimZ=-1f,moveX,moveZ,matchTime=NativeGameData.MATCH_SECONDS,extractProgress;
@@ -27,7 +30,7 @@ public final class NativeMatch {
     public volatile int kills,chestsOpened,moonberries,mag,reserve;
     public volatile String banner="DROP IN • COMPLETE THE CONTRACT • EXTRACT";
     public volatile float bannerTime;
-    public volatile String mapName;
+    public volatile String mapName,networkMode="SOLO",localNetworkId="";
     public volatile int groundColor,treeColor,rockColor,skyColor,fogColor;
     public volatile Contract primary,bonus;
     public volatile float extractX,extractZ;
@@ -39,9 +42,8 @@ public final class NativeMatch {
     private float fireCooldown,reloadRemaining,verticalVelocity,spawnTimer=8f,interactGate;
     private int pendingShots;
 
-    public NativeMatch(Context context,NativeProfileStore store){
-        this.store=store;this.account=store.active();long seed=System.nanoTime()^(long)account.id.hashCode();this.random=new Random(seed);configureLoadout();generateWorld();
-    }
+    public NativeMatch(Context context,NativeProfileStore store){this(context,store,System.nanoTime()^(long)store.active().id.hashCode());}
+    public NativeMatch(Context context,NativeProfileStore store,long seed){this.store=store;this.account=store.active();this.seed=seed;this.random=new Random(seed);configureLoadout();generateWorld();}
 
     private void configureLoadout(){
         loadout=account.loadout();if(loadout==null)loadout=NativeGameData.LOADOUTS.get("meadow_scout");String wid=loadout.custom?account.equippedWeaponId:loadout.weaponId;String aid=loadout.custom?account.equippedArmorId:loadout.armorId;weapon=NativeGameData.WEAPONS.get(wid);if(weapon==null)weapon=NativeGameData.WEAPONS.get("pea_popper");armor=NativeGameData.ARMORS.get(aid);if(armor==null)armor=NativeGameData.ARMORS.get("leaf_vest");maxShield=armor.shield;shield=maxShield;mag=weapon.mag;
@@ -105,6 +107,9 @@ public final class NativeMatch {
     public int reserveAmmo(){return count(backpack,weapon.ammoItem);}public int medkits(){return count(backpack,"medkit");}public int bandages(){return count(backpack,"bandage");}
     public boolean contractComplete(){return primary.complete;}public boolean bonusComplete(){return bonus.complete;}
 
+    public void upsertRemote(String id,String name,String species,float x,float z,float hp,float shield){if(id==null||id.isEmpty()||id.equals(localNetworkId))return;RemotePlayer r=remotePlayers.computeIfAbsent(id,k->new RemotePlayer());r.id=id;r.name=name;r.species=species;r.x=x;r.z=z;r.hp=hp;r.shield=shield;r.lastSeen=System.nanoTime();}
+    public void removeRemote(String id){if(id!=null)remotePlayers.remove(id);}public int networkPlayerCount(){return 1+remotePlayers.size();}
+
     private void message(String text,float seconds){banner=text;bannerTime=seconds;}
     private static String itemName(String id){NativeGameData.Item i=NativeGameData.ITEMS.get(id);return i==null?id:i.name.toUpperCase(Locale.US);}
     private static float clamp(float v,float lo,float hi){return Math.max(lo,Math.min(hi,v));}
@@ -117,12 +122,8 @@ public final class NativeMatch {
     public static final class Bullet {public float x,y,z,vx,vz,damage,life;Bullet(float x,float y,float z,float vx,float vz,float damage,float life){this.x=x;this.y=y;this.z=z;this.vx=vx;this.vz=vz;this.damage=damage;this.life=life;}}
     public static final class Pickup {public float x,z;public String itemId;public int qty;Pickup(float x,float z,String itemId,int qty){this.x=x;this.z=z;this.itemId=itemId;this.qty=qty;}}
     public static final class Chest {public float x,z;public boolean opened;public final ArrayList<NativeProfileStore.Stack> contents=new ArrayList<>();Chest(float x,float z){this.x=x;this.z=z;}}
+    public static final class RemotePlayer {public String id="",name="Critter",species="puppy";public float x,z,hp=100,shield;public long lastSeen;}
     private enum Region {
-        PINE("PINE VALLEY",0xff31583f,0xff1f5f47,0xff71807b,0xff74b8d4,0xff6b9eaa),
-        AMBER("AMBER JUNCTION",0xff695437,0xff52643b,0xff8a765d,0xffe5a95f,0xffb78358),
-        MARSH("MOONBERRY MARSH",0xff294f50,0xff275b52,0xff536c70,0xff668da0,0xff4a737c),
-        CLOVER("CLOVER HIGHLANDS",0xff42704a,0xff2f6841,0xff70816c,0xff7dc2d8,0xff6fa6a2),
-        FROST("FROSTFLOWER RIDGE",0xff788a86,0xff496d64,0xff9aa8aa,0xff9cc9da,0xff90b5bd),
-        REDWOOD("REDWOOD RUN",0xff574b37,0xff33543d,0xff756451,0xffd28a66,0xffa46d5f);
+        PINE("PINE VALLEY",0xff31583f,0xff1f5f47,0xff71807b,0xff74b8d4,0xff6b9eaa),AMBER("AMBER JUNCTION",0xff695437,0xff52643b,0xff8a765d,0xffe5a95f,0xffb78358),MARSH("MOONBERRY MARSH",0xff294f50,0xff275b52,0xff536c70,0xff668da0,0xff4a737c),CLOVER("CLOVER HIGHLANDS",0xff42704a,0xff2f6841,0xff70816c,0xff7dc2d8,0xff6fa6a2),FROST("FROSTFLOWER RIDGE",0xff788a86,0xff496d64,0xff9aa8aa,0xff9cc9da,0xff90b5bd),REDWOOD("REDWOOD RUN",0xff574b37,0xff33543d,0xff756451,0xffd28a66,0xffa46d5f);
         final String title;final int ground,trees,rocks,sky,fog;Region(String t,int g,int tr,int r,int s,int f){title=t;ground=g;trees=tr;rocks=r;sky=s;fog=f;}}
 }
