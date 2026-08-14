@@ -1,0 +1,14 @@
+{
+  "name": "Critter Extraction",
+  "studio": "Harley's Studios",
+  "platform": "Native Android",
+  "version": "0.41.0-native-3d-alpha",
+  "minimumAndroid": "Android 14 / API 34",
+  "targetSdk": 36,
+  "renderer": "OpenGL ES 3.0",
+  "webRuntime": false,
+  "webView": false,
+  "native3D": true,
+  "species": 39,
+  "offlineGameplay": true
+}
