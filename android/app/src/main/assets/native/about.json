@@ -32,9 +32,6 @@
     "controller buttons",
     "Android lifecycle pause/resume"
   ],
-  "lastCiVerification": {
-    "workflowRun": 31778364689,
-    "result": "success",
-    "apkSha256": "50e39ee619723237087ef8542ad6afe5a3ebaa637812e0921479d8ef47cd1e53"
-  }
+  "verifiedWorkflowRun": 31778492980,
+  "verifiedHeadSha": "170c60a7f0cf586040136ab675be7e4d0830783d"
 }
