@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "critters": [
+    {"id":"puppy","name":"Puppy","asset":"characters/puppy.svg"},
+    {"id":"fox","name":"Fox","asset":"characters/fox.svg"},
+    {"id":"arctic_fox","name":"Arctic Fox","asset":"characters/arcticfox.svg"},
+    {"id":"axolotl","name":"Axolotl","asset":"characters/axolotl.svg"},
+    {"id":"bear","name":"Bear","asset":"characters/bear.svg"},
+    {"id":"bunny","name":"Bunny","asset":"characters/bunny.svg"},
+    {"id":"capybara","name":"Capybara","asset":"characters/capybara.svg"},
+    {"id":"crow","name":"Crow","asset":"characters/crow.svg"},
+    {"id":"frog","name":"Frog","asset":"characters/frog.svg"},
+    {"id":"kitty","name":"Kitty","asset":"characters/kitty.svg"},
+    {"id":"otter","name":"Otter","asset":"characters/otter.svg"},
+    {"id":"panda","name":"Panda","asset":"characters/panda.svg"},
+    {"id":"penguin","name":"Penguin","asset":"characters/penguin.svg"}
+  ],
+  "weapons": [
+    {"id":"pea_popper","name":"Pea Popper","asset":"weapons/pea_popper.svg","damage":34,"fireCooldownSeconds":0.145,"projectileSpeed":980,"pellets":1,"pierce":0},
+    {"id":"acorn_sprayer","name":"Acorn Sprayer","asset":"weapons/acorn_sprayer.svg","damage":20,"fireCooldownSeconds":0.082,"projectileSpeed":1080,"pellets":1,"pierce":0},
+    {"id":"carrot_scatter","name":"Carrot Scatter","asset":"weapons/carrot_scatter.svg","damage":15,"fireCooldownSeconds":0.58,"projectileSpeed":900,"pellets":5,"pierce":0},
+    {"id":"honey_carbine","name":"Honey Carbine","asset":"weapons/honey_carbine.svg","damage":31,"fireCooldownSeconds":0.19,"projectileSpeed":1120,"pellets":1,"pierce":0},
+    {"id":"moonbeam","name":"Moonbeam","asset":"weapons/moonbeam.svg","damage":56,"fireCooldownSeconds":0.52,"projectileSpeed":1250,"pellets":1,"pierce":2}
+  ],
+  "armor": [
+    {"id":"leaf_vest","name":"Leaf Vest","asset":"items/armor_leaf_vest.svg","damageReduction":0.06,"speedMultiplier":1.0},
+    {"id":"bark_guard","name":"Bark Guard","asset":"items/armor_bark_guard.svg","damageReduction":0.16,"speedMultiplier":1.0},
+    {"id":"feather_vest","name":"Feather Vest","asset":"items/armor_feather_vest.svg","damageReduction":0.08,"speedMultiplier":1.10},
+    {"id":"root_padding","name":"Root Padding","asset":"items/armor_root_padding.svg","damageReduction":0.24,"speedMultiplier":0.92},
+    {"id":"star_cloak","name":"Star Cloak","asset":"items/armor_star_cloak.svg","damageReduction":0.12,"speedMultiplier":1.0,"dashCooldownSeconds":1.75,"startingMedkits":3},
+    {"id":"plate_armor","name":"Plate Armor","asset":"items/armor_plate.svg","damageReduction":0.30,"speedMultiplier":0.86}
+  ],
+  "gameplayAssets": {
+    "loot":"items/crystal.svg",
+    "medkit":"items/medkit.svg",
+    "branding":"HTG.png"
+  }
+}
