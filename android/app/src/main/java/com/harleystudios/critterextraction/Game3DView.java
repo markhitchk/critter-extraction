@@ -25,9 +25,24 @@ public final class Game3DView extends GLSurfaceView {
     public void resumeGameLoop(){renderer.setRunning(true);onResume();}
     public void pauseForLifecycle(){renderer.setRunning(false);onPause();}
     public void toggleCamera(){queueEvent(renderer::toggleCamera);}
+    public void toggleShoulder(){queueEvent(renderer::toggleShoulder);}
+    public void jump(){queueEvent(renderer::jump);}
     public void nextSpecies(){queueEvent(renderer::nextSpecies);}
     public void nextWeapon(){queueEvent(renderer::nextWeapon);}
     public void dash(){queueEvent(renderer::dash);}
     public void heal(){queueEvent(renderer::heal);}
+    public void fireOnce(){queueEvent(renderer::fireOnce);}
     public String status(){return renderer.status();}
+    public float hp(){return renderer.hp();}
+    public int loot(){return renderer.loot();}
+    public int petals(){return renderer.petals();}
+    public int medkits(){return renderer.medkits();}
+    public float playerX(){return renderer.playerX();}
+    public float playerZ(){return renderer.playerZ();}
+    public float extractX(){return renderer.extractX();}
+    public float extractZ(){return renderer.extractZ();}
+    public float matchSeconds(){return renderer.matchSeconds();}
+    public String speciesName(){return renderer.speciesName();}
+    public String weaponName(){return renderer.weaponName();}
+    public String cameraName(){return renderer.cameraName();}
 }
