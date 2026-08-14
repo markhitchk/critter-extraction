@@ -3,7 +3,6 @@ package com.harleystudios.critterextraction;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -15,8 +14,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -24,16 +21,14 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * Native Android gameplay renderer for Critter Extraction.
- * No WebView, HTML renderer, JavaScript engine, browser bridge, or network is used.
+ * Fully native Android gameplay view for Critter Extraction.
+ * No WebView, HTML, JavaScript runtime, CDN, or network is used.
  */
 public final class GameView extends View {
     private static final float WORLD_W = 3600f;
     private static final float WORLD_H = 2400f;
-    private static final float PLAYER_SPEED = 360f;
-    private static final float BULLET_SPEED = 980f;
-    private static final float JOYSTICK_R = 104f;
     private static final float PLAYER_R = 34f;
+    private static final float JOYSTICK_R = 104f;
     private static final int LOOT_TO_EXTRACT = 8;
     private static final int PETAL_CAP = 1_000_000;
 
@@ -47,19 +42,18 @@ public final class GameView extends View {
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Random random = new Random();
     private final SharedPreferences prefs;
+    private final AssetLibrary assetLibrary;
+    private final Bitmap htgLogo;
+
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Bullet> bullets = new ArrayList<>();
     private final List<Loot> loot = new ArrayList<>();
     private final List<Particle> particles = new ArrayList<>();
 
-    private final String[] critters = {
-            "Puppy", "Fox", "Arctic Fox", "Axolotl", "Bear", "Bunny", "Capybara",
-            "Crow", "Frog", "Kitty", "Otter", "Panda", "Penguin"
-    };
-
-    private Bitmap htgLogo;
     private int state = STATE_MENU;
-    private int selectedCritter = 0;
+    private int selectedCritter;
+    private int selectedWeapon;
+    private int selectedArmor;
     private int bestExtraction;
     private int totalPetals;
     private int lifetimeRuns;
@@ -69,37 +63,40 @@ public final class GameView extends View {
     private float playerHp = 100f;
     private float lastAimX = 1f;
     private float lastAimY = 0f;
-    private int carriedLoot = 0;
-    private int runPetals = 0;
+    private int carriedLoot;
+    private int runPetals;
     private int medkits = 2;
-    private float extractionProgress = 0f;
-    private boolean extractionUnlocked = false;
+    private float extractionProgress;
+    private boolean extractionUnlocked;
     private final float extractionX = WORLD_W - 430f;
     private final float extractionY = 430f;
-    private float spawnTimer = 0f;
-    private float fireTimer = 0f;
-    private float damageFlash = 0f;
-    private float dashCooldown = 0f;
-    private float playerInvulnerable = 0f;
-    private long runStartMs = 0L;
+    private float spawnTimer;
+    private float fireTimer;
+    private float damageFlash;
+    private float dashCooldown;
+    private float playerInvulnerable;
+    private long runStartMs;
 
-    private long lastFrameNanos = 0L;
-    private final long bootUntilMs = SystemClock.uptimeMillis() + 1150L;
+    private long lastFrameNanos;
+    private final long bootUntilMs = SystemClock.uptimeMillis() + 950L;
     private boolean lifecycleRunning = true;
 
     private int movePointerId = -1;
     private int aimPointerId = -1;
     private float moveBaseX, moveBaseY, moveTouchX, moveTouchY;
     private float aimBaseX, aimBaseY, aimTouchX, aimTouchY;
-    private float moveX = 0f, moveY = 0f;
-    private float aimX = 0f, aimY = 0f;
+    private float moveX, moveY, aimX, aimY;
 
     private final RectF pauseButton = new RectF();
     private final RectF dashButton = new RectF();
     private final RectF healButton = new RectF();
     private final RectF primaryButton = new RectF();
-    private final RectF leftPicker = new RectF();
-    private final RectF rightPicker = new RectF();
+    private final RectF critterLeft = new RectF();
+    private final RectF critterRight = new RectF();
+    private final RectF weaponLeft = new RectF();
+    private final RectF weaponRight = new RectF();
+    private final RectF armorLeft = new RectF();
+    private final RectF armorRight = new RectF();
 
     public GameView(Context context) {
         super(context);
@@ -108,16 +105,17 @@ public final class GameView extends View {
         requestFocus();
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeWidth(3f);
-        prefs = context.getSharedPreferences("critter_native_save", Context.MODE_PRIVATE);
-        selectedCritter = prefs.getInt("selected_critter", 0);
+
+        prefs = context.getSharedPreferences("critter_native_save_v2", Context.MODE_PRIVATE);
+        selectedCritter = clampIndex(prefs.getInt("selected_critter", 0), AssetLibrary.CRITTER_NAMES.length);
+        selectedWeapon = clampIndex(prefs.getInt("selected_weapon", 0), AssetLibrary.WEAPON_NAMES.length);
+        selectedArmor = clampIndex(prefs.getInt("selected_armor", 0), AssetLibrary.ARMOR_NAMES.length);
         bestExtraction = prefs.getInt("best_extraction", 0);
         totalPetals = prefs.getInt("petals", 0);
         lifetimeRuns = prefs.getInt("runs", 0);
-        try (InputStream in = context.getAssets().open("HTG.png")) {
-            htgLogo = BitmapFactory.decodeStream(in);
-        } catch (IOException ignored) {
-            htgLogo = null;
-        }
+
+        assetLibrary = new AssetLibrary(context);
+        htgLogo = assetLibrary.loadBitmap("HTG.png");
     }
 
     public void resumeGameLoop() {
@@ -137,7 +135,8 @@ public final class GameView extends View {
         long nowNanos = System.nanoTime();
         float dt = lastFrameNanos == 0L ? 0f : (nowNanos - lastFrameNanos) / 1_000_000_000f;
         lastFrameNanos = nowNanos;
-        dt = Math.min(dt, 0.033f);
+        dt = Math.min(dt, .033f);
+
         if (SystemClock.uptimeMillis() < bootUntilMs) drawBoot(canvas);
         else if (state == STATE_MENU) drawMenu(canvas);
         else {
@@ -159,22 +158,20 @@ public final class GameView extends View {
         playerInvulnerable = Math.max(0f, playerInvulnerable - dt);
 
         float moveLen = length(moveX, moveY);
-        if (moveLen > 0.05f) {
+        if (moveLen > .05f) {
             float nx = moveX / Math.max(1f, moveLen);
             float ny = moveY / Math.max(1f, moveLen);
-            float speedScale = Math.min(1f, moveLen);
-            playerX = clamp(playerX + nx * PLAYER_SPEED * speedScale * dt, PLAYER_R, WORLD_W - PLAYER_R);
-            playerY = clamp(playerY + ny * PLAYER_SPEED * speedScale * dt, PLAYER_R, WORLD_H - PLAYER_R);
+            float speed = 360f * armorSpeedMultiplier();
+            float strength = Math.min(1f, moveLen);
+            playerX = clamp(playerX + nx * speed * strength * dt, PLAYER_R, WORLD_W - PLAYER_R);
+            playerY = clamp(playerY + ny * speed * strength * dt, PLAYER_R, WORLD_H - PLAYER_R);
         }
 
         float aimLen = length(aimX, aimY);
         if (aimLen > .23f) {
             lastAimX = aimX / aimLen;
             lastAimY = aimY / aimLen;
-            if (fireTimer <= 0f) {
-                fireBullet(lastAimX, lastAimY);
-                fireTimer = .145f;
-            }
+            if (fireTimer <= 0f) fireWeapon();
         }
 
         spawnTimer -= dt;
@@ -193,7 +190,8 @@ public final class GameView extends View {
             e.flash = Math.max(0f, e.flash - dt);
             e.attackCooldown = Math.max(0f, e.attackCooldown - dt);
             if (d < e.radius + PLAYER_R + 8f && e.attackCooldown <= 0f && playerInvulnerable <= 0f) {
-                playerHp -= e.damage;
+                float incoming = e.damage * (1f - armorDamageReduction());
+                playerHp -= incoming;
                 e.attackCooldown = .62f;
                 damageFlash = .16f;
                 performHapticFeedback(HapticFeedbackConstants.REJECT);
@@ -217,7 +215,7 @@ public final class GameView extends View {
                         e.hp -= b.damage;
                         e.flash = .09f;
                         burst(b.x, b.y, 0xffa8efff, 3);
-                        remove = true;
+                        if (--b.pierce < 0) remove = true;
                         break;
                     }
                 }
@@ -274,11 +272,47 @@ public final class GameView extends View {
             p.vy *= .96f;
             if (p.life <= 0f) particleIt.remove();
         }
+
         if (playerHp <= 0f) {
             playerHp = 0f;
             state = STATE_GAME_OVER;
             finishRun(false);
         }
+    }
+
+    private void fireWeapon() {
+        float damage;
+        float speed;
+        float cooldown;
+        int pellets = 1;
+        float spread = 0f;
+        int pierce = 0;
+
+        switch (selectedWeapon) {
+            case 1: // Acorn Sprayer
+                damage = 20f; speed = 1080f; cooldown = .082f; break;
+            case 2: // Carrot Scatter
+                damage = 15f; speed = 900f; cooldown = .58f; pellets = 5; spread = .16f; break;
+            case 3: // Honey Carbine
+                damage = 31f; speed = 1120f; cooldown = .19f; break;
+            case 4: // Moonbeam
+                damage = 56f; speed = 1250f; cooldown = .52f; pierce = 2; break;
+            default: // Pea Popper
+                damage = 34f; speed = 980f; cooldown = .145f; break;
+        }
+
+        float baseAngle = (float) Math.atan2(lastAimY, lastAimX);
+        for (int i = 0; i < pellets; i++) {
+            float offset = pellets == 1 ? 0f : (i - (pellets - 1) * .5f) * spread;
+            float angle = baseAngle + offset;
+            float nx = (float) Math.cos(angle);
+            float ny = (float) Math.sin(angle);
+            bullets.add(new Bullet(
+                    playerX + nx * (PLAYER_R + 15f), playerY + ny * (PLAYER_R + 15f),
+                    nx * speed, ny * speed, damage, 1.35f, pierce
+            ));
+        }
+        fireTimer = cooldown;
     }
 
     private void startRun() {
@@ -288,7 +322,7 @@ public final class GameView extends View {
         playerHp = 100f;
         carriedLoot = 0;
         runPetals = 0;
-        medkits = 2;
+        medkits = selectedArmor == 4 ? 3 : 2;
         extractionProgress = 0f;
         extractionUnlocked = false;
         spawnTimer = .4f;
@@ -299,6 +333,7 @@ public final class GameView extends View {
         releaseControls();
         runStartMs = SystemClock.uptimeMillis();
         for (int i = 0; i < 7; i++) spawnEnemy();
+        persistLoadout();
         performHapticFeedback(HapticFeedbackConstants.CONFIRM);
     }
 
@@ -315,13 +350,42 @@ public final class GameView extends View {
         lifetimeRuns++;
         if (success) bestExtraction = Math.max(bestExtraction, carriedLoot);
         totalPetals = Math.min(PETAL_CAP, totalPetals + Math.max(0, runPetals));
-        prefs.edit().putInt("selected_critter", selectedCritter).putInt("best_extraction", bestExtraction)
-                .putInt("petals", totalPetals).putInt("runs", lifetimeRuns).apply();
+        prefs.edit()
+                .putInt("selected_critter", selectedCritter)
+                .putInt("selected_weapon", selectedWeapon)
+                .putInt("selected_armor", selectedArmor)
+                .putInt("best_extraction", bestExtraction)
+                .putInt("petals", totalPetals)
+                .putInt("runs", lifetimeRuns)
+                .apply();
     }
 
-    private void fireBullet(float nx, float ny) {
-        bullets.add(new Bullet(playerX + nx * (PLAYER_R + 15f), playerY + ny * (PLAYER_R + 15f),
-                nx * BULLET_SPEED, ny * BULLET_SPEED, 34f, 1.2f));
+    private void persistLoadout() {
+        prefs.edit()
+                .putInt("selected_critter", selectedCritter)
+                .putInt("selected_weapon", selectedWeapon)
+                .putInt("selected_armor", selectedArmor)
+                .apply();
+    }
+
+    private float armorDamageReduction() {
+        switch (selectedArmor) {
+            case 1: return .16f;
+            case 2: return .08f;
+            case 3: return .24f;
+            case 4: return .12f;
+            case 5: return .30f;
+            default: return .06f;
+        }
+    }
+
+    private float armorSpeedMultiplier() {
+        switch (selectedArmor) {
+            case 2: return 1.10f;
+            case 3: return .92f;
+            case 5: return .86f;
+            default: return 1f;
+        }
     }
 
     private void dash() {
@@ -332,7 +396,7 @@ public final class GameView extends View {
         dx /= len; dy /= len;
         playerX = clamp(playerX + dx * 250f, PLAYER_R, WORLD_W - PLAYER_R);
         playerY = clamp(playerY + dy * 250f, PLAYER_R, WORLD_H - PLAYER_R);
-        dashCooldown = 2.25f;
+        dashCooldown = selectedArmor == 4 ? 1.75f : 2.25f;
         playerInvulnerable = .24f;
         burst(playerX, playerY, 0xff59d7ff, 15);
         performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);
@@ -353,7 +417,7 @@ public final class GameView extends View {
         float y = clamp(playerY + (float) Math.sin(angle) * distance, 55f, WORLD_H - 55f);
         float scale = .85f + random.nextFloat() * .45f;
         enemies.add(new Enemy(x, y, 31f * scale, 72f * scale, 118f + random.nextFloat() * 62f,
-                8f + random.nextFloat() * 6f, random.nextInt(5)));
+                8f + random.nextFloat() * 6f, random.nextInt(AssetLibrary.CRITTER_PATHS.length)));
     }
 
     private void burst(float x, float y, int color, int count) {
@@ -366,18 +430,21 @@ public final class GameView extends View {
     }
 
     private void drawBoot(Canvas c) {
-        c.drawColor(Color.rgb(5, 13, 18));
+        c.drawColor(0xff071117);
         float w = getWidth(), h = getHeight();
         if (htgLogo != null) {
-            float maxW = Math.min(w * .22f, 260f);
-            float ratio = htgLogo.getHeight() / (float) htgLogo.getWidth();
-            RectF dst = new RectF(w * .5f - maxW * .5f, h * .24f, w * .5f + maxW * .5f, h * .24f + maxW * ratio);
+            float maxW = Math.min(w * .20f, 230f);
+            float ratio = htgLogo.getHeight() / (float) Math.max(1, htgLogo.getWidth());
+            RectF dst = new RectF(w * .5f - maxW * .5f, h * .18f, w * .5f + maxW * .5f, h * .18f + maxW * ratio);
             c.drawBitmap(htgLogo, null, dst, paint);
-        } else drawCritter(c, w * .5f, h * .34f, 1.5f, 0xff59d7ff, 1);
-        text(c, "CRITTER EXTRACTION", w * .5f, h * .62f, 40f, 0xffeaf8ff, Paint.Align.CENTER, true);
-        text(c, "NATIVE ANDROID", w * .5f, h * .69f, 17f, 0xff59d7ff, Paint.Align.CENTER, true);
-        float p = clamp(1f - (bootUntilMs - SystemClock.uptimeMillis()) / 1150f, 0f, 1f);
-        RectF bar = new RectF(w * .5f - 150f, h * .77f, w * .5f + 150f, h * .77f + 7f);
+        } else {
+            drawCritterAsset(c, w * .5f, h * .34f, 120f, selectedCritter, 0xff59d7ff);
+        }
+        text(c, "CRITTER EXTRACTION", w * .5f, h * .61f, 40f, 0xffeaf8ff, Paint.Align.CENTER, true);
+        text(c, "NATIVE MOBILE • v0.24.0", w * .5f, h * .68f, 17f, 0xff59d7ff, Paint.Align.CENTER, true);
+        text(c, assetLibrary.catalogSummary(), w * .5f, h * .73f, 13f, 0xff91aab5, Paint.Align.CENTER, false);
+        float p = clamp(1f - (bootUntilMs - SystemClock.uptimeMillis()) / 950f, 0f, 1f);
+        RectF bar = new RectF(w * .5f - 150f, h * .79f, w * .5f + 150f, h * .79f + 7f);
         paint.setColor(0xff17303a); c.drawRoundRect(bar, 4f, 4f, paint);
         paint.setColor(0xff59d7ff); c.drawRoundRect(new RectF(bar.left, bar.top, bar.left + bar.width() * p, bar.bottom), 4f, 4f, paint);
     }
@@ -391,49 +458,99 @@ public final class GameView extends View {
             float y = (i * 97f) % Math.max(1f, h);
             c.drawCircle(x, y, 2.5f + (i % 3), paint);
         }
-        text(c, "CRITTER EXTRACTION", w * .5f, 76f, 38f, 0xfff2fbff, Paint.Align.CENTER, true);
-        text(c, "ANDROID 14+ • OFFLINE NATIVE BUILD", w * .5f, 108f, 14f, 0xff68d9ff, Paint.Align.CENTER, true);
-        float cardW = Math.min(560f, w * .54f);
-        RectF card = new RectF(w * .5f - cardW * .5f, h * .19f, w * .5f + cardW * .5f, h * .65f);
+
+        text(c, "CRITTER EXTRACTION", w * .5f, 55f, 33f, 0xfff2fbff, Paint.Align.CENTER, true);
+        text(c, "ANDROID 14+ • FULL NATIVE MOBILE ALPHA", w * .5f, 82f, 13f, 0xff68d9ff, Paint.Align.CENTER, true);
+
+        float cardW = Math.min(760f, w * .72f);
+        float left = w * .5f - cardW * .5f;
+        float right = w * .5f + cardW * .5f;
+        float top = Math.max(100f, h * .16f);
+        float bottom = Math.min(h - 112f, h * .73f);
+        RectF card = new RectF(left, top, right, bottom);
         paint.setColor(0xff0d1d24); c.drawRoundRect(card, 28f, 28f, paint);
         stroke.setColor(0xff245163); stroke.setStrokeWidth(3f); c.drawRoundRect(card, 28f, 28f, stroke);
-        drawCritter(c, w * .5f, card.top + card.height() * .42f, 1.45f, critterColor(selectedCritter), selectedCritter);
-        text(c, critters[selectedCritter].toUpperCase(Locale.US), w * .5f, card.bottom - 44f, 23f, 0xfff0fbff, Paint.Align.CENTER, true);
-        leftPicker.set(card.left + 20f, card.centerY() - 38f, card.left + 86f, card.centerY() + 38f);
-        rightPicker.set(card.right - 86f, card.centerY() - 38f, card.right - 20f, card.centerY() + 38f);
-        drawArrow(c, leftPicker, false); drawArrow(c, rightPicker, true);
-        primaryButton.set(w * .5f - 170f, h * .71f, w * .5f + 170f, h * .71f + 70f);
+
+        float artSize = Math.min(180f, card.height() * .52f);
+        drawCritterAsset(c, left + 125f, card.centerY() - 5f, artSize, selectedCritter, critterColor(selectedCritter));
+
+        float rowLeft = left + 235f;
+        float rowRight = right - 22f;
+        float rowH = Math.max(50f, card.height() / 3.45f);
+        float y1 = top + 16f;
+        float y2 = y1 + rowH + 8f;
+        float y3 = y2 + rowH + 8f;
+
+        drawLoadoutRow(c, new RectF(rowLeft, y1, rowRight, y1 + rowH), "CRITTER",
+                AssetLibrary.CRITTER_NAMES[selectedCritter], AssetLibrary.CRITTER_PATHS[selectedCritter],
+                critterLeft, critterRight, 0xff59d7ff);
+        drawLoadoutRow(c, new RectF(rowLeft, y2, rowRight, y2 + rowH), "WEAPON",
+                AssetLibrary.WEAPON_NAMES[selectedWeapon], AssetLibrary.WEAPON_PATHS[selectedWeapon],
+                weaponLeft, weaponRight, 0xffffd166);
+        drawLoadoutRow(c, new RectF(rowLeft, y3, rowRight, y3 + rowH), "ARMOR",
+                AssetLibrary.ARMOR_NAMES[selectedArmor], AssetLibrary.ARMOR_PATHS[selectedArmor],
+                armorLeft, armorRight, 0xff7ee787);
+
+        primaryButton.set(w * .5f - 170f, h - 90f, w * .5f + 170f, h - 25f);
         paint.setColor(0xff59d7ff); c.drawRoundRect(primaryButton, 22f, 22f, paint);
-        text(c, "DEPLOY", primaryButton.centerX(), primaryButton.centerY() + 8f, 24f, 0xff041017, Paint.Align.CENTER, true);
-        text(c, "Best extraction  " + bestExtraction + "   •   Petals  " + totalPetals + "   •   Runs  " + lifetimeRuns,
-                w * .5f, h - 28f, 14f, 0xff9eb7c2, Paint.Align.CENTER, false);
+        text(c, "DEPLOY", primaryButton.centerX(), primaryButton.centerY() + 8f, 23f, 0xff041017, Paint.Align.CENTER, true);
+
+        text(c, "Best " + bestExtraction + "  •  Petals " + totalPetals + "  •  Runs " + lifetimeRuns,
+                22f, h - 32f, 12f, 0xff9eb7c2, Paint.Align.LEFT, false);
+        text(c, assetLibrary.totalCatalogCount() + " packaged shared assets", w - 22f, h - 32f, 12f, 0xff9eb7c2, Paint.Align.RIGHT, false);
+    }
+
+    private void drawLoadoutRow(Canvas c, RectF row, String label, String name, String assetPath,
+                                RectF leftButton, RectF rightButton, int accent) {
+        paint.setColor(0xff102630); c.drawRoundRect(row, 16f, 16f, paint);
+        stroke.setColor(0xff284855); stroke.setStrokeWidth(2f); c.drawRoundRect(row, 16f, 16f, stroke);
+
+        float buttonW = 46f;
+        leftButton.set(row.left + 7f, row.top + 7f, row.left + 7f + buttonW, row.bottom - 7f);
+        rightButton.set(row.right - 7f - buttonW, row.top + 7f, row.right - 7f, row.bottom - 7f);
+        drawArrow(c, leftButton, false); drawArrow(c, rightButton, true);
+
+        float iconSize = Math.max(40f, row.height() - 15f);
+        RectF icon = new RectF(leftButton.right + 8f, row.centerY() - iconSize * .5f,
+                leftButton.right + 8f + iconSize, row.centerY() + iconSize * .5f);
+        assetLibrary.drawSvgOrFallback(c, assetPath, icon, accent, name);
+
+        float textX = icon.right + 12f;
+        text(c, label, textX, row.centerY() - 5f, 10f, 0xff7f9aa5, Paint.Align.LEFT, true);
+        text(c, name, textX, row.centerY() + 17f, 16f, 0xffeefaff, Paint.Align.LEFT, true);
     }
 
     private void drawWorld(Canvas c) {
         c.drawColor(0xff071117);
         float camX = clamp(playerX - getWidth() * .5f, 0f, Math.max(0f, WORLD_W - getWidth()));
         float camY = clamp(playerY - getHeight() * .5f, 0f, Math.max(0f, WORLD_H - getHeight()));
-        c.save(); c.translate(-camX, -camY); drawGround(c, camX, camY);
+        c.save();
+        c.translate(-camX, -camY);
+        drawGround(c, camX, camY);
         if (extractionUnlocked) drawExtractionZone(c);
         for (Loot l : loot) drawLoot(c, l);
         for (Enemy e : enemies) drawEnemy(c, e);
         for (Bullet b : bullets) {
-            paint.setColor(0xffa8efff); c.drawCircle(b.x, b.y, 8f, paint);
-            stroke.setColor(0x7059d7ff); stroke.setStrokeWidth(8f);
+            paint.setColor(selectedWeapon == 4 ? 0xffd996ff : 0xffa8efff);
+            c.drawCircle(b.x, b.y, selectedWeapon == 4 ? 10f : 7f, paint);
+            stroke.setColor(0x7059d7ff); stroke.setStrokeWidth(7f);
             c.drawLine(b.x - b.vx * .025f, b.y - b.vy * .025f, b.x, b.y, stroke);
         }
         for (Particle p : particles) {
             int alpha = (int) (255f * clamp(p.life / .55f, 0f, 1f));
-            paint.setColor((p.color & 0x00ffffff) | (alpha << 24)); c.drawCircle(p.x, p.y, 4f, paint);
+            paint.setColor((p.color & 0x00ffffff) | (alpha << 24));
+            c.drawCircle(p.x, p.y, 4f, paint);
         }
         if (playerInvulnerable <= 0f || ((int) (SystemClock.uptimeMillis() / 55L) & 1) == 0) {
-            drawCritter(c, playerX, playerY, 1f, critterColor(selectedCritter), selectedCritter);
+            drawCritterAsset(c, playerX, playerY, 90f, selectedCritter, critterColor(selectedCritter));
             paint.setColor(0xffd9f6ff); paint.setStrokeWidth(5f);
             c.drawLine(playerX + lastAimX * 22f, playerY + lastAimY * 22f,
                     playerX + lastAimX * 57f, playerY + lastAimY * 57f, paint);
         }
         c.restore();
-        if (damageFlash > 0f) { paint.setColor(0x48ff354f); c.drawRect(0f, 0f, getWidth(), getHeight(), paint); }
+        if (damageFlash > 0f) {
+            paint.setColor(0x48ff354f); c.drawRect(0f, 0f, getWidth(), getHeight(), paint);
+        }
     }
 
     private void drawGround(Canvas c, float camX, float camY) {
@@ -461,129 +578,142 @@ public final class GameView extends View {
         float w = getWidth(), h = getHeight();
         RectF hpBg = new RectF(28f, 24f, Math.min(350f, w * .32f), 50f);
         paint.setColor(0xcc0a1115); c.drawRoundRect(hpBg, 13f, 13f, paint);
-        RectF hp = new RectF(hpBg.left + 3f, hpBg.top + 3f, hpBg.left + 3f + (hpBg.width() - 6f) * (playerHp / 100f), hpBg.bottom - 3f);
+        RectF hp = new RectF(hpBg.left + 3f, hpBg.top + 3f,
+                hpBg.left + 3f + (hpBg.width() - 6f) * (playerHp / 100f), hpBg.bottom - 3f);
         paint.setColor(playerHp > 35f ? 0xff57e389 : 0xffff5c6c); c.drawRoundRect(hp, 10f, 10f, paint);
         text(c, Math.round(playerHp) + " HP", hpBg.left + 10f, 72f, 13f, 0xffe7f7fc, Paint.Align.LEFT, true);
-        String objective = extractionUnlocked ? "EXTRACTION OPEN • HOLD ZONE " + Math.min(100, Math.round(extractionProgress / 3f * 100f)) + "%" : "LOOT " + carriedLoot + "/" + LOOT_TO_EXTRACT;
+
+        String objective = extractionUnlocked
+                ? "EXTRACTION OPEN • HOLD ZONE " + Math.min(100, Math.round(extractionProgress / 3f * 100f)) + "%"
+                : "LOOT " + carriedLoot + "/" + LOOT_TO_EXTRACT;
         text(c, objective, w * .5f, 42f, 17f, extractionUnlocked ? 0xff57e389 : 0xffffd166, Paint.Align.CENTER, true);
         text(c, "RUN +" + runPetals + " PETALS", w * .5f, 67f, 12f, 0xff9eb7c2, Paint.Align.CENTER, false);
+
         pauseButton.set(w - 76f, 20f, w - 20f, 76f);
         paint.setColor(0xbb0b171d); c.drawRoundRect(pauseButton, 16f, 16f, paint);
         stroke.setColor(0xff3f6978); stroke.setStrokeWidth(2f); c.drawRoundRect(pauseButton, 16f, 16f, stroke);
         paint.setColor(0xffd8eef5);
-        c.drawRect(pauseButton.centerX() - 10f, pauseButton.centerY() - 12f, pauseButton.centerX() - 3f, pauseButton.centerY() + 12f, paint);
-        c.drawRect(pauseButton.centerX() + 3f, pauseButton.centerY() - 12f, pauseButton.centerX() + 10f, pauseButton.centerY() + 12f, paint);
-        float dmX = 145f, dmY = h - 145f, daX = w - 145f, daY = h - 145f;
-        drawJoystick(c, movePointerId >= 0 ? moveBaseX : dmX, movePointerId >= 0 ? moveBaseY : dmY,
-                movePointerId >= 0 ? moveTouchX : dmX, movePointerId >= 0 ? moveTouchY : dmY, movePointerId >= 0, "MOVE");
-        drawJoystick(c, aimPointerId >= 0 ? aimBaseX : daX, aimPointerId >= 0 ? aimBaseY : daY,
-                aimPointerId >= 0 ? aimTouchX : daX, aimPointerId >= 0 ? aimTouchY : daY, aimPointerId >= 0, "AIM/FIRE");
-        dashButton.set(w - 150f, h - 370f, w - 50f, h - 270f);
-        healButton.set(w - 275f, h - 335f, w - 185f, h - 245f);
-        drawActionButton(c, dashButton, "DASH", dashCooldown <= 0f, dashCooldown <= 0f ? "READY" : String.format(Locale.US, "%.1f", dashCooldown));
-        drawActionButton(c, healButton, "MED", medkits > 0 && playerHp < 100f, String.valueOf(medkits));
+        c.drawRect(pauseButton.centerX() - 10f, pauseButton.centerY() - 13f, pauseButton.centerX() - 3f, pauseButton.centerY() + 13f, paint);
+        c.drawRect(pauseButton.centerX() + 3f, pauseButton.centerY() - 13f, pauseButton.centerX() + 10f, pauseButton.centerY() + 13f, paint);
+
+        float rightX = w - 105f;
+        dashButton.set(rightX - 42f, h - 122f, rightX + 42f, h - 38f);
+        healButton.set(rightX - 143f, h - 112f, rightX - 73f, h - 42f);
+        drawActionButton(c, dashButton, dashCooldown > 0f ? String.format(Locale.US, "%.1f", dashCooldown) : "DASH", 0xff59d7ff);
+        drawActionButton(c, healButton, "MED " + medkits, 0xff57e389);
+
+        RectF weaponIcon = new RectF(w - 210f, 19f, w - 156f, 73f);
+        assetLibrary.drawSvgOrFallback(c, AssetLibrary.WEAPON_PATHS[selectedWeapon], weaponIcon, 0xffffd166,
+                AssetLibrary.WEAPON_NAMES[selectedWeapon]);
+        text(c, AssetLibrary.WEAPON_NAMES[selectedWeapon], weaponIcon.left - 8f, 51f, 11f, 0xffd7e8ef, Paint.Align.RIGHT, true);
+
+        drawJoystick(c, movePointerId >= 0, moveBaseX, moveBaseY, moveTouchX, moveTouchY, 0xff59d7ff);
+        drawJoystick(c, aimPointerId >= 0, aimBaseX, aimBaseY, aimTouchX, aimTouchY, 0xffffd166);
     }
 
-    private void drawJoystick(Canvas c, float bx, float by, float tx, float ty, boolean active, String label) {
-        paint.setColor(active ? 0x3d59d7ff : 0x221c758f); c.drawCircle(bx, by, JOYSTICK_R, paint);
-        stroke.setColor(active ? 0x9959d7ff : 0x553a7d90); stroke.setStrokeWidth(3f); c.drawCircle(bx, by, JOYSTICK_R, stroke);
+    private void drawActionButton(Canvas c, RectF r, String label, int accent) {
+        paint.setColor(0xcc0b171d); c.drawOval(r, paint);
+        stroke.setColor(accent); stroke.setStrokeWidth(3f); c.drawOval(r, stroke);
+        text(c, label, r.centerX(), r.centerY() + 5f, 12f, accent, Paint.Align.CENTER, true);
+    }
+
+    private void drawJoystick(Canvas c, boolean active, float bx, float by, float tx, float ty, int accent) {
+        if (!active) return;
+        paint.setColor(0x3323a6cf); c.drawCircle(bx, by, JOYSTICK_R, paint);
+        stroke.setColor(accent); stroke.setStrokeWidth(3f); c.drawCircle(bx, by, JOYSTICK_R, stroke);
         float dx = tx - bx, dy = ty - by, len = length(dx, dy);
         if (len > JOYSTICK_R) { dx = dx / len * JOYSTICK_R; dy = dy / len * JOYSTICK_R; }
-        paint.setColor(active ? 0xaa9eeeff : 0x664d9db2); c.drawCircle(bx + dx, by + dy, 42f, paint);
-        text(c, label, bx, by + JOYSTICK_R + 24f, 11f, 0x999fd0dc, Paint.Align.CENTER, true);
-    }
-
-    private void drawActionButton(Canvas c, RectF r, String title, boolean enabled, String sub) {
-        paint.setColor(enabled ? 0xc9245363 : 0x99202a2f); c.drawOval(r, paint);
-        stroke.setColor(enabled ? 0xff59d7ff : 0xff46565d); stroke.setStrokeWidth(2f); c.drawOval(r, stroke);
-        text(c, title, r.centerX(), r.centerY() - 1f, 14f, enabled ? 0xffe3f9ff : 0xff768b93, Paint.Align.CENTER, true);
-        text(c, sub, r.centerX(), r.centerY() + 18f, 9f, enabled ? 0xff8edff7 : 0xff667a82, Paint.Align.CENTER, false);
+        paint.setColor(0xaaeafaff); c.drawCircle(bx + dx, by + dy, 38f, paint);
     }
 
     private void drawPauseOverlay(Canvas c) {
-        paint.setColor(0xc8000000); c.drawRect(0f, 0f, getWidth(), getHeight(), paint);
         float w = getWidth(), h = getHeight();
-        text(c, "PAUSED", w * .5f, h * .37f, 42f, 0xffffffff, Paint.Align.CENTER, true);
-        text(c, "Tap to continue", w * .5f, h * .45f, 18f, 0xff9fc4d2, Paint.Align.CENTER, false);
-        primaryButton.set(w * .5f - 150f, h * .54f, w * .5f + 150f, h * .54f + 64f);
-        paint.setColor(0xff59d7ff); c.drawRoundRect(primaryButton, 20f, 20f, paint);
-        text(c, "RESUME", primaryButton.centerX(), primaryButton.centerY() + 7f, 20f, 0xff041017, Paint.Align.CENTER, true);
+        paint.setColor(0xb9000000); c.drawRect(0f, 0f, w, h, paint);
+        text(c, "PAUSED", w * .5f, h * .43f, 38f, 0xffffffff, Paint.Align.CENTER, true);
+        text(c, "Tap to resume", w * .5f, h * .52f, 17f, 0xff9ec4d2, Paint.Align.CENTER, false);
+        text(c, AssetLibrary.CRITTER_NAMES[selectedCritter] + " • " + AssetLibrary.WEAPON_NAMES[selectedWeapon] + " • " + AssetLibrary.ARMOR_NAMES[selectedArmor],
+                w * .5f, h * .59f, 13f, 0xff59d7ff, Paint.Align.CENTER, true);
     }
 
     private void drawEndOverlay(Canvas c, boolean success) {
-        paint.setColor(0xd6070b0e); c.drawRect(0f, 0f, getWidth(), getHeight(), paint);
         float w = getWidth(), h = getHeight();
-        text(c, success ? "EXTRACTION COMPLETE" : "RUN LOST", w * .5f, h * .31f, 38f,
+        paint.setColor(0xc6000000); c.drawRect(0f, 0f, w, h, paint);
+        text(c, success ? "EXTRACTION COMPLETE" : "RUN LOST", w * .5f, h * .32f, 34f,
                 success ? 0xff57e389 : 0xffff6b6b, Paint.Align.CENTER, true);
-        text(c, "Loot " + carriedLoot + "   •   +" + runPetals + " petals", w * .5f, h * .40f, 18f, 0xffd8edf5, Paint.Align.CENTER, false);
-        primaryButton.set(w * .5f - 160f, h * .51f, w * .5f + 160f, h * .51f + 68f);
-        paint.setColor(0xff59d7ff); c.drawRoundRect(primaryButton, 21f, 21f, paint);
+        text(c, "Loot " + carriedLoot + "  •  +" + runPetals + " petals", w * .5f, h * .42f, 18f, 0xffe8f7fc, Paint.Align.CENTER, true);
+        primaryButton.set(w * .5f - 155f, h * .52f, w * .5f + 155f, h * .52f + 64f);
+        paint.setColor(0xff59d7ff); c.drawRoundRect(primaryButton, 20f, 20f, paint);
         text(c, "DEPLOY AGAIN", primaryButton.centerX(), primaryButton.centerY() + 7f, 19f, 0xff041017, Paint.Align.CENTER, true);
-        text(c, "Tap outside the button for loadout", w * .5f, h * .67f, 13f, 0xff8aa8b4, Paint.Align.CENTER, false);
+        text(c, "Tap outside the button for loadout", w * .5f, h * .68f, 13f, 0xff8aa8b4, Paint.Align.CENTER, false);
     }
 
     private void drawEnemy(Canvas c, Enemy e) {
-        int color = e.flash > 0f ? 0xffffffff : enemyColor(e.variant);
-        drawCritter(c, e.x, e.y, e.radius / PLAYER_R, color, e.variant + 3);
+        int index = Math.floorMod(e.variant, AssetLibrary.CRITTER_PATHS.length);
+        drawCritterAsset(c, e.x, e.y, e.radius * 2.45f, index, e.flash > 0f ? 0xffffffff : enemyColor(index));
         float hpW = e.radius * 2.1f;
-        RectF bg = new RectF(e.x - hpW * .5f, e.y - e.radius - 21f, e.x + hpW * .5f, e.y - e.radius - 15f);
+        RectF bg = new RectF(e.x - hpW * .5f, e.y - e.radius - 31f, e.x + hpW * .5f, e.y - e.radius - 25f);
         paint.setColor(0xaa000000); c.drawRoundRect(bg, 3f, 3f, paint);
-        paint.setColor(0xffff6b6b); c.drawRoundRect(new RectF(bg.left, bg.top, bg.left + bg.width() * clamp(e.hp / e.maxHp, 0f, 1f), bg.bottom), 3f, 3f, paint);
+        paint.setColor(0xffff6b6b);
+        c.drawRoundRect(new RectF(bg.left, bg.top, bg.left + bg.width() * clamp(e.hp / e.maxHp, 0f, 1f), bg.bottom), 3f, 3f, paint);
     }
 
     private void drawLoot(Canvas c, Loot l) {
         float pulse = 1f + .09f * (float) Math.sin(SystemClock.uptimeMillis() * .008 + l.x);
-        paint.setColor(0x33ffd166); c.drawCircle(l.x, l.y, 34f * pulse, paint);
-        paint.setColor(0xffffd166);
-        Path d = new Path(); d.moveTo(l.x, l.y - 15f * pulse); d.lineTo(l.x + 14f * pulse, l.y);
-        d.lineTo(l.x, l.y + 15f * pulse); d.lineTo(l.x - 14f * pulse, l.y); d.close(); c.drawPath(d, paint);
-        text(c, "+" + l.value, l.x, l.y + 42f, 11f, 0xffffe69a, Paint.Align.CENTER, true);
+        RectF art = new RectF(l.x - 21f * pulse, l.y - 21f * pulse, l.x + 21f * pulse, l.y + 21f * pulse);
+        assetLibrary.drawSvgOrFallback(c, "items/crystal.svg", art, 0xffffd166, "Crystal");
+        text(c, "+" + l.value, l.x, l.y + 39f, 11f, 0xffffe69a, Paint.Align.CENTER, true);
     }
 
-    private void drawCritter(Canvas c, float x, float y, float scale, int color, int variant) {
-        float s = 30f * scale;
-        int dark = darken(color, .58f), light = lighten(color, .22f);
-        paint.setColor(dark); c.drawOval(new RectF(x - s * .82f, y - s * .12f, x + s * .88f, y + s * 1.20f), paint);
-        paint.setColor(color); c.drawCircle(x, y, s, paint); c.drawOval(new RectF(x - s * .72f, y + s * .35f, x + s * .72f, y + s * 1.13f), paint);
-        if ((variant % 4) == 0) {
-            Path le = new Path(); le.moveTo(x - s * .74f, y - s * .55f); le.lineTo(x - s * .30f, y - s * 1.15f); le.lineTo(x - s * .06f, y - s * .48f); le.close();
-            Path re = new Path(); re.moveTo(x + s * .74f, y - s * .55f); re.lineTo(x + s * .30f, y - s * 1.15f); re.lineTo(x + s * .06f, y - s * .48f); re.close();
-            paint.setColor(color); c.drawPath(le, paint); c.drawPath(re, paint);
-        } else {
-            paint.setColor(dark); c.drawOval(new RectF(x - s * .92f, y - s * .80f, x - s * .36f, y - s * .08f), paint);
-            c.drawOval(new RectF(x + s * .36f, y - s * .80f, x + s * .92f, y - s * .08f), paint);
-        }
-        paint.setColor(light); c.drawOval(new RectF(x - s * .52f, y + s * .03f, x + s * .52f, y + s * .62f), paint);
-        paint.setColor(0xff071117); c.drawCircle(x - s * .34f, y - s * .18f, s * .11f, paint); c.drawCircle(x + s * .34f, y - s * .18f, s * .11f, paint); c.drawCircle(x, y + s * .12f, s * .10f, paint);
-        stroke.setColor(0xff071117); stroke.setStrokeWidth(Math.max(2f, 2.6f * scale));
-        c.drawLine(x, y + s * .19f, x - s * .15f, y + s * .32f, stroke); c.drawLine(x, y + s * .19f, x + s * .15f, y + s * .32f, stroke);
+    private void drawCritterAsset(Canvas c, float x, float y, float size, int index, int fallbackColor) {
+        int safe = Math.floorMod(index, AssetLibrary.CRITTER_PATHS.length);
+        RectF dst = new RectF(x - size * .5f, y - size * .5f, x + size * .5f, y + size * .5f);
+        assetLibrary.drawSvgOrFallback(c, AssetLibrary.CRITTER_PATHS[safe], dst, fallbackColor, AssetLibrary.CRITTER_NAMES[safe]);
     }
 
     private void drawArrow(Canvas c, RectF r, boolean right) {
-        paint.setColor(0xff173541); c.drawRoundRect(r, 18f, 18f, paint);
+        paint.setColor(0xff173541); c.drawRoundRect(r, 14f, 14f, paint);
         Path p = new Path();
-        if (right) { p.moveTo(r.centerX() - 8f, r.centerY() - 14f); p.lineTo(r.centerX() + 9f, r.centerY()); p.lineTo(r.centerX() - 8f, r.centerY() + 14f); }
-        else { p.moveTo(r.centerX() + 8f, r.centerY() - 14f); p.lineTo(r.centerX() - 9f, r.centerY()); p.lineTo(r.centerX() + 8f, r.centerY() + 14f); }
+        if (right) {
+            p.moveTo(r.centerX() - 6f, r.centerY() - 11f); p.lineTo(r.centerX() + 7f, r.centerY()); p.lineTo(r.centerX() - 6f, r.centerY() + 11f);
+        } else {
+            p.moveTo(r.centerX() + 6f, r.centerY() - 11f); p.lineTo(r.centerX() - 7f, r.centerY()); p.lineTo(r.centerX() + 6f, r.centerY() + 11f);
+        }
         p.close(); paint.setColor(0xff8ee6ff); c.drawPath(p, paint);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int action = event.getActionMasked(), actionIndex = event.getActionIndex();
+        int action = event.getActionMasked();
+        int actionIndex = event.getActionIndex();
         if (SystemClock.uptimeMillis() < bootUntilMs) return true;
+
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
-            float x = event.getX(actionIndex), y = event.getY(actionIndex); int id = event.getPointerId(actionIndex);
+            float x = event.getX(actionIndex), y = event.getY(actionIndex);
+            int id = event.getPointerId(actionIndex);
+
             if (state == STATE_MENU) {
                 if (primaryButton.contains(x, y)) startRun();
-                else if (leftPicker.contains(x, y)) changeCritter(-1);
-                else if (rightPicker.contains(x, y)) changeCritter(1);
+                else if (critterLeft.contains(x, y)) changeCritter(-1);
+                else if (critterRight.contains(x, y)) changeCritter(1);
+                else if (weaponLeft.contains(x, y)) changeWeapon(-1);
+                else if (weaponRight.contains(x, y)) changeWeapon(1);
+                else if (armorLeft.contains(x, y)) changeArmor(-1);
+                else if (armorRight.contains(x, y)) changeArmor(1);
                 return true;
             }
-            if (state == STATE_PAUSED) { state = STATE_PLAYING; lastFrameNanos = 0L; performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); return true; }
-            if (state == STATE_SUCCESS || state == STATE_GAME_OVER) { if (primaryButton.contains(x, y)) startRun(); else state = STATE_MENU; return true; }
+            if (state == STATE_PAUSED) {
+                state = STATE_PLAYING; lastFrameNanos = 0L;
+                performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                return true;
+            }
+            if (state == STATE_SUCCESS || state == STATE_GAME_OVER) {
+                if (primaryButton.contains(x, y)) startRun(); else state = STATE_MENU;
+                return true;
+            }
             if (pauseButton.contains(x, y)) { state = STATE_PAUSED; releaseControls(); return true; }
             if (dashButton.contains(x, y)) { dash(); return true; }
             if (healButton.contains(x, y)) { heal(); return true; }
+
             if (x < getWidth() * .48f && movePointerId < 0) {
                 movePointerId = id; moveBaseX = moveTouchX = x; moveBaseY = moveTouchY = y; updateMoveVector();
             } else if (aimPointerId < 0) {
@@ -591,6 +721,7 @@ public final class GameView extends View {
             }
             return true;
         }
+
         if (action == MotionEvent.ACTION_MOVE) {
             for (int i = 0; i < event.getPointerCount(); i++) {
                 int id = event.getPointerId(i);
@@ -599,6 +730,7 @@ public final class GameView extends View {
             }
             return true;
         }
+
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_CANCEL) {
             int id = event.getPointerId(actionIndex);
             if (id == movePointerId) { movePointerId = -1; moveX = moveY = 0f; }
@@ -621,13 +753,27 @@ public final class GameView extends View {
         aimX = dx / JOYSTICK_R; aimY = dy / JOYSTICK_R;
     }
 
-    private void releaseControls() { movePointerId = -1; aimPointerId = -1; moveX = moveY = aimX = aimY = 0f; }
+    private void releaseControls() {
+        movePointerId = -1; aimPointerId = -1;
+        moveX = moveY = aimX = aimY = 0f;
+    }
 
     private void changeCritter(int delta) {
-        selectedCritter = (selectedCritter + delta + critters.length) % critters.length;
-        prefs.edit().putInt("selected_critter", selectedCritter).apply();
-        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        selectedCritter = Math.floorMod(selectedCritter + delta, AssetLibrary.CRITTER_NAMES.length);
+        persistLoadout(); hapticTick();
     }
+
+    private void changeWeapon(int delta) {
+        selectedWeapon = Math.floorMod(selectedWeapon + delta, AssetLibrary.WEAPON_NAMES.length);
+        persistLoadout(); hapticTick();
+    }
+
+    private void changeArmor(int delta) {
+        selectedArmor = Math.floorMod(selectedArmor + delta, AssetLibrary.ARMOR_NAMES.length);
+        persistLoadout(); hapticTick();
+    }
+
+    private void hapticTick() { performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -637,18 +783,24 @@ public final class GameView extends View {
             else if (state != STATE_MENU) state = STATE_MENU;
             return true;
         }
-        if (state == STATE_PLAYING && keyCode == KeyEvent.KEYCODE_BUTTON_R1) { fireBullet(lastAimX, lastAimY); return true; }
+        if (state == STATE_PLAYING && keyCode == KeyEvent.KEYCODE_BUTTON_R1) { fireWeapon(); return true; }
         if (state == STATE_PLAYING && keyCode == KeyEvent.KEYCODE_BUTTON_A) { dash(); return true; }
+        if (state == STATE_PLAYING && keyCode == KeyEvent.KEYCODE_BUTTON_B) { heal(); return true; }
         return super.onKeyDown(keyCode, event);
     }
 
     private void text(Canvas c, String value, float x, float y, float size, int color, Paint.Align align, boolean bold) {
-        paint.setStyle(Paint.Style.FILL); paint.setTextSize(size); paint.setColor(color); paint.setTextAlign(align);
-        paint.setTypeface(bold ? android.graphics.Typeface.DEFAULT_BOLD : android.graphics.Typeface.DEFAULT); c.drawText(value, x, y, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTextSize(size);
+        paint.setColor(color);
+        paint.setTextAlign(align);
+        paint.setTypeface(bold ? android.graphics.Typeface.DEFAULT_BOLD : android.graphics.Typeface.DEFAULT);
+        c.drawText(value, x, y, paint);
     }
 
     private int critterColor(int index) {
-        int[] colors = {0xffc58b5c, 0xffe77b4f, 0xffe8f6ff, 0xffff8fb5, 0xff9b704d, 0xffe7d7cf, 0xffad8260, 0xff46515f, 0xff63c878, 0xff8f9ca7, 0xff8a6a50, 0xfff0f0ed, 0xff202935};
+        int[] colors = {0xffc58b5c, 0xffe77b4f, 0xffe8f6ff, 0xffff8fb5, 0xff9b704d, 0xffe7d7cf,
+                0xffad8260, 0xff46515f, 0xff63c878, 0xff8f9ca7, 0xff8a6a50, 0xfff0f0ed, 0xff202935};
         return colors[Math.floorMod(index, colors.length)];
     }
 
@@ -659,27 +811,34 @@ public final class GameView extends View {
 
     private static float length(float x, float y) { return (float) Math.sqrt(x * x + y * y); }
     private static float clamp(float v, float min, float max) { return Math.max(min, Math.min(max, v)); }
-    private static int darken(int color, float factor) { return Color.rgb(Math.round(Color.red(color) * factor), Math.round(Color.green(color) * factor), Math.round(Color.blue(color) * factor)); }
-    private static int lighten(int color, float amount) {
-        int r = Color.red(color) + Math.round((255 - Color.red(color)) * amount);
-        int g = Color.green(color) + Math.round((255 - Color.green(color)) * amount);
-        int b = Color.blue(color) + Math.round((255 - Color.blue(color)) * amount);
-        return Color.rgb(r, g, b);
-    }
+    private static int clampIndex(int value, int size) { return size <= 0 ? 0 : Math.floorMod(value, size); }
 
     private static final class Enemy {
-        float x, y, radius, hp, maxHp, speed, damage, flash, attackCooldown; int variant;
+        float x, y, radius, hp, maxHp, speed, damage, flash, attackCooldown;
+        int variant;
         Enemy(float x, float y, float radius, float hp, float speed, float damage, int variant) {
-            this.x = x; this.y = y; this.radius = radius; this.hp = hp; this.maxHp = hp; this.speed = speed; this.damage = damage; this.variant = variant;
+            this.x = x; this.y = y; this.radius = radius; this.hp = hp; this.maxHp = hp;
+            this.speed = speed; this.damage = damage; this.variant = variant;
         }
     }
+
     private static final class Bullet {
         float x, y, vx, vy, damage, life;
-        Bullet(float x, float y, float vx, float vy, float damage, float life) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage; this.life = life; }
+        int pierce;
+        Bullet(float x, float y, float vx, float vy, float damage, float life, int pierce) {
+            this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage; this.life = life; this.pierce = pierce;
+        }
     }
-    private static final class Loot { float x, y; int value; Loot(float x, float y, int value) { this.x = x; this.y = y; this.value = value; } }
+
+    private static final class Loot {
+        float x, y; int value;
+        Loot(float x, float y, int value) { this.x = x; this.y = y; this.value = value; }
+    }
+
     private static final class Particle {
         float x, y, vx, vy, life; int color;
-        Particle(float x, float y, float vx, float vy, float life, int color) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.life = life; this.color = color; }
+        Particle(float x, float y, float vx, float vy, float life, int color) {
+            this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.life = life; this.color = color;
+        }
     }
 }
