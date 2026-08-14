@@ -31,7 +31,5 @@
     "persistent local progression",
     "controller buttons",
     "Android lifecycle pause/resume"
-  ],
-  "verifiedWorkflowRun": 31778492980,
-  "verifiedHeadSha": "170c60a7f0cf586040136ab675be7e4d0830783d"
+  ]
 }
