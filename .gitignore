@@ -3,3 +3,12 @@ playwright-report/
 test-results/
 *.zip
 .DS_Store
+
+# Android build output and private signing material
+android/.gradle/
+android/**/build/
+android/local.properties
+android/keystore.properties
+android/dev-signing/
+*.jks
+*.keystore

@@ -1,0 +1,34 @@
+{
+  "sourceOfTruth": "markhitchk/critter-extraction main/live",
+  "nativePortVersion": "0.41.0-native-3d-alpha",
+  "android": {"minSdk": 34, "targetSdk": 36, "renderer": "OpenGL ES 3.0", "webView": false, "javascriptRuntime": false},
+  "nativePortUses": [
+    "live/index.html",
+    "live/core/game/game-core.js",
+    "live/core/rendering/model-library.js",
+    "live/core/rendering/species-models.js",
+    "live/docs/architecture/ACCOUNT_SYSTEM.md",
+    "live/docs/architecture/MULTIPLAYER.md",
+    "live/assets/characters",
+    "live/assets/weapons",
+    "live/assets/items",
+    "live/assets/branding/icon.svg",
+    "live/assets/loading/cinematic-gameplay-fullhd.webp"
+  ],
+  "implementedNativeSystems": [
+    "schema-18 local accounts and portable JSON save",
+    "XP, levels, career stats and Petal economy",
+    "40-slot stash and 20-slot prepared backpack",
+    "merchant buy/sell/safe-junk flow",
+    "five canonical weapon profiles and five loadouts plus custom loadout",
+    "armor, shield, healing, reload, crouch, jump, aim and interaction controls",
+    "six procedural regional presentations",
+    "primary and bonus extraction contracts",
+    "five-Moonberry extraction requirement and five-minute drop timer",
+    "first/third person and shoulder switching",
+    "native PeerJS-compatible signaling with WebRTC data channels",
+    "six-digit rooms, co-op/PvP room mode and four-player room limit"
+  ],
+  "branding": {"canonicalSource": "live/assets/branding/icon.svg", "studioBoot": "icon.svg", "menuTopbar": "icon.svg", "androidLauncher": "icon.svg exact raster export"},
+  "notes": "This is a native Android implementation; shared repository art is packaged locally and no browser page is embedded."
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "canonicalSvg": "live/assets/branding/icon.svg",
+  "canonicalSvgSha256": "9755289ef076355c7275f84a79fe31afc2d2f970f6d5710369c643317684d2a0",
+  "launcherRaster": "android/app/src/main/res/drawable-nodpi/critter_icon_canonical.png",
+  "launcherRasterWidth": 1024,
+  "launcherRasterHeight": 1024,
+  "uses": [
+    "Android launcher",
+    "Android round launcher",
+    "Android system splash",
+    "native boot screen",
+    "native top-left header"
+  ]
+}
