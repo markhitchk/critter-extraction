@@ -1,6 +1,7 @@
 package com.harleystudios.critterextraction;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -13,104 +14,36 @@ import android.view.WindowInsetsController;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * Native Android shell modeled directly after main/live/index.html.
- * No WebView/browser page is created.
- */
+import java.util.List;
+
+/** Fully native Android shell for the /live game systems. No WebView is created. */
 public final class MainActivity extends Activity {
     private static final int TEXT=0xfff7f7ff,MUTED=0xffaeb2d1,MINT=0xff7ef7d4,CYAN=0xff63dff5,PURPLE=0xff8e82ff,DANGER=0xffff6f91;
-    private Game3DView gameView;
-    private FrameLayout gameRoot;
+    private NativeProfileStore store;private Game3DView gameView;private FrameLayout gameRoot;private LiveMenuView menuView;
+    @Override protected void onCreate(Bundle b){super.onCreate(b);try{setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);}catch(Throwable ignored){}store=new NativeProfileStore(this);enterImmersiveModeSafely();showMenu();}
 
-    @Override protected void onCreate(Bundle savedInstanceState){super.onCreate(savedInstanceState);try{setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);}catch(Throwable ignored){}enterImmersiveModeSafely();showMenu();}
+    private void showMenu(){if(gameView!=null){try{gameView.pauseForLifecycle();}catch(Throwable ignored){}gameView=null;}gameRoot=null;menuView=new LiveMenuView(this,store);menuView.setListener(new LiveMenuView.Listener(){public void onPlaySolo(){showGame();}public void onHost(){showMultiplayerPortStatus("Host Multiplayer");}public void onJoin(){showMultiplayerPortStatus("Join Multiplayer");}public void onControls(){NativeGameDialogs.controls(MainActivity.this);}public void onSettings(){NativeGameDialogs.settings(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onTradingPost(){NativeGameDialogs.merchant(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onAccount(){showAccountActions();}public void onEditProfile(){NativeGameDialogs.profile(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onAccounts(){NativeGameDialogs.accounts(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onLoadout(){NativeGameDialogs.loadouts(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onStash(){NativeGameDialogs.stash(MainActivity.this,store,MainActivity.this::refreshMenu);}public void onCharacter(){NativeGameDialogs.character(MainActivity.this,store,MainActivity.this::refreshMenu);}});setContentView(menuView);}
+    private void refreshMenu(){if(menuView!=null)menuView.refresh();}
+    private void showAccountActions(){String[] actions={"Name & Profile","Switch / Manage Accounts","Character","Portable Save"};new AlertDialog.Builder(this).setTitle(store.active().displayName).setItems(actions,(d,w)->{if(w==0)NativeGameDialogs.profile(this,store,this::refreshMenu);else if(w==1)NativeGameDialogs.accounts(this,store,this::refreshMenu);else if(w==2)NativeGameDialogs.character(this,store,this::refreshMenu);else NativeGameDialogs.saveTools(this,store,this::refreshMenu);}).setNegativeButton("Cancel",null).show();}
+    private void showMultiplayerPortStatus(String title){new AlertDialog.Builder(this).setTitle(title).setMessage("The local full-game port is active in this compile stage. Native WebRTC room transport is being wired next and will replace this dialog before the APK is released to you.").setPositiveButton("OK",null).show();}
 
-    private void showMenu(){
-        if(gameView!=null){try{gameView.pauseForLifecycle();}catch(Throwable ignored){}gameView=null;}
-        LiveMenuView menu=new LiveMenuView(this);
-        menu.setListener(new LiveMenuView.Listener(){
-            @Override public void onPlaySolo(){showGame();}
-            @Override public void onNextCritter(){cyclePreference("species",39);}
-            @Override public void onNextWeapon(){cyclePreference("weapon",5);}
-        });
-        setContentView(menu);
-    }
+    private void showGame(){try{menuView=null;gameRoot=new FrameLayout(this);gameRoot.setBackgroundColor(0xff111225);gameView=new Game3DView(this,store);gameView.setResultListener((extracted,summary)->runOnUiThread(()->showResults(extracted,summary)));gameRoot.addView(gameView,new FrameLayout.LayoutParams(-1,-1));gameRoot.addView(new LiveHudOverlay(this,gameView),new FrameLayout.LayoutParams(-1,-1));addTouchControls(gameRoot);setContentView(gameRoot);gameView.resumeGameLoop();}catch(Throwable e){showStartupFailure(e);}}
+    private void addTouchControls(FrameLayout root){float s=referenceScale();int top=px(10,s),right=px(14,s);addButton(root,"Ⅱ",Gravity.TOP|Gravity.RIGHT,right,top,44,38,s,v->showPause());right+=px(50,s);addButton(root,"BAG",Gravity.TOP|Gravity.RIGHT,right,top,54,38,s,v->showMatchInventory());right+=px(60,s);addButton(root,"CAM",Gravity.TOP|Gravity.RIGHT,right,top,54,38,s,v->gameView.toggleCamera());right+=px(60,s);addButton(root,"↔",Gravity.TOP|Gravity.RIGHT,right,top,44,38,s,v->gameView.toggleShoulder());right+=px(50,s);addButton(root,"JUMP",Gravity.TOP|Gravity.RIGHT,right,top,64,38,s,v->gameView.jump());
+        int bottom=px(16,s);right=px(14,s);Button fire=addButton(root,"FIRE",Gravity.BOTTOM|Gravity.RIGHT,right,bottom,76,76,s,null);hold(fire,v->gameView.setFire(v));right+=px(84,s);Button aim=addButton(root,"AIM",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+px(8,s),60,60,s,null);hold(aim,v->gameView.setAim(v));right+=px(68,s);Button use=addButton(root,"USE",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+px(8,s),60,60,s,null);hold(use,v->gameView.setUse(v));right+=px(68,s);addButton(root,"+",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+px(8,s),54,54,s,v->gameView.heal());right+=px(61,s);addButton(root,"R",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+px(8,s),54,54,s,v->gameView.reload());right+=px(61,s);addButton(root,"C",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+px(8,s),54,54,s,v->gameView.crouch());}
+    private interface Hold{void set(boolean v);}private void hold(Button b,Hold h){b.setOnTouchListener((v,e)->{if(e.getActionMasked()==MotionEvent.ACTION_DOWN){h.set(true);v.setPressed(true);return true;}if(e.getActionMasked()==MotionEvent.ACTION_UP||e.getActionMasked()==MotionEvent.ACTION_CANCEL){h.set(false);v.setPressed(false);return true;}return true;});}
+    private Button addButton(FrameLayout root,String text,int gravity,int side,int vertical,float width,float height,float scale,View.OnClickListener click){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextColor(TEXT);b.setTextSize(10);b.setPadding(0,0,0,0);b.setMinHeight(0);b.setMinWidth(0);b.setBackground(panel(0xc00a0b1b,12,0x66ffffff));if(click!=null)b.setOnClickListener(click);FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px(width,scale),px(height,scale),gravity);if((gravity&Gravity.RIGHT)==Gravity.RIGHT)lp.rightMargin=side;else lp.leftMargin=side;if((gravity&Gravity.BOTTOM)==Gravity.BOTTOM)lp.bottomMargin=vertical;else lp.topMargin=vertical;root.addView(b,lp);return b;}
 
-    private void cyclePreference(String key,int count){android.content.SharedPreferences p=getSharedPreferences("critter_native_3d",MODE_PRIVATE);p.edit().putInt(key,Math.floorMod(p.getInt(key,0)+1,count)).apply();}
+    private void showMatchInventory(){if(gameView==null||gameRoot==null)return;gameView.pauseForLifecycle();LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(16),dp(12),dp(16),dp(12));box.setBackgroundColor(0xff202344);box.addView(label("MATCH BACKPACK",12,MINT,true));box.addView(label(gameView.weaponName()+"   "+gameView.magazine()+" / "+gameView.reserveAmmo()+" ammo\nHealth "+Math.round(gameView.hp())+"   Shield "+Math.round(gameView.shield())+"   Moonberries "+gameView.loot()+" / 5",14,TEXT,true));List<NativeProfileStore.Stack> items=gameView.backpack();if(items.isEmpty())box.addView(label("Backpack is empty.",13,MUTED,false));for(NativeProfileStore.Stack st:items){NativeGameData.Item item=NativeGameData.ITEMS.get(st.itemId);box.addView(label((item==null?st.itemId:item.name)+" ×"+st.qty,13,TEXT,false));}TextView hint=label("USE picks up world loot and opens nearby supply chests. Extracted non-ammo loot is banked to Account Stash.",11,MUTED,false);hint.setPadding(0,dp(12),0,0);box.addView(hint);AlertDialog d=new AlertDialog.Builder(this).setTitle("Inventory").setView(scroll(box)).setPositiveButton("Resume",null).create();d.setOnDismissListener(x->{if(gameView!=null)gameView.resumeGameLoop();});d.show();}
+    private void showPause(){if(gameView==null)return;gameView.pauseForLifecycle();String[] choices={"Resume","Inventory","Controls","Settings","Leave Drop"};AlertDialog d=new AlertDialog.Builder(this).setTitle("Pause Menu").setItems(choices,(dialog,which)->{if(which==0){dialog.dismiss();gameView.resumeGameLoop();}else if(which==1){dialog.dismiss();showMatchInventory();}else if(which==2){NativeGameDialogs.controls(this);gameView.resumeGameLoop();}else if(which==3){NativeGameDialogs.settings(this,store,()->{});gameView.resumeGameLoop();}else{dialog.dismiss();confirmLeave();}}).create();d.setOnCancelListener(x->{if(gameView!=null)gameView.resumeGameLoop();});d.show();}
+    private void confirmLeave(){new AlertDialog.Builder(this).setTitle("Leave Drop?").setMessage("Unextracted match loot will be lost, matching the /live extraction rules.").setNegativeButton("Stay",(d,w)->{if(gameView!=null)gameView.resumeGameLoop();}).setPositiveButton("Leave",(d,w)->showMenu()).show();}
+    private void showResults(boolean extracted,String summary){if(gameView!=null)gameView.pauseForLifecycle();NativeProfileStore.Account a=store.active();String message=(extracted?"Extraction successful.":"The drop ended without extraction.")+"\n\n"+summary+"\n\nCareer: "+a.stats.extracts+" extracts • "+a.stats.berries+" berries • "+a.stats.kills+" critters • "+a.stats.matches+" drops\n🌸 "+NativeGameData.formatPetals(a.petals);new AlertDialog.Builder(this).setTitle(extracted?"EXTRACTED":"DROP ENDED").setMessage(message).setCancelable(false).setPositiveButton("Return to Menu",(d,w)->showMenu()).setNegativeButton("New Drop",(d,w)->showGame()).show();}
 
-    private void showGame(){
-        try{
-            gameRoot=new FrameLayout(this);gameRoot.setBackgroundColor(0xff111225);
-            gameView=new Game3DView(this);gameRoot.addView(gameView,new FrameLayout.LayoutParams(-1,-1));
-            LiveHudOverlay hud=new LiveHudOverlay(this,gameView);gameRoot.addView(hud,new FrameLayout.LayoutParams(-1,-1));
-            addTouchControls(gameRoot);setContentView(gameRoot);gameView.resumeGameLoop();
-        }catch(Throwable error){showStartupFailure(error);}
-    }
-
-    private void addTouchControls(FrameLayout root){
-        float d=getResources().getDisplayMetrics().density;
-        int top=(int)(12*d),gap=(int)(7*d),h=(int)(38*d);
-        int x=(int)(16*d);
-        addButton(root,"Inventory",Gravity.TOP|Gravity.RIGHT,x,top,(int)(82*d),h,v->showInventory());x+=(int)(89*d);
-        addButton(root,"Pause",Gravity.TOP|Gravity.RIGHT,x,top,(int)(67*d),h,v->showPause());x+=(int)(74*d);
-        addButton(root,"Leave",Gravity.TOP|Gravity.RIGHT,x,top,(int)(62*d),h,v->showMenu());
-
-        int touchTop=(int)(54*d);int right=(int)(14*d);
-        addButton(root,"Ⅱ",Gravity.TOP|Gravity.RIGHT,right,touchTop,(int)(44*d),(int)(38*d),v->showPause());right+=(int)(50*d);
-        addButton(root,"BAG",Gravity.TOP|Gravity.RIGHT,right,touchTop,(int)(54*d),(int)(38*d),v->showInventory());right+=(int)(60*d);
-        addButton(root,"CAM",Gravity.TOP|Gravity.RIGHT,right,touchTop,(int)(54*d),(int)(38*d),v->gameView.toggleCamera());right+=(int)(60*d);
-        addButton(root,"↔",Gravity.TOP|Gravity.RIGHT,right,touchTop,(int)(44*d),(int)(38*d),v->gameView.toggleShoulder());right+=(int)(50*d);
-        addButton(root,"JUMP",Gravity.TOP|Gravity.RIGHT,right,touchTop,(int)(64*d),(int)(38*d),v->gameView.jump());
-
-        int bottom=(int)(18*d);right=(int)(14*d);
-        Button fire=addButton(root,"FIRE",Gravity.BOTTOM|Gravity.RIGHT,right,bottom,(int)(72*d),(int)(72*d),v->gameView.fireOnce());
-        fire.setTextSize(12);fire.setBackground(panel(0xdd512f66,36,0x999f79ff));right+=(int)(80*d);
-        addButton(root,"AIM",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+(int)(7*d),(int)(58*d),(int)(58*d),v->{});right+=(int)(65*d);
-        addButton(root,"USE",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+(int)(7*d),(int)(58*d),(int)(58*d),v->{});right+=(int)(65*d);
-        addButton(root,"+",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+(int)(7*d),(int)(52*d),(int)(52*d),v->gameView.heal());right+=(int)(59*d);
-        addButton(root,"R",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+(int)(7*d),(int)(52*d),(int)(52*d),v->{});right+=(int)(59*d);
-        addButton(root,"C",Gravity.BOTTOM|Gravity.RIGHT,right,bottom+(int)(7*d),(int)(52*d),(int)(52*d),v->gameView.dash());
-    }
-
-    private Button addButton(FrameLayout root,String text,int gravity,int side,int vertical,int width,int height,View.OnClickListener click){
-        Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextColor(TEXT);b.setTextSize(10);b.setPadding(0,0,0,0);b.setMinWidth(0);b.setMinHeight(0);b.setBackground(panel(0xb30a0b1b,12,0x55ffffff));b.setOnClickListener(click);
-        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(width,height,gravity);if((gravity&Gravity.RIGHT)==Gravity.RIGHT)lp.rightMargin=side;else lp.leftMargin=side;if((gravity&Gravity.BOTTOM)==Gravity.BOTTOM)lp.bottomMargin=vertical;else lp.topMargin=vertical;root.addView(b,lp);return b;
-    }
-
-    private void showInventory(){
-        if(gameRoot==null||gameView==null)return;gameView.pauseForLifecycle();
-        FrameLayout shade=new FrameLayout(this);shade.setBackgroundColor(0xcc050612);shade.setClickable(true);
-        LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setPadding(dp(20),dp(18),dp(20),dp(18));card.setBackground(panel(0xff292b51,22,0x44ffffff));
-        TextView eyebrow=label("ACCOUNT STORAGE",9,MINT,true);card.addView(eyebrow);TextView title=label("Stash & Loadout",28,TEXT,true);card.addView(title);
-        TextView summary=label("BACKPACK WEIGHT     0.0 / 25.0 kg     •     MOONBERRIES     "+gameView.loot()+" / 8     •     ACCOUNT PETALS     🌸 "+gameView.petals(),11,MUTED,false);summary.setPadding(0,dp(12),0,dp(12));card.addView(summary);
-        TextView equipped=label("EQUIPPED\nPRIMARY   "+gameView.weaponName()+"\nARMOR     Leaf Vest\nBACKPACK  Critter Pack\n\nCARRIED ITEMS\nMedkits × "+gameView.medkits()+"\n\nSAFE STORAGE\nExtracted loot remains on this device.",13,TEXT,false);equipped.setBackground(panel(0x55111225,14,0x22ffffff));equipped.setPadding(dp(14),dp(14),dp(14),dp(14));card.addView(equipped,new LinearLayout.LayoutParams(-1,0,1));
-        Button done=modalButton("Done",true);done.setOnClickListener(v->{gameRoot.removeView(shade);gameView.resumeGameLoop();});card.addView(done,new LinearLayout.LayoutParams(-1,dp(46)));
-        shade.addView(card,new FrameLayout.LayoutParams(Math.min(dp(760),getResources().getDisplayMetrics().widthPixels-dp(40)),Math.min(dp(470),getResources().getDisplayMetrics().heightPixels-dp(36)),Gravity.CENTER));gameRoot.addView(shade,new FrameLayout.LayoutParams(-1,-1));
-    }
-
-    private void showPause(){
-        if(gameRoot==null||gameView==null)return;gameView.pauseForLifecycle();
-        FrameLayout shade=new FrameLayout(this);shade.setBackgroundColor(0xcc050612);shade.setClickable(true);
-        LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setPadding(dp(20),dp(18),dp(20),dp(18));card.setBackground(panel(0xff292b51,22,0x44ffffff));
-        card.addView(label("MATCH PAUSED",9,MINT,true));card.addView(label("Pause Menu",28,TEXT,true));
-        TextView info=label("Critter Extraction\n"+gameView.speciesName()+" • "+gameView.weaponName()+"\n\nYour current native 3D run is paused.",12,MUTED,false);info.setPadding(0,dp(16),0,dp(14));card.addView(info,new LinearLayout.LayoutParams(-1,0,1));
-        Button resume=modalButton("Resume",true);resume.setOnClickListener(v->{gameRoot.removeView(shade);gameView.resumeGameLoop();});card.addView(resume,new LinearLayout.LayoutParams(-1,dp(46)));
-        Button inventory=modalButton("Inventory",false);inventory.setOnClickListener(v->{gameRoot.removeView(shade);gameView.resumeGameLoop();showInventory();});card.addView(inventory,new LinearLayout.LayoutParams(-1,dp(46)));
-        Button leave=modalButton("Leave Drop",false);leave.setTextColor(0xffffb0c2);leave.setOnClickListener(v->showMenu());card.addView(leave,new LinearLayout.LayoutParams(-1,dp(46)));
-        shade.addView(card,new FrameLayout.LayoutParams(dp(380),Math.min(dp(390),getResources().getDisplayMetrics().heightPixels-dp(40)),Gravity.CENTER));gameRoot.addView(shade,new FrameLayout.LayoutParams(-1,-1));
-    }
-
-    private Button modalButton(String text,boolean primary){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextColor(primary?0xff111526:TEXT);b.setTextSize(12);b.setBackground(primary?gradientPanel():panel(0x22ffffff,12,0x44ffffff));return b;}
-    private TextView label(String text,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(text);t.setTextSize(size);t.setTextColor(color);t.setTypeface(android.graphics.Typeface.create("sans",bold?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL));return t;}
-    private GradientDrawable gradientPanel(){GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{MINT,CYAN});g.setCornerRadius(dp(12));return g;}
-    private GradientDrawable panel(int color,float radius,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp((int)radius));g.setStroke(dp(1),strokeColor);return g;}
-    private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
-
+    private ScrollView scroll(View v){ScrollView s=new ScrollView(this);s.setBackgroundColor(0xff111225);s.addView(v);return s;}private TextView label(String text,float sp,int color,boolean bold){TextView t=new TextView(this);t.setText(text);t.setTextSize(sp);t.setTextColor(color);t.setTypeface(android.graphics.Typeface.create("sans",bold?1:0));t.setPadding(0,dp(5),0,dp(5));return t;}private GradientDrawable panel(int color,float radius,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp((int)radius));g.setStroke(Math.max(1,dp(1)),strokeColor);return g;}private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}private float referenceScale(){android.util.DisplayMetrics m=getResources().getDisplayMetrics();return Math.min(m.widthPixels/1536f,m.heightPixels/720f);}private int px(float v,float s){return Math.max(1,Math.round(v*s));}
     private void enterImmersiveModeSafely(){try{getWindow().setDecorFitsSystemWindows(false);WindowInsetsController c=getWindow().getInsetsController();if(c!=null){c.hide(WindowInsets.Type.statusBars()|WindowInsets.Type.navigationBars());c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);}}catch(Throwable ignored){getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);}}
     private void showStartupFailure(Throwable error){gameView=null;TextView m=new TextView(this);m.setGravity(Gravity.CENTER);m.setTextColor(Color.WHITE);m.setBackgroundColor(0xff111225);m.setTextSize(18);String t=error==null?"Unknown":error.getClass().getSimpleName();m.setText("CRITTER EXTRACTION\n\nNative OpenGL startup failed.\n"+t+"\n\nScreenshot this screen so this device can be fixed.");m.setPadding(48,48,48,48);setContentView(m);}
-    @Override protected void onResume(){super.onResume();enterImmersiveModeSafely();if(gameView!=null)gameView.resumeGameLoop();}
-    @Override protected void onPause(){if(gameView!=null)gameView.pauseForLifecycle();super.onPause();}
-    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus)enterImmersiveModeSafely();}
-    @Override public void onBackPressed(){if(gameView!=null)showPause();else super.onBackPressed();}
+    @Override protected void onResume(){super.onResume();enterImmersiveModeSafely();if(gameView!=null)gameView.resumeGameLoop();}@Override protected void onPause(){if(gameView!=null)gameView.pauseForLifecycle();super.onPause();}@Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus)enterImmersiveModeSafely();}@Override public void onBackPressed(){if(gameView!=null)showPause();else super.onBackPressed();}
 }
