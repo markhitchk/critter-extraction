@@ -8,6 +8,13 @@ on:
       - 'android/**'
       - 'live/**'
       - '.github/workflows/android-v0.1-test.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android/**'
+      - 'live/**'
+      - '.github/workflows/android-v0.1-test.yml'
   workflow_dispatch:
 
 permissions:
