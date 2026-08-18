@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.harleytg.critterextraction'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.harleytg.critterextraction'
+        minSdk 34
+        targetSdk 35
+        versionCode 100001
+        versionName '0.1.0-test1'
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            applicationIdSuffix ''
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    androidResources {
+        noCompress += ['html', 'js', 'css', 'svg', 'webp', 'png', 'jpg', 'jpeg', 'json', 'xml', 'glb', 'gltf', 'bin', 'wasm']
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
