@@ -8,6 +8,12 @@ on:
       - 'native-android/**'
       - 'live/assets/**'
       - '.github/workflows/android-native-v0.2.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'native-android/**'
+      - 'live/assets/**'
+      - '.github/workflows/android-native-v0.2.yml'
 
 permissions:
   contents: write
@@ -78,6 +84,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish APK checkpoint to test branch
+        if: github.event_name == 'push'
         run: |
           mkdir -p apk-builds
           cp CritterExtraction-Native-v0.2.0-test1.apk apk-builds/CritterExtraction-Native-v0.2.0-test1.apk
