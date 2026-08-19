@@ -1,0 +1,9 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+rootProject.name = 'CritterExtractionNative'
+include ':core', ':android'
