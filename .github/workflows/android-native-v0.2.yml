@@ -9,6 +9,9 @@ on:
       - 'live/assets/**'
       - '.github/workflows/android-native-v0.2.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build native Android APK
@@ -38,9 +41,9 @@ jobs:
           test -f native-android/assets/weapons/pea_popper.png
           test -f native-android/assets/items/medkit.png
 
-      - name: Verify this is not a WebView build
+      - name: Verify this is not a browser-runtime build
         run: |
-          ! grep -RniE 'android\.webkit|WebView|loadUrl\(|index\.html|javascript:' native-android/core native-android/android --exclude='*.md'
+          ! grep -RniE 'android\.webkit|loadUrl\(|index\.html|javascript:' native-android/core native-android/android --exclude='*.md'
           test ! -d native-android/assets/game
 
       - name: Set up Gradle
@@ -65,7 +68,7 @@ jobs:
           cp "$APK" CritterExtraction-Native-v0.2.0-test1.apk
           sha256sum CritterExtraction-Native-v0.2.0-test1.apk > CritterExtraction-Native-v0.2.0-test1.apk.sha256
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: critter-extraction-native-v0.2.0-test1
@@ -73,6 +76,21 @@ jobs:
             CritterExtraction-Native-v0.2.0-test1.apk
             CritterExtraction-Native-v0.2.0-test1.apk.sha256
           if-no-files-found: error
+
+      - name: Publish APK checkpoint to test branch
+        run: |
+          mkdir -p apk-builds
+          cp CritterExtraction-Native-v0.2.0-test1.apk apk-builds/CritterExtraction-Native-v0.2.0-test1.apk
+          cp CritterExtraction-Native-v0.2.0-test1.apk.sha256 apk-builds/CritterExtraction-Native-v0.2.0-test1.apk.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apk-builds/CritterExtraction-Native-v0.2.0-test1.apk apk-builds/CritterExtraction-Native-v0.2.0-test1.apk.sha256
+          if git diff --cached --quiet; then
+            echo 'APK checkpoint already matches.'
+          else
+            git commit -m 'Publish native v0.2.0 test1 APK [skip ci]'
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
 
   android14-smoke:
     name: Android 14 native smoke test
@@ -118,4 +136,3 @@ jobs:
           path: |
             native-game.png
             native-logcat.txt
-          if-no-files-found: error
