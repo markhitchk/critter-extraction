@@ -1,0 +1,121 @@
+name: Android Native v0.2 Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-native-v0.2-test]
+    paths:
+      - 'native-android/**'
+      - 'live/assets/**'
+      - '.github/workflows/android-native-v0.2.yml'
+
+jobs:
+  build:
+    name: Build native Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Prepare exact Critter Extraction assets
+        run: |
+          python -m pip install --disable-pip-version-check cairosvg==2.8.2
+          python native-android/tools/prepare_assets.py live/assets native-android/assets native-android/android/res
+          test -f native-android/assets/source/icon.svg
+          test -f native-android/assets/characters/puppy.png
+          test -f native-android/assets/weapons/pea_popper.png
+          test -f native-android/assets/items/medkit.png
+
+      - name: Verify this is not a WebView build
+        run: |
+          ! grep -RniE 'android\.webkit|WebView|loadUrl\(|index\.html|javascript:' native-android/core native-android/android --exclude='*.md'
+          test ! -d native-android/assets/game
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Build debug APK
+        run: gradle -p native-android :android:assembleDebug --stacktrace
+
+      - name: Verify APK metadata and contents
+        run: |
+          APK='native-android/android/build/outputs/apk/debug/android-debug.apk'
+          test -f "$APK"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee /tmp/badging.txt
+          grep -q "package: name='com.harleytg.critterextraction' versionCode='200001' versionName='0.2.0-native-test1'" /tmp/badging.txt
+          grep -q "sdkVersion:'34'" /tmp/badging.txt
+          if unzip -l "$APK" | grep -Eq 'index\.html|assets/game/|peerjs\.min\.js'; then
+            echo 'Browser-game payload found in native APK' >&2
+            exit 1
+          fi
+          cp "$APK" CritterExtraction-Native-v0.2.0-test1.apk
+          sha256sum CritterExtraction-Native-v0.2.0-test1.apk > CritterExtraction-Native-v0.2.0-test1.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: critter-extraction-native-v0.2.0-test1
+          path: |
+            CritterExtraction-Native-v0.2.0-test1.apk
+            CritterExtraction-Native-v0.2.0-test1.apk.sha256
+          if-no-files-found: error
+
+  android14-smoke:
+    name: Android 14 native smoke test
+    needs: build
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: critter-extraction-native-v0.2.0-test1
+          path: apk
+
+      - name: Boot Android 14 emulator and launch native game
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r apk/CritterExtraction-Native-v0.2.0-test1.apk
+            adb shell am start -W -n com.harleytg.critterextraction/.android.AndroidLauncher
+            sleep 12
+            adb shell dumpsys activity activities | grep -q 'com.harleytg.critterextraction/.android.AndroidLauncher'
+            adb shell screencap -p /sdcard/native-game.png
+            adb pull /sdcard/native-game.png native-game.png
+            adb logcat -d > native-logcat.txt
+            ! grep -E 'FATAL EXCEPTION|Process: com\.harleytg\.critterextraction.*has died' native-logcat.txt
+
+      - name: Upload emulator evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: critter-extraction-native-v0.2.0-emulator-evidence
+          path: |
+            native-game.png
+            native-logcat.txt
+          if-no-files-found: error
