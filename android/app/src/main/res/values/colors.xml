@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="critter_background">#17182D</color>
+    <color name="critter_navigation">#0B0C19</color>
+</resources>

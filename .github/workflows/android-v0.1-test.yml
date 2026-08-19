@@ -1,0 +1,146 @@
+name: Critter Extraction Android v0.1 Test
+
+on:
+  push:
+    branches:
+      - android-v0.1-test
+    paths:
+      - 'android/**'
+      - 'live/**'
+      - '.github/workflows/android-v0.1-test.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android/**'
+      - 'live/**'
+      - '.github/workflows/android-v0.1-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: critter-android-v01-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Android 14+ APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Prepare exact LIVE game runtime and app icon
+        run: |
+          python -m pip install --disable-pip-version-check cairosvg
+          rm -rf android/app/src/main/assets/game
+          mkdir -p android/app/src/main/assets/game
+          rsync -a live/ android/app/src/main/assets/game/ \
+            --exclude '.github' \
+            --exclude 'docs' \
+            --exclude '*.md' \
+            --exclude 'LICENSE' \
+            --exclude '.gitignore' \
+            --exclude '.nojekyll'
+          python android/tools/generate_icons.py
+
+      - name: Parity checkpoint
+        run: |
+          test -f android/app/src/main/assets/game/index.html
+          test -f android/app/src/main/assets/game/core/game/game-runtime.js
+          test -f android/app/src/main/assets/game/assets/icon.svg
+          test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          grep -q 'Critter Extraction v0.22.0' android/app/src/main/assets/game/index.html
+          grep -q 'Harley' android/app/src/main/assets/game/index.html
+          grep -q 'applicationId.*com.harleytg.critterextraction' android/app/build.gradle
+          echo 'Parity checkpoint passed: v0.22.0 LIVE runtime + Harley’s Studios branding are bundled.'
+
+      - name: Lint and compile APK
+        working-directory: android
+        run: gradle --no-daemon clean lintDebug assembleDebug
+
+      - name: Prepare test APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk CritterExtraction-Android-v0.1.0-test1.apk
+          sha256sum CritterExtraction-Android-v0.1.0-test1.apk > CritterExtraction-Android-v0.1.0-test1.sha256
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: critter-extraction-android-v0.1.0-test1
+          path: |
+            CritterExtraction-Android-v0.1.0-test1.apk
+            CritterExtraction-Android-v0.1.0-test1.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  emulator-smoke:
+    name: Android 14 emulator smoke test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools emulator platforms;android-34 system-images;android-34;default;x86_64'
+
+      - name: Download built APK
+        uses: actions/download-artifact@v7
+        with:
+          name: critter-extraction-android-v0.1.0-test1
+          path: android-artifact
+
+      - name: Install and launch on Android 14
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r android-artifact/CritterExtraction-Android-v0.1.0-test1.apk
+            adb logcat -c
+            adb shell am force-stop com.harleytg.critterextraction
+            adb shell monkey -p com.harleytg.critterextraction -c android.intent.category.LAUNCHER 1
+            sleep 15
+            adb shell dumpsys activity activities | grep -q 'com.harleytg.critterextraction/.MainActivity'
+            adb shell am start -W -a android.intent.action.VIEW -d 'https://markhitchk.github.io/critter-extraction/live/?join=940255' com.harleytg.critterextraction
+            sleep 25
+            adb exec-out screencap -p > android-test-screenshot.png
+            adb logcat -d '*:E' > android-test-errors.txt || true
+            test -z "$(grep -E 'FATAL EXCEPTION|Process: com.harleytg.critterextraction' android-test-errors.txt || true)"
+
+      - name: Upload emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: critter-extraction-android-emulator-evidence
+          path: |
+            android-test-screenshot.png
+            android-test-errors.txt
+          if-no-files-found: ignore
+          retention-days: 14
