@@ -126,16 +126,13 @@ jobs:
             adb logcat -c
             adb shell am force-stop com.harleytg.critterextraction
             adb shell monkey -p com.harleytg.critterextraction -c android.intent.category.LAUNCHER 1
-            sleep 10
+            sleep 15
             adb shell dumpsys activity activities | grep -q 'com.harleytg.critterextraction/.MainActivity'
             adb shell am start -W -a android.intent.action.VIEW -d 'https://markhitchk.github.io/critter-extraction/live/?join=940255' com.harleytg.critterextraction
-            sleep 4
+            sleep 25
             adb exec-out screencap -p > android-test-screenshot.png
             adb logcat -d '*:E' > android-test-errors.txt || true
-            if grep -E 'FATAL EXCEPTION|Process: com.harleytg.critterextraction' android-test-errors.txt; then
-              cat android-test-errors.txt
-              exit 1
-            fi
+            test -z "$(grep -E 'FATAL EXCEPTION|Process: com.harleytg.critterextraction' android-test-errors.txt || true)"
 
       - name: Upload emulator evidence
         if: always()
