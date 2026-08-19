@@ -11,6 +11,6 @@ public final class CritterExtractionGame extends Game {
     @Override
     public void create() {
         saves = Gdx.app.getPreferences("critter-extraction-native-save");
-        setScreen(new GameScreen(this));
+        setScreen(new MainMenuScreen(this));
     }
 }
