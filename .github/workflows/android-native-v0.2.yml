@@ -47,6 +47,30 @@ jobs:
           test -f native-android/assets/weapons/pea_popper.png
           test -f native-android/assets/items/medkit.png
 
+      - name: Apply LibGDX InputProcessor compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('native-android/core/src/main/java/com/harleytg/critterextraction/GameScreen.java')
+          source = path.read_text()
+          if 'boolean touchCancelled(' not in source:
+              marker = '''    @Override public boolean touchUp(int x, int y, int pointer, int button) {
+                  if (pointer==movePointer) { movePointer=-1; moveBase.setZero(); moveNow.setZero(); }
+                  if (pointer==lookPointer) lookPointer=-1;
+                  return true;
+              }
+          '''
+              replacement = marker + '''
+              @Override public boolean touchCancelled(int x, int y, int pointer, int button) {
+                  return touchUp(x, y, pointer, button);
+              }
+          '''
+              if marker not in source:
+                  raise SystemExit('Unable to find touchUp compatibility insertion point')
+              path.write_text(source.replace(marker, replacement, 1))
+          PY
+          grep -q 'boolean touchCancelled(' native-android/core/src/main/java/com/harleytg/critterextraction/GameScreen.java
+
       - name: Verify this is not a browser-runtime build
         run: |
           ! grep -RniE 'android\.webkit|loadUrl\(|index\.html|javascript:' native-android/core native-android/android --exclude='*.md'
