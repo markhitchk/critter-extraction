@@ -2,6 +2,8 @@ name: Critter Extraction Native Android CI
 on:
   push:
     branches: ["chatgpt/native-android-port-c60715f"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 permissions:
   contents: read
