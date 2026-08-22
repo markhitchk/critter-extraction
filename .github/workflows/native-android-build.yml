@@ -1,0 +1,63 @@
+name: Critter Extraction Native Android CI
+on:
+  push:
+    branches: ["chatgpt/native-android-port-c60715f"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand native source
+        run: |
+          rm -rf android-native
+          mkdir android-native
+          unzip -q .ci/native-port-source.zip -d android-native
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+      - name: Author production GLBs and previews
+        working-directory: android-native
+        run: blender --background --python art-source/generate_assets.py
+      - name: Validate production assets
+        working-directory: android-native
+        run: python3 tools/validate_assets.py
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Generate Gradle wrapper
+        working-directory: android-native
+        run: gradle wrapper --gradle-version 8.13
+      - name: Test, lint and build debug APK
+        working-directory: android-native
+        run: |
+          ./gradlew clean
+          ./gradlew testDebugUnitTest
+          ./gradlew lintDebug
+          ./gradlew assembleDebug
+      - name: Collect deliverables
+        run: |
+          mkdir -p deliverable
+          cp android-native/app/build/outputs/apk/debug/app-debug.apk deliverable/Critter-Extraction-Native-debug.apk
+          cp android-native/PORT_MATRIX.md android-native/ASSET_MANIFEST.md android-native/PORT_NOTES.md deliverable/
+          cp -r android-native/docs/asset-previews deliverable/asset-previews
+          cp android-native/gradlew android-native/gradlew.bat deliverable/ || true
+          cp -r android-native/gradle deliverable/gradle || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: critter-extraction-native-debug
+          path: deliverable
+          if-no-files-found: error
