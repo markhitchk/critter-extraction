@@ -20,6 +20,6 @@
     "check:release": "node tools/check-release-consistency.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.0"
+    "@playwright/test": "^1.64.0"
   }
 }
